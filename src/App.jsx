@@ -229,20 +229,42 @@ async function callClaudeSonnet(prompt, maxTokens=2000) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // ENRICHMENT — translate + insight + sector
 // ═══════════════════════════════════════════════════════════════════════════════
+// Translate a single non-English title using Google Translate free endpoint
+async function googleTranslate(text, sourceLang) {
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return data?.[0]?.map(x=>x?.[0]||"").join("") || text;
+  } catch { return text; }
+}
+
 async function enrichBatch(articles) {
   if(!articles.length) return [];
-  const prompt=`Financial analyst. For each headline return JSON array (one object per item):
-{"translated":"English translation of title (if already English, copy it exactly)","insight":"One sentence investor takeaway in English","sector":"FIN|IT|IND|CD|CS|HC|EN|MAT|COM|RE|UTL|MAC|UNK"}
-IMPORTANT: If the headline language is zh, ko, ja, or any non-English language, you MUST translate the title to English. Never leave a non-English title untranslated.
-Sectors: FIN=banks/insurance/capital markets, IT=software/hardware/semis, IND=manufacturing/transport/conglomerates, CD=autos/retail/luxury/leisure, CS=food/beverages/household, HC=pharma/biotech/hospitals, EN=oil/gas/renewables, MAT=mining/chemicals/steel, COM=media/telecom/internet platforms, RE=property/REITs, UTL=power/water, MAC=central bank/rates/GDP/trade/FX/fiscal/elections/tariffs, UNK=unclear.
-Return ONLY valid JSON array, no other text. ${articles.length} items:
-${articles.map((a,i)=>`${i}. [${a.lang}] ${a.title}`).join("\n")}`;
+
+  // Step 1: Pre-translate all non-English titles via Google Translate
+  const withTranslations = await Promise.all(articles.map(async a => {
+    if (a.lang === "en") return { ...a, _preTranslated: a.title };
+    const translated = await googleTranslate(a.title, a.lang === "zh" ? "zh-CN" : a.lang);
+    return { ...a, _preTranslated: translated };
+  }));
+
+  // Step 2: Enrich with Claude using pre-translated titles
+  const prompt=`Financial analyst. For each headline return a JSON array (one object per item).
+Each item: {"translated":"<English title>","insight":"<one sentence investor takeaway>","sector":"<code>"}
+Use EXACTLY the pre-translated title provided — do not re-translate.
+Sector codes: FIN=banks/insurance/capital markets, IT=software/hardware/semis, IND=manufacturing/transport/conglomerates, CD=autos/retail/luxury/leisure, CS=food/beverages/household, HC=pharma/biotech/hospitals, EN=oil/gas/renewables, MAT=mining/chemicals/steel, COM=media/telecom/internet platforms, RE=property/REITs, UTL=power/water, MAC=central bank/rates/GDP/trade/FX/fiscal/elections/tariffs, UNK=unclear.
+Return ONLY a valid JSON array. ${withTranslations.length} items:
+${withTranslations.map((a,i)=>`${i}. ${a._preTranslated}`).join("\n")}`;
+
   try {
-    const text=await callClaude(prompt,2000);
-    const cleaned=text.replace(/```json|```/g,"").trim();
-    const parsed=JSON.parse(cleaned);
-    return parsed;
-  } catch { return []; }
+    const text = await callClaude(prompt, 2000);
+    const cleaned = text.replace(/```json|```/g,"").trim();
+    return JSON.parse(cleaned);
+  } catch { 
+    // Fallback: return pre-translations without insight
+    return withTranslations.map(a=>({translated:a._preTranslated, insight:"", sector:"UNK"}));
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -254,11 +276,12 @@ async function generateBriefUnlimited(articles, label) {
 
   // If small enough, do it in one call
   if (articles.length <= CHUNK) {
-    const prompt=`Investment analyst. Concise brief on ${label}: (1) market backdrop, (2) key corporate/sector moves — name companies, (3) risks & opportunities. Prose, no bullets.
+    const prompt=`Investment analyst. Write a focused brief on ${label}.
+Rules: (1) Name EVERY company mentioned across all headlines — miss none. (2) Cover macro backdrop. (3) Note key risks/opportunities. Flowing prose, no bullets, max 3 paragraphs.
 
 Headlines (${articles.length}):
 ${articles.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
-    return await callClaude(prompt, 1000);
+    return await callClaude(prompt, 800);
   }
 
   // Multi-chunk: summarise each chunk, then synthesise
@@ -266,16 +289,16 @@ ${articles.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}
   for(let i=0;i<articles.length;i+=CHUNK) chunks.push(articles.slice(i,i+CHUNK));
 
   const chunkSummaries=await Promise.all(chunks.map(async(chunk,ci)=>{
-    const prompt=`Summarise these ${chunk.length} business headlines for ${label} in 2-3 sentences. Name key companies/events only.
-${chunk.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
-    return await callClaude(prompt,600);
+    const prompt=`List the key companies and events from these ${chunk.length} headlines in 2 sentences. Name every company mentioned.
+${chunk.map(a=>`• ${a.translatedTitle||a.title}`).join("\n")}`;
+    return await callClaude(prompt,400);
   }));
 
   // Synthesise all chunk summaries into final brief
-  const synthPrompt=`Investment analyst. Synthesise these ${chunks.length} news summaries for ${label} into one crisp brief: (1) market backdrop, (2) key corporate/sector moves, (3) risks & opportunities. Prose, no bullets.
+  const synthPrompt=`Investment analyst. From these summaries for ${label}, write a 3-paragraph brief: (1) macro backdrop, (2) ALL companies and their news — name every one, (3) risks & opportunities. Prose only.
 
-${chunkSummaries.map((s,i)=>`[${i+1}]: ${s}`).join("\n\n")}`;
-  return await callClaude(synthPrompt, 1500);
+${chunkSummaries.map((s,i)=>`[${i+1}]: ${s}`).join("\n")}`;
+  return await callClaude(synthPrompt, 900);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -899,7 +922,19 @@ export default function App() {
   },[]);
 
   // Computed
-  const canonical=allArticles.filter(a=>showDupes||!a.duplicateOf);
+  const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+  const sortByDate = arts => [...arts].sort((a,b) => {
+    const da = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
+    const db = b.pubDate ? new Date(b.pubDate).getTime() : (b.fetchedAt||0);
+    return db - da; // newest first
+  });
+  const isRecent = a => {
+    const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
+    return t === 0 || (Date.now() - t) < FIVE_DAYS_MS;
+  };
+  const canonical = sortByDate(
+    allArticles.filter(a => (showDupes||!a.duplicateOf) && isRecent(a))
+  );
   const forCountry=c=>c==="ALL"?canonical:canonical.filter(a=>a.country===c);
   const forSector=s=>s==="ALL"?canonical:canonical.filter(a=>a.sector===s);
   const countryArts=forCountry(activeCountry);
@@ -907,6 +942,8 @@ export default function App() {
   const sourcesInView=SOURCES.filter(s=>activeCountry==="ALL"||s.country===activeCountry);
   const sourceGroups=sourcesInView.map(s=>({s,arts:canonical.filter(a=>a.sourceId===s.id)})).filter(g=>g.arts.length);
   const sectorGroups=MSCI_SECTORS.map(sec=>({sec,arts:canonical.filter(a=>a.sector===sec.code)})).filter(g=>g.arts.length).sort((a,b)=>b.arts.length-a.arts.length);
+  // Also show unenriched articles under a pending group if sectors tab is empty
+  const unenrichedArts=canonical.filter(a=>!a.sector);
   const sectorForActive=SECTOR_MAP[activeSector];
   const isLoading=Object.values(loading).some(Boolean);
   const dupeCount=allArticles.filter(a=>a.duplicateOf).length;
@@ -976,13 +1013,29 @@ export default function App() {
                 cursor:"pointer",fontFamily:"'DM Mono',monospace",transition:"all 0.15s"}}>
               {showDupes?"∙ hide dupes":"∙ show dupes"}
             </button>
+            <button onClick={()=>{
+                if(!window.confirm("Clear all cached headlines and summaries? The app will re-fetch and re-enrich everything from scratch.")) return;
+                Object.values(SK).forEach(k=>localStorage.removeItem(k));
+                setAllArticles([]);
+                setBriefs({});
+                setLastFetch({});
+                setStatusMsg("Cache cleared — reloading…");
+                setTimeout(()=>window.location.reload(), 800);
+              }}
+              style={{fontSize:9,padding:"4px 9px",border:"1px solid #e0b0b0",borderRadius:4,
+                background:"none",color:"#c0392b",
+                cursor:"pointer",fontFamily:"'DM Mono',monospace",transition:"all 0.15s"}}
+              onMouseOver={e=>e.currentTarget.style.background="#fdecea"}
+              onMouseOut={e=>e.currentTarget.style.background="none"}>
+              ✕ clear cache
+            </button>
             <button onClick={()=>fetchSources(SOURCES)} disabled={isLoading||enriching}
               style={{display:"flex",alignItems:"center",gap:5,background:"none",
                 border:"1px solid #bbb",color:"#333",padding:"6px 14px",borderRadius:5,
                 cursor:(isLoading||enriching)?"not-allowed":"pointer",fontFamily:"'DM Mono',monospace",
                 fontSize:11,opacity:(isLoading||enriching)?0.5:1,transition:"all 0.2s"}}
-              onMouseOver={e=>e.currentTarget.style.background="#c9a84c1a"}
-              onMouseOut={e=>e.currentTarget.style.background="#c9a84c0e"}>
+              onMouseOver={e=>e.currentTarget.style.background="#f5f5f5"}
+              onMouseOut={e=>e.currentTarget.style.background="none"}>
               <span style={{display:"inline-block",animation:isLoading?"spin 1s linear infinite":"none"}}>⟳</span>
               {isLoading?"refreshing…":"refresh all"}
             </button>
