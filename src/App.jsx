@@ -108,27 +108,39 @@ async function sSet(k, v) {
 // ═══════════════════════════════════════════════════════════════════════════════
 async function fetchFeed(source) {
   try {
-    const res = await fetch(PROXY + encodeURIComponent(source.url), {signal: AbortSignal.timeout(14000)});
-    if (!res.ok) throw new Error("bad");
-    const xml = new DOMParser().parseFromString(await res.text(), "text/xml");
-    return Array.from(xml.querySelectorAll("item")).slice(0,10).map(item => {
+    // Fetch via server-side proxy to avoid CORS blocks
+    const res = await fetch("/api/rss", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: source.url }),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.xml || data.xml.length < 100) return [];
+    const xml = new DOMParser().parseFromString(data.xml, "text/xml");
+    const items = Array.from(xml.querySelectorAll("item"));
+    if (!items.length) return [];
+    return items.slice(0,10).map(item => {
       const g = t => item.querySelector(t)?.textContent?.trim() || "";
       const title = g("title").replace(/<!\[CDATA\[|\]\]>/g,"").trim();
-      if (!title) return null;
+      if (!title || title === "undefined") return null;
       return {
         id: btoa(encodeURIComponent(title.slice(0,60))).replace(/[^a-zA-Z0-9]/g,"").slice(0,20),
         title,
         description: g("description").replace(/<[^>]+>/g,"").replace(/<!\[CDATA\[|\]\]>/g,"").trim().slice(0,260),
         link: g("link")||g("guid"),
-        pubDate: g("pubDate")||g("dc\\:date")||"",
+        pubDate: g("pubDate")||g("dc:date")||"",
         source: source.name, sourceId: source.id,
         country: source.country, flag: source.flag, lang: source.lang,
         fetchedAt: Date.now(),
         translatedTitle: null, insight: null, sector: null, duplicateOf: null,
-        watchMatches: [], // [{keyword, matchType: "direct"|"related", reason}]
+        watchMatches: [],
       };
     }).filter(Boolean);
-  } catch { return []; }
+  } catch(e) {
+    console.warn("fetchFeed failed for", source.id, e.message);
+    return [];
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
