@@ -494,7 +494,7 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
     setLoading(p=>({...p,[briefKey]:false}));
   };
   return (
-    <div style={{background:"#080f1a",border:"1px solid #ccc",borderRadius:10,
+    <div style={{background:"#fff",borderLeft:"3px solid #c0392b",border:"1px solid #e0e0e0",borderRadius:10,
       padding:"18px 22px",marginBottom:20,animation:"fadeIn 0.4s ease"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:brief?12:0}}>
         <div style={{display:"flex",alignItems:"center",gap:9}}>
@@ -512,7 +512,7 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
           style={{background:"none",border:"1px solid #bbb",color:"#333",
             padding:"6px 14px",borderRadius:5,cursor:"pointer",
             fontFamily:"'DM Mono',monospace",fontSize:11,transition:"all 0.2s"}}
-          onMouseOver={e=>e.currentTarget.style.background="#c9a84c11"}
+          onMouseOver={e=>e.currentTarget.style.background="#fdecea"}
           onMouseOut={e=>e.currentTarget.style.background="none"}>
           {isLoading?<><Dots/> generating…</>:brief?"↺ refresh":"✦ generate brief"}
         </button>
@@ -618,7 +618,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
   return (
     <div style={{animation:"fadeIn 0.3s ease"}}>
       {/* Input area */}
-      <div style={{background:"#080f1a",border:"1px solid #ccc",borderRadius:10,
+      <div style={{background:"#fff",borderLeft:"3px solid #c0392b",border:"1px solid #e0e0e0",borderRadius:10,
         padding:"20px 24px",marginBottom:20}}>
         <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",
           letterSpacing:"0.12em",marginBottom:4}}>WATCHLIST TRACKER</div>
@@ -637,7 +637,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
             onChange={e=>setInputVal(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&addKeyword()}
             placeholder="e.g. Samsung, Fed rate cut, TSMC, Reliance Industries…"
-            style={{flex:1,background:"#f0ebe0",border:"1px solid #1e3040",borderRadius:6,
+            style={{flex:1,background:"#fff",border:"1px solid #ddd",borderRadius:6,
               padding:"9px 14px",color:"#1a1a1a",fontFamily:"'DM Sans',sans-serif",fontSize:13,
               outline:"none"}}
           />
@@ -645,7 +645,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
             style={{padding:"9px 18px",background:"#c0392b11",border:"1px solid #c0392b66",
               color:"#c0392b",borderRadius:6,cursor:"pointer",fontFamily:"'DM Mono',monospace",
               fontSize:11,transition:"all 0.15s"}}
-            onMouseOver={e=>e.currentTarget.style.background="#c9a84c22"}
+            onMouseOver={e=>e.currentTarget.style.background="#fdecea"}
             onMouseOut={e=>e.currentTarget.style.background="#c9a84c11"}>
             + add
           </button>
@@ -658,11 +658,11 @@ function WatchlistTab({allArticles, setAllArticles}) {
               <div key={kw}
                 onClick={()=>setActiveKw(kw)}
                 style={{display:"flex",alignItems:"center",gap:8,padding:"6px 12px",
-                  background:activeKw===kw?"#1a1a1a":"#fff",
-                  border:`1px solid ${activeKw===kw?"#c0392b":"#ccc"}`,
+                  background:activeKw===kw?"#fdecea":"#fff",
+                  border:`1px solid ${activeKw===kw?"#c0392b":"#ddd"}`,
                   borderRadius:20,cursor:"pointer",transition:"all 0.15s"}}>
                 <span style={{fontFamily:"'DM Mono',monospace",fontSize:11,
-                  color:activeKw===kw?"#c0392b":"#4a6a8a"}}>
+                  color:activeKw===kw?"#c0392b":"#333"}}>
                   {kw}
                 </span>
                 {kwCounts[kw]&&(kwCounts[kw].direct||kwCounts[kw].related)>0&&(
@@ -684,7 +684,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <button onClick={runAnalysis} disabled={analysing||!keywords.length||!canonical.length}
             style={{padding:"9px 20px",
-              background:(!keywords.length||!canonical.length)?"#0d1a26":"#c9a84c11",
+              background:(!keywords.length||!canonical.length)?"#f5f5f5":"#fdecea",
               border:"1px solid #bbb",color:"#333",borderRadius:6,
               cursor:(!keywords.length||!canonical.length)?"not-allowed":"pointer",
               fontFamily:"'DM Mono',monospace",fontSize:11,transition:"all 0.2s",
@@ -710,7 +710,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
       {activeKw && (
         <div style={{animation:"fadeIn 0.3s ease"}}>
           {/* Keyword intel brief */}
-          <div style={{background:"#080f1a",border:"1px solid #ccc",borderRadius:10,
+          <div style={{background:"#fff",borderLeft:"3px solid #c0392b",border:"1px solid #e0e0e0",borderRadius:10,
             padding:"18px 22px",marginBottom:20}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
               marginBottom:kwBriefs[activeKw]?12:0}}>
@@ -732,7 +732,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
                   padding:"6px 14px",borderRadius:5,cursor:"pointer",
                   fontFamily:"'DM Mono',monospace",fontSize:11,transition:"all 0.2s",
                   opacity:!kwArticles.length?0.4:1}}
-                onMouseOver={e=>e.currentTarget.style.background="#c9a84c11"}
+                onMouseOver={e=>e.currentTarget.style.background="#fdecea"}
                 onMouseOut={e=>e.currentTarget.style.background="none"}>
                 {kwBriefLoad[activeKw]?<><Dots/> generating…</>:kwBriefs[activeKw]?"↺ refresh brief":"✦ generate intelligence brief"}
               </button>
@@ -1008,7 +1008,7 @@ export default function App() {
                     onMouseOver={e=>{if(!active)e.currentTarget.style.color="#c0392b"}}
                     onMouseOut={e=>{if(!active)e.currentTarget.style.color="#333"}}>
                     {c.flag} {c.label}
-                    {cnt>0&&<span style={{fontSize:8,background:active?"#c9a84c22":"#0d1a26",color:active?"#c0392b":"#999",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
+                    {cnt>0&&<span style={{fontSize:8,background:active?"#fdecea":"#f0f0f0",color:active?"#c0392b":"#666",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
                   </button>
                 );
               })
@@ -1026,7 +1026,7 @@ export default function App() {
                     onMouseOver={e=>{if(!active)e.currentTarget.style.color="#c0392b"}}
                     onMouseOut={e=>{if(!active)e.currentTarget.style.color="#333"}}>
                     <span>{sec.icon||"▤"}</span> {sec.label}
-                    {cnt>0&&<span style={{fontSize:8,background:active?`${col}22`:"#0d1a26",color:active?col:"#999",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
+                    {cnt>0&&<span style={{fontSize:8,background:active?`${col}18`:"#f0f0f0",color:active?col:"#666",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
                   </button>
                 );
               })
