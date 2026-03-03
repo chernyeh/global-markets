@@ -23,24 +23,11 @@ const SECTOR_MAP = Object.fromEntries(MSCI_SECTORS.map(s => [s.code, s]));
 // ═══════════════════════════════════════════════════════════════════════════════
 // SOURCES
 // ═══════════════════════════════════════════════════════════════════════════════
-// RSS feeds are fetched server-side via /api/rss to avoid CORS restrictions
-async function fetchRSS(url) {
-  try {
-    const res = await fetch("/api/rss", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-      signal: AbortSignal.timeout(16000),
-    });
-    const data = await res.json();
-    return data.xml || null;
-  } catch(e) { return null; }
-}
 const GN = (q,hl="en-US",gl="US",ceid="US:en") =>
   `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=${hl}&gl=${gl}&ceid=${ceid}`;
 
 const SOURCES = [
-  {id:"reuters",    country:"US",name:"Reuters Business",       lang:"en",flag:"🇺🇸",url:"https://feeds.reuters.com/reuters/businessNews"},
+  {id:"reuters",    country:"US",name:"Reuters Business",       lang:"en",flag:"🇺🇸",url:GN("site:reuters.com business finance")},
   {id:"marketwatch",country:"US",name:"MarketWatch",            lang:"en",flag:"🇺🇸",url:GN("site:marketwatch.com markets stocks")},
   {id:"wsj",        country:"US",name:"Wall Street Journal",    lang:"en",flag:"🇺🇸",url:GN("site:wsj.com business finance markets")},
   {id:"bloomberg",  country:"US",name:"Bloomberg",              lang:"en",flag:"🇺🇸",url:GN("site:bloomberg.com finance markets economy")},
@@ -50,7 +37,7 @@ const SOURCES = [
   {id:"bnn",        country:"CA",name:"BNN Bloomberg Canada",   lang:"en",flag:"🇨🇦",url:GN("site:bnnbloomberg.ca")},
   {id:"bt_sg",      country:"SG",name:"Business Times SG",      lang:"en",flag:"🇸🇬",url:GN("site:businesstimes.com.sg")},
   {id:"st_sg",      country:"SG",name:"Straits Times Business", lang:"en",flag:"🇸🇬",url:GN("site:straitstimes.com business")},
-  {id:"cna_sg",     country:"SG",name:"CNA Business",           lang:"en",flag:"🇸🇬",url:"https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6511"},
+  {id:"cna_sg",     country:"SG",name:"CNA Business",           lang:"en",flag:"🇸🇬",url:GN("site:channelnewsasia.com business")},
   {id:"edge_sg",    country:"SG",name:"The Edge Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:theedgesingapore.com")},
   {id:"scmp",       country:"HK",name:"South China Morning Post",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com business finance")},
   {id:"mingtiandi", country:"HK",name:"Mingtiandi",             lang:"en",flag:"🇭🇰",url:GN("site:mingtiandi.com")},
@@ -58,27 +45,27 @@ const SOURCES = [
   {id:"mingpao",    country:"HK",name:"明報財經 Ming Pao",       lang:"zh",flag:"🇭🇰",url:GN("site:mingpao.com 財經","zh-HK","HK","HK:zh-Hant")},
   {id:"ked",        country:"KR",name:"KED Global",             lang:"en",flag:"🇰🇷",url:GN("site:kedglobal.com")},
   {id:"kr_herald",  country:"KR",name:"Korea Herald Business",  lang:"en",flag:"🇰🇷",url:GN("site:koreaherald.com business")},
-  {id:"yonhap",     country:"KR",name:"Yonhap Economy",         lang:"en",flag:"🇰🇷",url:"https://en.yna.co.kr/RSS/economy.xml"},
-  {id:"hankyung",   country:"KR",name:"한국경제 Hankyung",        lang:"ko",flag:"🇰🇷",url:"https://rss.hankyung.com/economy.xml"},
-  {id:"maeil",      country:"KR",name:"매일경제 Maeil",           lang:"ko",flag:"🇰🇷",url:"https://file.mk.co.kr/news/rss/rss_30000001.xml"},
-  {id:"chosunbiz",  country:"KR",name:"조선비즈 Chosunbiz",      lang:"ko",flag:"🇰🇷",url:"https://biz.chosun.com/site/data/rss/news.xml"},
+  {id:"yonhap",     country:"KR",name:"Yonhap Economy",         lang:"en",flag:"🇰🇷",url:GN("site:en.yna.co.kr economy business")},
+  {id:"hankyung",   country:"KR",name:"한국경제 Hankyung",        lang:"ko",flag:"🇰🇷",url:GN("site:hankyung.com 경제 주식","ko","KR","KR:ko")},
+  {id:"maeil",      country:"KR",name:"매일경제 Maeil",           lang:"ko",flag:"🇰🇷",url:GN("site:mk.co.kr 경제 주식","ko","KR","KR:ko")},
+  {id:"chosunbiz",  country:"KR",name:"조선비즈 Chosunbiz",      lang:"ko",flag:"🇰🇷",url:GN("site:biz.chosun.com 경제 기업","ko","KR","KR:ko")},
   {id:"taipei_t",   country:"TW",name:"Taipei Times Business",  lang:"en",flag:"🇹🇼",url:GN("site:taipeitimes.com business")},
   {id:"focus_tw",   country:"TW",name:"Focus Taiwan CNA",       lang:"en",flag:"🇹🇼",url:GN("site:focustaiwan.tw business")},
   {id:"udn_money",  country:"TW",name:"經濟日報 UDN Money",       lang:"zh",flag:"🇹🇼",url:GN("site:money.udn.com","zh-TW","TW","TW:zh-Hant")},
   {id:"ctee",       country:"TW",name:"工商時報 CTEE",            lang:"zh",flag:"🇹🇼",url:GN("site:ctee.com.tw","zh-TW","TW","TW:zh-Hant")},
   {id:"digitimes",  country:"TW",name:"DigiTimes",              lang:"en",flag:"🇹🇼",url:GN("site:digitimes.com")},
-  {id:"econ_times", country:"IN",name:"Economic Times",         lang:"en",flag:"🇮🇳",url:"https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"},
+  {id:"econ_times", country:"IN",name:"Economic Times",         lang:"en",flag:"🇮🇳",url:GN("site:economictimes.indiatimes.com markets stocks")},
   {id:"biz_std",    country:"IN",name:"Business Standard",      lang:"en",flag:"🇮🇳",url:GN("site:business-standard.com markets")},
   {id:"mint",       country:"IN",name:"Mint / LiveMint",        lang:"en",flag:"🇮🇳",url:GN("site:livemint.com markets business")},
   {id:"ndtv_p",     country:"IN",name:"NDTV Profit",            lang:"en",flag:"🇮🇳",url:GN("site:ndtvprofit.com")},
-  {id:"moneyctrl",  country:"IN",name:"Moneycontrol",           lang:"en",flag:"🇮🇳",url:"https://www.moneycontrol.com/rss/marketsnews.xml"},
+  {id:"moneyctrl",  country:"IN",name:"Moneycontrol",           lang:"en",flag:"🇮🇳",url:GN("site:moneycontrol.com markets stocks")},
   {id:"afr",        country:"AU",name:"Australian Fin. Review", lang:"en",flag:"🇦🇺",url:GN("site:afr.com business markets")},
   {id:"the_aus",    country:"AU",name:"The Australian Business",lang:"en",flag:"🇦🇺",url:GN("site:theaustralian.com.au business")},
-  {id:"abc_au",     country:"AU",name:"ABC Business",           lang:"en",flag:"🇦🇺",url:"https://www.abc.net.au/news/feed/2942578/rss.xml"},
+  {id:"abc_au",     country:"AU",name:"ABC Business",           lang:"en",flag:"🇦🇺",url:GN("site:abc.net.au business economy")},
   {id:"smh",        country:"AU",name:"Sydney Morning Herald",  lang:"en",flag:"🇦🇺",url:GN("site:smh.com.au business")},
   {id:"caixin",     country:"CN",name:"Caixin Global",          lang:"en",flag:"🇨🇳",url:GN("site:caixinglobal.com")},
   {id:"yicai",      country:"CN",name:"Yicai Global",           lang:"en",flag:"🇨🇳",url:GN("site:yicaiglobal.com")},
-  {id:"peoples_d",  country:"CN",name:"People's Daily",         lang:"en",flag:"🇨🇳",url:"https://en.people.cn/rss/business.xml"},
+  {id:"peoples_d",  country:"CN",name:"People's Daily",         lang:"en",flag:"🇨🇳",url:GN("site:en.people.cn business economy")},
 ];
 
 const COUNTRIES = [
@@ -121,9 +108,9 @@ async function sSet(k, v) {
 // ═══════════════════════════════════════════════════════════════════════════════
 async function fetchFeed(source) {
   try {
-    const text = await fetchRSS(source.url);
-    if (!text) return [];
-    const xml = new DOMParser().parseFromString(text, "text/xml");
+    const res = await fetch(PROXY + encodeURIComponent(source.url), {signal: AbortSignal.timeout(14000)});
+    if (!res.ok) throw new Error("bad");
+    const xml = new DOMParser().parseFromString(await res.text(), "text/xml");
     return Array.from(xml.querySelectorAll("item")).slice(0,10).map(item => {
       const g = t => item.querySelector(t)?.textContent?.trim() || "";
       const title = g("title").replace(/<!\[CDATA\[|\]\]>/g,"").trim();
@@ -933,7 +920,7 @@ export default function App() {
                 <button key={id} onClick={()=>setMainTab(id)}
                   style={{padding:"5px 13px",borderRadius:4,border:"none",
                     background:mainTab===id?"#182d48":"none",
-                    color:mainTab===id?(id==="watchlist"?"#4a9eff":"#c9a84c"):"#3a5060",
+                    color:mainTab===id?(id==="watchlist"?"#4a9eff":"#c9a84c"):"#8aa8bc",
                     cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:11,transition:"all 0.15s"}}>
                   {label}
                 </button>
@@ -983,14 +970,14 @@ export default function App() {
                 return (
                   <button key={c.code} onClick={()=>setActiveCountry(c.code)}
                     style={{padding:"11px 14px",border:"none",background:"none",
-                      color:active?"#c9a84c":"#2a4050",
+                      color:active?"#c9a84c":"#8aa8bc",
                       borderBottom:active?"2px solid #c9a84c":"2px solid transparent",
-                      cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:10,
+                      cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:12,
                       whiteSpace:"nowrap",transition:"all 0.15s",display:"flex",alignItems:"center",gap:4}}
-                    onMouseOver={e=>{if(!active)e.currentTarget.style.color="#5a7a8a"}}
-                    onMouseOut={e=>{if(!active)e.currentTarget.style.color="#2a4050"}}>
+                    onMouseOver={e=>{if(!active)e.currentTarget.style.color="#c9a84c"}}
+                    onMouseOut={e=>{if(!active)e.currentTarget.style.color="#8aa8bc"}}>
                     {c.flag} {c.label}
-                    {cnt>0&&<span style={{fontSize:8,background:active?"#c9a84c22":"#0d1a26",color:active?"#c9a84c":"#2a4050",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
+                    {cnt>0&&<span style={{fontSize:8,background:active?"#c9a84c22":"#0d1a26",color:active?"#c9a84c":"#7a9ab8",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
                   </button>
                 );
               })
@@ -1002,13 +989,13 @@ export default function App() {
                 return (
                   <button key={sec.code} onClick={()=>setActiveSector(sec.code)}
                     style={{padding:"11px 13px",border:"none",background:"none",
-                      color:active?col:"#2a4050",borderBottom:active?`2px solid ${col}`:"2px solid transparent",
-                      cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:10,
+                      color:active?col:"#8aa8bc",borderBottom:active?`2px solid ${col}`:"2px solid transparent",
+                      cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:12,
                       whiteSpace:"nowrap",transition:"all 0.15s",display:"flex",alignItems:"center",gap:4}}
-                    onMouseOver={e=>{if(!active)e.currentTarget.style.color="#5a7a8a"}}
-                    onMouseOut={e=>{if(!active)e.currentTarget.style.color="#2a4050"}}>
+                    onMouseOver={e=>{if(!active)e.currentTarget.style.color="#c9a84c"}}
+                    onMouseOut={e=>{if(!active)e.currentTarget.style.color="#8aa8bc"}}>
                     <span>{sec.icon||"▤"}</span> {sec.label}
-                    {cnt>0&&<span style={{fontSize:8,background:active?`${col}22`:"#0d1a26",color:active?col:"#2a4050",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
+                    {cnt>0&&<span style={{fontSize:8,background:active?`${col}22`:"#0d1a26",color:active?col:"#7a9ab8",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
                   </button>
                 );
               })
