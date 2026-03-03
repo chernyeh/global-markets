@@ -108,22 +108,17 @@ async function sSet(k, v) {
 // ═══════════════════════════════════════════════════════════════════════════════
 async function fetchFeed(source) {
   try {
-    // Fetch via server-side proxy to avoid CORS blocks
-    const res = await fetch("/api/rss", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: source.url }),
-    });
+    const res = await fetch("/api/rss?url=" + encodeURIComponent(source.url));
     if (!res.ok) return [];
-    const data = await res.json();
-    if (!data.xml || data.xml.length < 100) return [];
-    const xml = new DOMParser().parseFromString(data.xml, "text/xml");
+    const text = await res.text();
+    if (!text || text.length < 100) return [];
+    const xml = new DOMParser().parseFromString(text, "text/xml");
     const items = Array.from(xml.querySelectorAll("item"));
     if (!items.length) return [];
     return items.slice(0,10).map(item => {
       const g = t => item.querySelector(t)?.textContent?.trim() || "";
       const title = g("title").replace(/<!\[CDATA\[|\]\]>/g,"").trim();
-      if (!title || title === "undefined") return null;
+      if (!title) return null;
       return {
         id: btoa(encodeURIComponent(title.slice(0,60))).replace(/[^a-zA-Z0-9]/g,"").slice(0,20),
         title,
@@ -138,7 +133,7 @@ async function fetchFeed(source) {
       };
     }).filter(Boolean);
   } catch(e) {
-    console.warn("fetchFeed failed for", source.id, e.message);
+    console.warn("fetchFeed error:", source.id, e.message);
     return [];
   }
 }
