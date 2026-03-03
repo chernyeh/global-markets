@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 // MSCI GICS SECTORS
 // ═══════════════════════════════════════════════════════════════════════════════
 const MSCI_SECTORS = [
-  { code:"FIN", label:"Financials",             icon:"◈", color:"#4a9eff" },
+  { code:"FIN", label:"Financials",             icon:"◈", color:"#2980b9" },
   { code:"IT",  label:"Information Technology", icon:"⬡", color:"#a78bfa" },
   { code:"IND", label:"Industrials",            icon:"⬢", color:"#fb923c" },
   { code:"CD",  label:"Consumer Discretionary", icon:"◉", color:"#f472b6" },
@@ -15,7 +15,7 @@ const MSCI_SECTORS = [
   { code:"COM", label:"Comm. Services",         icon:"◐", color:"#f87171" },
   { code:"RE",  label:"Real Estate",            icon:"⬛", color:"#c084fc" },
   { code:"UTL", label:"Utilities",              icon:"◑", color:"#94a3b8" },
-  { code:"MAC", label:"Macro / Policy",         icon:"⊕", color:"#c9a84c" },
+  { code:"MAC", label:"Macro / Policy",         icon:"⊕", color:"#c0392b" },
   { code:"UNK", label:"Unclassified",           icon:"○", color:"#3a4a5a" },
 ];
 const SECTOR_MAP = Object.fromEntries(MSCI_SECTORS.map(s => [s.code, s]));
@@ -392,7 +392,7 @@ function timeAgo(ms) {
   return `${Math.round(d/1440)}d ago`;
 }
 
-function Dots({color="#c9a84c"}) {
+function Dots({color="#c0392b"}) {
   return (
     <span style={{display:"inline-flex",gap:3,alignItems:"center"}}>
       {[0,1,2].map(i=>(
@@ -403,7 +403,7 @@ function Dots({color="#c9a84c"}) {
   );
 }
 
-function Tag({children,color="#c9a84c",onClick}) {
+function Tag({children,color="#c0392b",onClick}) {
   return (
     <span onClick={onClick} style={{fontSize:9,padding:"1px 6px",borderRadius:3,
       fontFamily:"'DM Mono',monospace",background:`${color}18`,color,
@@ -430,21 +430,21 @@ function ArticleCard({art, highlightKeyword=null}) {
   return (
     <div style={{
       padding:"13px 0",
-      borderBottom:"1px solid #0f1d2a",
+      borderBottom:"1px solid #e8e2d6",
       animation:"fadeIn 0.3s ease",
       background: isHighlighted ? "linear-gradient(90deg,#c9a84c04 0%,transparent 100%)" : "transparent",
-      borderLeft: isHighlighted ? `2px solid ${directMatches.length?"#c9a84c":"#4a9eff"}` : "2px solid transparent",
+      borderLeft: isHighlighted ? `2px solid ${directMatches.length?"#c0392b":"#4a9eff"}` : "2px solid transparent",
       paddingLeft: isHighlighted ? 10 : 0,
     }}>
       <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:5,marginBottom:5}}>
-        <span style={{fontSize:11,color:"#c9a84c",fontFamily:"'DM Mono',monospace",fontWeight:600}}>
+        <span style={{fontSize:11,color:"#c0392b",fontFamily:"'DM Mono',monospace",fontWeight:600}}>
           {art.flag} {art.source}
         </span>
         {art.lang!=="en" && <Tag color="#7a8fa6">{art.lang.toUpperCase()}→EN</Tag>}
         {sec && sec.code!=="UNK" && <Tag color={sec.color}>{sec.icon} {sec.label}</Tag>}
         {/* Watchlist match badges */}
         {directMatches.map(m=>(
-          <Tag key={m.keyword} color="#c9a84c">⦿ {m.keyword}</Tag>
+          <Tag key={m.keyword} color="#c0392b">⦿ {m.keyword}</Tag>
         ))}
         {relatedMatches.map(m=>(
           <Tag key={m.keyword} color="#4a9eff">◎ {m.keyword}</Tag>
@@ -457,24 +457,24 @@ function ArticleCard({art, highlightKeyword=null}) {
       </div>
 
       <a href={art.link} target="_blank" rel="noopener noreferrer"
-        style={{color:"#dde6f0",fontFamily:"'Playfair Display',Georgia,serif",
+        style={{color:"#1a1a1a",fontFamily:"'Playfair Display',Georgia,serif",
           fontSize:14,lineHeight:1.5,fontWeight:600,textDecoration:"none",
           display:"block",marginBottom:4,transition:"color 0.15s"}}
-        onMouseOver={e=>e.target.style.color="#c9a84c"}
+        onMouseOver={e=>e.target.style.color="#c0392b"}
         onMouseOut={e=>e.target.style.color="#dde6f0"}>
         {displayTitle}
       </a>
 
       {/* Focus match reason in watchlist view */}
       {focusMatch && (
-        <div style={{fontSize:11,color:focusMatch.matchType==="direct"?"#c9a84c":"#4a9eff",
+        <div style={{fontSize:11,color:focusMatch.matchType==="direct"?"#c0392b":"#4a9eff",
           lineHeight:1.6,paddingLeft:0,marginBottom:4,fontFamily:"'DM Mono',monospace"}}>
           {focusMatch.matchType==="direct"?"⦿ direct":"◎ related"} — {focusMatch.reason}
         </div>
       )}
 
       {art.insight&&(
-        <div style={{fontSize:12,color:"#6a8fa8",lineHeight:1.65,
+        <div style={{fontSize:12,color:"#666",lineHeight:1.65,
           borderLeft:"2px solid #c9a84c33",paddingLeft:9,
           fontStyle:"italic",fontFamily:"'DM Sans',sans-serif"}}>
           {art.insight}
@@ -494,22 +494,22 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
     setLoading(p=>({...p,[briefKey]:false}));
   };
   return (
-    <div style={{background:"#080f1a",border:"1px solid #182535",borderRadius:10,
+    <div style={{background:"#080f1a",border:"1px solid #ccc",borderRadius:10,
       padding:"18px 22px",marginBottom:20,animation:"fadeIn 0.4s ease"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:brief?12:0}}>
         <div style={{display:"flex",alignItems:"center",gap:9}}>
           <span style={{fontSize:16}}>{icon}</span>
           <div>
-            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c9a84c",letterSpacing:"0.12em"}}>
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.12em"}}>
               AI INVESTMENT BRIEF · {articles.length} articles analysed
             </div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#e8edf3",fontWeight:600}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>
               {label}
             </div>
           </div>
         </div>
         <button onClick={run} disabled={isLoading}
-          style={{background:"none",border:"1px solid #c9a84c55",color:"#c9a84c",
+          style={{background:"none",border:"1px solid #bbb",color:"#333",
             padding:"6px 14px",borderRadius:5,cursor:"pointer",
             fontFamily:"'DM Mono',monospace",fontSize:11,transition:"all 0.2s"}}
           onMouseOver={e=>e.currentTarget.style.background="#c9a84c11"}
@@ -518,8 +518,8 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
         </button>
       </div>
       {brief&&(
-        <p style={{fontSize:13,color:"#7a9ab8",lineHeight:1.9,fontStyle:"italic",
-          margin:0,borderTop:"1px solid #141f2e",paddingTop:12,
+        <p style={{fontSize:13,color:"#555",lineHeight:1.9,fontStyle:"italic",
+          margin:0,borderTop:"1px solid #e8e2d6",paddingTop:12,
           fontFamily:"'DM Sans',sans-serif",whiteSpace:"pre-wrap"}}>
           {brief}
         </p>
@@ -618,11 +618,11 @@ function WatchlistTab({allArticles, setAllArticles}) {
   return (
     <div style={{animation:"fadeIn 0.3s ease"}}>
       {/* Input area */}
-      <div style={{background:"#080f1a",border:"1px solid #182535",borderRadius:10,
+      <div style={{background:"#080f1a",border:"1px solid #ccc",borderRadius:10,
         padding:"20px 24px",marginBottom:20}}>
-        <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c9a84c",
+        <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",
           letterSpacing:"0.12em",marginBottom:4}}>WATCHLIST TRACKER</div>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#e8edf3",
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#1a1a1a",
           fontWeight:600,marginBottom:14}}>
           Intelligent Keyword Monitoring
         </div>
@@ -637,13 +637,13 @@ function WatchlistTab({allArticles, setAllArticles}) {
             onChange={e=>setInputVal(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&addKeyword()}
             placeholder="e.g. Samsung, Fed rate cut, TSMC, Reliance Industries…"
-            style={{flex:1,background:"#0d1a26",border:"1px solid #1e3040",borderRadius:6,
-              padding:"9px 14px",color:"#dde6f0",fontFamily:"'DM Sans',sans-serif",fontSize:13,
+            style={{flex:1,background:"#f0ebe0",border:"1px solid #1e3040",borderRadius:6,
+              padding:"9px 14px",color:"#1a1a1a",fontFamily:"'DM Sans',sans-serif",fontSize:13,
               outline:"none"}}
           />
           <button onClick={addKeyword}
-            style={{padding:"9px 18px",background:"#c9a84c11",border:"1px solid #c9a84c44",
-              color:"#c9a84c",borderRadius:6,cursor:"pointer",fontFamily:"'DM Mono',monospace",
+            style={{padding:"9px 18px",background:"#c0392b11",border:"1px solid #c0392b66",
+              color:"#c0392b",borderRadius:6,cursor:"pointer",fontFamily:"'DM Mono',monospace",
               fontSize:11,transition:"all 0.15s"}}
             onMouseOver={e=>e.currentTarget.style.background="#c9a84c22"}
             onMouseOut={e=>e.currentTarget.style.background="#c9a84c11"}>
@@ -658,17 +658,17 @@ function WatchlistTab({allArticles, setAllArticles}) {
               <div key={kw}
                 onClick={()=>setActiveKw(kw)}
                 style={{display:"flex",alignItems:"center",gap:8,padding:"6px 12px",
-                  background:activeKw===kw?"#1a2d48":"#0d1a26",
-                  border:`1px solid ${activeKw===kw?"#c9a84c55":"#1e3040"}`,
+                  background:activeKw===kw?"#1a1a1a":"#fff",
+                  border:`1px solid ${activeKw===kw?"#c0392b":"#ccc"}`,
                   borderRadius:20,cursor:"pointer",transition:"all 0.15s"}}>
                 <span style={{fontFamily:"'DM Mono',monospace",fontSize:11,
-                  color:activeKw===kw?"#c9a84c":"#4a6a8a"}}>
+                  color:activeKw===kw?"#c0392b":"#4a6a8a"}}>
                   {kw}
                 </span>
                 {kwCounts[kw]&&(kwCounts[kw].direct||kwCounts[kw].related)>0&&(
                   <span style={{fontSize:9,fontFamily:"'DM Mono',monospace",color:"#3a6080"}}>
-                    <span style={{color:"#c9a84c"}}>{kwCounts[kw].direct}</span>
-                    {kwCounts[kw].related>0&&<span style={{color:"#4a9eff"}}> +{kwCounts[kw].related}</span>}
+                    <span style={{color:"#c0392b"}}>{kwCounts[kw].direct}</span>
+                    {kwCounts[kw].related>0&&<span style={{color:"#2980b9"}}> +{kwCounts[kw].related}</span>}
                   </span>
                 )}
                 <span onClick={e=>{e.stopPropagation();removeKeyword(kw);}}
@@ -685,7 +685,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
           <button onClick={runAnalysis} disabled={analysing||!keywords.length||!canonical.length}
             style={{padding:"9px 20px",
               background:(!keywords.length||!canonical.length)?"#0d1a26":"#c9a84c11",
-              border:"1px solid #c9a84c44",color:"#c9a84c",borderRadius:6,
+              border:"1px solid #bbb",color:"#333",borderRadius:6,
               cursor:(!keywords.length||!canonical.length)?"not-allowed":"pointer",
               fontFamily:"'DM Mono',monospace",fontSize:11,transition:"all 0.2s",
               opacity:(!keywords.length||!canonical.length)?0.4:1}}
@@ -700,8 +700,8 @@ function WatchlistTab({allArticles, setAllArticles}) {
           )}
           <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:"auto",
             fontFamily:"'DM Mono',monospace",fontSize:10,color:"#2a4050"}}>
-            <span style={{color:"#c9a84c"}}>⦿ direct mention</span>
-            <span style={{color:"#4a9eff"}}>◎ related / indirect</span>
+            <span style={{color:"#c0392b"}}>⦿ direct mention</span>
+            <span style={{color:"#2980b9"}}>◎ related / indirect</span>
           </div>
         </div>
       </div>
@@ -710,14 +710,14 @@ function WatchlistTab({allArticles, setAllArticles}) {
       {activeKw && (
         <div style={{animation:"fadeIn 0.3s ease"}}>
           {/* Keyword intel brief */}
-          <div style={{background:"#080f1a",border:"1px solid #182535",borderRadius:10,
+          <div style={{background:"#080f1a",border:"1px solid #ccc",borderRadius:10,
             padding:"18px 22px",marginBottom:20}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
               marginBottom:kwBriefs[activeKw]?12:0}}>
               <div>
-                <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c9a84c",
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",
                   letterSpacing:"0.12em"}}>INTELLIGENCE BRIEF · {kwArticles.length} relevant articles</div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#e8edf3",fontWeight:600}}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#1a1a1a",fontWeight:600}}>
                   "{activeKw}" — Full Picture
                 </div>
               </div>
@@ -728,7 +728,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
                   setKwBriefLoad(p=>({...p,[activeKw]:false}));
                 }}
                 disabled={kwBriefLoad[activeKw]||!kwArticles.length}
-                style={{background:"none",border:"1px solid #c9a84c55",color:"#c9a84c",
+                style={{background:"none",border:"1px solid #bbb",color:"#333",
                   padding:"6px 14px",borderRadius:5,cursor:"pointer",
                   fontFamily:"'DM Mono',monospace",fontSize:11,transition:"all 0.2s",
                   opacity:!kwArticles.length?0.4:1}}
@@ -738,8 +738,8 @@ function WatchlistTab({allArticles, setAllArticles}) {
               </button>
             </div>
             {kwBriefs[activeKw]&&(
-              <p style={{fontSize:13,color:"#7a9ab8",lineHeight:1.9,fontStyle:"italic",
-                margin:0,borderTop:"1px solid #141f2e",paddingTop:12,
+              <p style={{fontSize:13,color:"#555",lineHeight:1.9,fontStyle:"italic",
+                margin:0,borderTop:"1px solid #e8e2d6",paddingTop:12,
                 fontFamily:"'DM Sans',sans-serif",whiteSpace:"pre-wrap"}}>
                 {kwBriefs[activeKw]}
               </p>
@@ -755,11 +755,11 @@ function WatchlistTab({allArticles, setAllArticles}) {
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
               {/* Direct mentions */}
               <div>
-                <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c9a84c",
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c0392b",
                   fontWeight:600,letterSpacing:"0.08em",marginBottom:10,
                   display:"flex",alignItems:"center",gap:8}}>
                   <span>⦿ DIRECT MENTIONS</span>
-                  <span style={{background:"#c9a84c22",color:"#c9a84c",padding:"1px 7px",
+                  <span style={{background:"#c0392b18",color:"#c0392b",padding:"1px 7px",
                     borderRadius:10,fontSize:9}}>{directArts.length}</span>
                 </div>
                 {directArts.length===0?(
@@ -772,11 +772,11 @@ function WatchlistTab({allArticles, setAllArticles}) {
 
               {/* Related / indirect */}
               <div>
-                <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#4a9eff",
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#2980b9",
                   fontWeight:600,letterSpacing:"0.08em",marginBottom:10,
                   display:"flex",alignItems:"center",gap:8}}>
                   <span>◎ RELATED / INDIRECT</span>
-                  <span style={{background:"#4a9eff22",color:"#4a9eff",padding:"1px 7px",
+                  <span style={{background:"#4a9eff22",color:"#2980b9",padding:"1px 7px",
                     borderRadius:10,fontSize:9}}>{relatedArts.length}</span>
                 </div>
                 {relatedArts.length===0?(
@@ -922,7 +922,7 @@ export default function App() {
   ];
 
   return (
-    <div style={{minHeight:"100vh",background:"#060c13",color:"#c8d4e0",fontFamily:"'DM Sans',system-ui,sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#f5f0e8",color:"#1a1a1a",fontFamily:"'DM Sans',system-ui,sans-serif"}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500;600&display=swap');
         @keyframes pulse{0%,100%{opacity:.2}50%{opacity:1}}
@@ -931,25 +931,28 @@ export default function App() {
         *{box-sizing:border-box}
         input{outline:none}
         ::-webkit-scrollbar{width:3px;height:3px}
-        ::-webkit-scrollbar-thumb{background:#1a2535;border-radius:2px}
+        ::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
         ::-webkit-scrollbar-track{background:transparent}
       `}</style>
 
       {/* HEADER */}
-      <header style={{background:"#03070e",borderBottom:"1px solid #111e2d",padding:"0 24px",position:"sticky",top:0,zIndex:200}}>
+      <header style={{background:"#fff",borderBottom:"2px solid #1a1a1a",padding:"0 24px",position:"sticky",top:0,zIndex:200}}>
         <div style={{maxWidth:1500,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:58}}>
           <div style={{display:"flex",alignItems:"center",gap:18}}>
             <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,color:"#eaeff5",fontWeight:700,letterSpacing:"-0.02em",lineHeight:1}}>GLOBAL MARKETS</div>
-              <div style={{fontFamily:"'DM Mono',monospace",fontSize:8,color:"#c9a84c",letterSpacing:"0.2em",marginTop:2}}>INTELLIGENCE WIRE</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:23,color:"#1a1a1a",fontWeight:700,letterSpacing:"-0.03em",lineHeight:1}}>GLOBAL MARKETS</div>
+              <div style={{fontFamily:"'DM Mono',monospace",fontSize:8,color:"#888",letterSpacing:"0.3em",marginTop:2}}>INTELLIGENCE WIRE</div>
             </div>
-            <div style={{display:"flex",gap:2,background:"#0b1420",borderRadius:6,padding:3,border:"1px solid #182535"}}>
+            <div style={{display:"flex",gap:2,background:"none",borderRadius:0,padding:"2px 0",border:"none"}}>
               {MAIN_TABS.map(({id,label})=>(
                 <button key={id} onClick={()=>setMainTab(id)}
                   style={{padding:"5px 13px",borderRadius:4,border:"none",
-                    background:mainTab===id?"#182d48":"none",
-                    color:mainTab===id?(id==="watchlist"?"#4a9eff":"#c9a84c"):"#8aa8bc",
-                    cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:11,transition:"all 0.15s"}}>
+                    background:"none",
+                    color:mainTab===id?"#c0392b":"#333",
+                    borderBottom:mainTab===id?"2px solid #c0392b":"2px solid transparent",
+                    fontWeight:mainTab===id?600:400,
+                    borderRadius:0,
+                    cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:12,transition:"all 0.15s"}}>
                   {label}
                 </button>
               ))}
@@ -958,24 +961,24 @@ export default function App() {
 
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {(isLoading||enriching||statusMsg)&&(
-              <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#3a6a8a",display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888",display:"flex",alignItems:"center",gap:6}}>
                 <Dots/>{statusMsg||"processing…"}
               </span>
             )}
-            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,display:"flex",gap:10,color:"#2a3a4a"}}>
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,display:"flex",gap:10,color:"#888"}}>
               <span style={{color:"#2a4a6a"}}>{allArticles.length} fetched</span>
               <span style={{color:"#1a3a2a"}}>−{dupeCount} dupes</span>
               <span style={{color:"#2a3a1a"}}>{enrichedCount} enriched</span>
             </div>
             <button onClick={()=>setShowDupes(p=>!p)}
-              style={{fontSize:9,padding:"4px 9px",border:"1px solid #182535",borderRadius:4,
-                background:showDupes?"#182518":"none",color:showDupes?"#86efac":"#2a4a5a",
+              style={{fontSize:9,padding:"4px 9px",border:"1px solid #ccc",borderRadius:4,
+                background:showDupes?"#f0f0f0":"none",color:showDupes?"#333":"#888",
                 cursor:"pointer",fontFamily:"'DM Mono',monospace",transition:"all 0.15s"}}>
               {showDupes?"∙ hide dupes":"∙ show dupes"}
             </button>
             <button onClick={()=>fetchSources(SOURCES)} disabled={isLoading||enriching}
-              style={{display:"flex",alignItems:"center",gap:5,background:"#c9a84c0e",
-                border:"1px solid #c9a84c44",color:"#c9a84c",padding:"6px 14px",borderRadius:5,
+              style={{display:"flex",alignItems:"center",gap:5,background:"none",
+                border:"1px solid #bbb",color:"#333",padding:"6px 14px",borderRadius:5,
                 cursor:(isLoading||enriching)?"not-allowed":"pointer",fontFamily:"'DM Mono',monospace",
                 fontSize:11,opacity:(isLoading||enriching)?0.5:1,transition:"all 0.2s"}}
               onMouseOver={e=>e.currentTarget.style.background="#c9a84c1a"}
@@ -989,7 +992,7 @@ export default function App() {
 
       {/* SUB-NAV (only for region/sector) */}
       {mainTab!=="watchlist"&&(
-        <div style={{background:"#03070e",borderBottom:"1px solid #0d1a26",position:"sticky",top:58,zIndex:199,overflowX:"auto"}}>
+        <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:58,zIndex:199,overflowX:"auto"}}>
           <div style={{maxWidth:1500,margin:"0 auto",padding:"0 24px",display:"flex",minWidth:"max-content"}}>
             {mainTab==="region"?(
               COUNTRIES.map(c=>{
@@ -998,32 +1001,32 @@ export default function App() {
                 return (
                   <button key={c.code} onClick={()=>setActiveCountry(c.code)}
                     style={{padding:"11px 14px",border:"none",background:"none",
-                      color:active?"#c9a84c":"#8aa8bc",
+                      color:active?"#c0392b":"#8aa8bc",
                       borderBottom:active?"2px solid #c9a84c":"2px solid transparent",
                       cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:12,
                       whiteSpace:"nowrap",transition:"all 0.15s",display:"flex",alignItems:"center",gap:4}}
-                    onMouseOver={e=>{if(!active)e.currentTarget.style.color="#c9a84c"}}
-                    onMouseOut={e=>{if(!active)e.currentTarget.style.color="#8aa8bc"}}>
+                    onMouseOver={e=>{if(!active)e.currentTarget.style.color="#c0392b"}}
+                    onMouseOut={e=>{if(!active)e.currentTarget.style.color="#333"}}>
                     {c.flag} {c.label}
-                    {cnt>0&&<span style={{fontSize:8,background:active?"#c9a84c22":"#0d1a26",color:active?"#c9a84c":"#7a9ab8",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
+                    {cnt>0&&<span style={{fontSize:8,background:active?"#c9a84c22":"#0d1a26",color:active?"#c0392b":"#999",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
                   </button>
                 );
               })
             ):(
-              [{code:"ALL",label:"All Sectors",icon:"▤",color:"#c9a84c"},...MSCI_SECTORS].map(sec=>{
+              [{code:"ALL",label:"All Sectors",icon:"▤",color:"#c0392b"},...MSCI_SECTORS].map(sec=>{
                 const cnt=sec.code==="ALL"?canonical.length:canonical.filter(a=>a.sector===sec.code).length;
                 const active=activeSector===sec.code;
-                const col=sec.color||"#c9a84c";
+                const col=sec.color||"#c0392b";
                 return (
                   <button key={sec.code} onClick={()=>setActiveSector(sec.code)}
                     style={{padding:"11px 13px",border:"none",background:"none",
-                      color:active?col:"#8aa8bc",borderBottom:active?`2px solid ${col}`:"2px solid transparent",
+                      color:active?col:"#333",borderBottom:active?`2px solid ${col}`:"2px solid transparent",
                       cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:12,
                       whiteSpace:"nowrap",transition:"all 0.15s",display:"flex",alignItems:"center",gap:4}}
-                    onMouseOver={e=>{if(!active)e.currentTarget.style.color="#c9a84c"}}
-                    onMouseOut={e=>{if(!active)e.currentTarget.style.color="#8aa8bc"}}>
+                    onMouseOver={e=>{if(!active)e.currentTarget.style.color="#c0392b"}}
+                    onMouseOut={e=>{if(!active)e.currentTarget.style.color="#333"}}>
                     <span>{sec.icon||"▤"}</span> {sec.label}
-                    {cnt>0&&<span style={{fontSize:8,background:active?`${col}22`:"#0d1a26",color:active?col:"#7a9ab8",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
+                    {cnt>0&&<span style={{fontSize:8,background:active?`${col}22`:"#0d1a26",color:active?col:"#999",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
                   </button>
                 );
               })
@@ -1077,7 +1080,7 @@ export default function App() {
                 {sourceGroups.map(({s,arts})=>(
                   <div key={s.id} style={{breakInside:"avoid",marginBottom:4}}>
                     <div style={{display:"flex",alignItems:"center",gap:7,padding:"9px 0 7px",borderBottom:"1px solid #c9a84c18",marginBottom:1}}>
-                      <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c9a84c",fontWeight:600,letterSpacing:"0.06em"}}>
+                      <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c0392b",fontWeight:600,letterSpacing:"0.06em"}}>
                         {s.flag} {s.name.toUpperCase()}
                       </span>
                       <span style={{fontSize:9,color:"#1e2e3e",fontFamily:"'DM Mono',monospace"}}>{arts.length}</span>
@@ -1099,13 +1102,13 @@ export default function App() {
                 {sectorGroups.map(({sec,arts})=>{
                   const briefKey=`sector_${sec.code}`;
                   return (
-                    <div key={sec.code} style={{background:"#070e1a",border:`1px solid ${sec.color}22`,borderRadius:10,padding:"16px 18px",animation:"fadeIn 0.4s ease"}}>
+                    <div key={sec.code} style={{background:"#ffffff",border:`1px solid ${sec.color}22`,borderRadius:10,padding:"16px 18px",animation:"fadeIn 0.4s ease"}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <span style={{fontSize:20,color:sec.color}}>{sec.icon}</span>
                           <div>
                             <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:sec.color,letterSpacing:"0.1em",fontWeight:600}}>{sec.code} · {arts.length} stories</div>
-                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#dde6f0",fontWeight:600}}>{sec.label}</div>
+                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>{sec.label}</div>
                           </div>
                         </div>
                         <div style={{display:"flex",gap:6}}>
@@ -1127,7 +1130,7 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                      {briefs[briefKey]&&<p style={{fontSize:11,color:"#6a8fa8",lineHeight:1.8,fontStyle:"italic",margin:"0 0 10px",borderBottom:"1px solid #111f2e",paddingBottom:10,fontFamily:"'DM Sans',sans-serif",whiteSpace:"pre-wrap"}}>{briefs[briefKey]}</p>}
+                      {briefs[briefKey]&&<p style={{fontSize:11,color:"#666",lineHeight:1.8,fontStyle:"italic",margin:"0 0 10px",borderBottom:"1px solid #e8e2d6",paddingBottom:10,fontFamily:"'DM Sans',sans-serif",whiteSpace:"pre-wrap"}}>{briefs[briefKey]}</p>}
                       <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
                         {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{
                           const n=arts.filter(a=>a.country===c.code).length;
@@ -1153,7 +1156,7 @@ export default function App() {
                   {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{
                     const arts=sectorArts.filter(a=>a.country===c.code);
                     if(!arts.length) return null;
-                    const col=sectorForActive?.color||"#c9a84c";
+                    const col=sectorForActive?.color||"#c0392b";
                     return (
                       <div key={c.code} style={{breakInside:"avoid",marginBottom:4}}>
                         <div style={{display:"flex",alignItems:"center",gap:7,padding:"9px 0 7px",borderBottom:`1px solid ${col}22`,marginBottom:1}}>
@@ -1171,7 +1174,7 @@ export default function App() {
         )}
       </div>
 
-      <footer style={{borderTop:"1px solid #0c1826",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <footer style={{borderTop:"1px solid #ddd",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#182535"}}>{SOURCES.length} sources · {COUNTRIES.length-1} markets · {MSCI_SECTORS.length} GICS sectors</span>
         <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#182535"}}>persisted locally · stale threshold 45 min</span>
       </footer>
