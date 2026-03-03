@@ -23,22 +23,18 @@ const SECTOR_MAP = Object.fromEntries(MSCI_SECTORS.map(s => [s.code, s]));
 // ═══════════════════════════════════════════════════════════════════════════════
 // SOURCES
 // ═══════════════════════════════════════════════════════════════════════════════
-const PROXIES = [
-  "https://api.allorigins.win/raw?url=",
-  "https://corsproxy.io/?url=",
-];
-
-async function fetchWithProxy(url) {
-  for (const proxy of PROXIES) {
-    try {
-      const res = await fetch(proxy + encodeURIComponent(url), {signal: AbortSignal.timeout(14000)});
-      if (res.ok) {
-        const text = await res.text();
-        if (text && text.length > 100) return text;
-      }
-    } catch(e) { continue; }
-  }
-  return null;
+// RSS feeds are fetched server-side via /api/rss to avoid CORS restrictions
+async function fetchRSS(url) {
+  try {
+    const res = await fetch("/api/rss", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+      signal: AbortSignal.timeout(16000),
+    });
+    const data = await res.json();
+    return data.xml || null;
+  } catch(e) { return null; }
 }
 const GN = (q,hl="en-US",gl="US",ceid="US:en") =>
   `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=${hl}&gl=${gl}&ceid=${ceid}`;
@@ -125,7 +121,7 @@ async function sSet(k, v) {
 // ═══════════════════════════════════════════════════════════════════════════════
 async function fetchFeed(source) {
   try {
-    const text = await fetchWithProxy(source.url);
+    const text = await fetchRSS(source.url);
     if (!text) return [];
     const xml = new DOMParser().parseFromString(text, "text/xml");
     return Array.from(xml.querySelectorAll("item")).slice(0,10).map(item => {
