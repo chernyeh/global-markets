@@ -272,33 +272,29 @@ ${withTranslations.map((a,i)=>`${i}. ${a._preTranslated}`).join("\n")}`;
 // ═══════════════════════════════════════════════════════════════════════════════
 async function generateBriefUnlimited(articles, label) {
   if (!articles.length) return "";
-  const CHUNK = 20; // headlines per chunk
 
-  // If small enough, do it in one call
-  if (articles.length <= CHUNK) {
-    const prompt=`Investment analyst. Write a focused brief on ${label}.
-Rules: (1) Name EVERY company mentioned across all headlines — miss none. (2) Cover macro backdrop. (3) Note key risks/opportunities. Flowing prose, no bullets, max 3 paragraphs.
+  // Split into chunks of 25 and summarise ALL in parallel — no sequential steps
+  const CHUNK = 25;
+  const chunks = [];
+  for (let i = 0; i < articles.length; i += CHUNK) chunks.push(articles.slice(i, i + CHUNK));
 
-Headlines (${articles.length}):
-${articles.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
-    return await callClaude(prompt, 800);
+  if (chunks.length === 1) {
+    // Single chunk — one fast call, 500 token cap
+    const prompt = `Brief for ${label}. 2 paragraphs max. Name every company. Cover macro + key moves + risks.
+${articles.map(a=>`• ${a.translatedTitle||a.title}`).join("\n")}`;
+    return await callClaude(prompt, 500);
   }
 
-  // Multi-chunk: summarise each chunk, then synthesise
-  const chunks=[];
-  for(let i=0;i<articles.length;i+=CHUNK) chunks.push(articles.slice(i,i+CHUNK));
-
-  const chunkSummaries=await Promise.all(chunks.map(async(chunk,ci)=>{
-    const prompt=`List the key companies and events from these ${chunk.length} headlines in 2 sentences. Name every company mentioned.
+  // Multiple chunks — ALL summarised in parallel, then one fast synthesis
+  const summaries = await Promise.all(chunks.map(chunk => {
+    const prompt = `3 sentences: key companies and events from these headlines.
 ${chunk.map(a=>`• ${a.translatedTitle||a.title}`).join("\n")}`;
-    return await callClaude(prompt,400);
+    return callClaude(prompt, 300);
   }));
 
-  // Synthesise all chunk summaries into final brief
-  const synthPrompt=`Investment analyst. From these summaries for ${label}, write a 3-paragraph brief: (1) macro backdrop, (2) ALL companies and their news — name every one, (3) risks & opportunities. Prose only.
-
-${chunkSummaries.map((s,i)=>`[${i+1}]: ${s}`).join("\n")}`;
-  return await callClaude(synthPrompt, 900);
+  const synthPrompt = `${label} brief — 2 paragraphs, name every company, cover macro + risks:
+${summaries.join(" ")}`;
+  return await callClaude(synthPrompt, 500);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
