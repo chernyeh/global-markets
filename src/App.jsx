@@ -484,7 +484,7 @@ function ArticleCard({art, highlightKeyword=null}) {
           fontSize:14,lineHeight:1.5,fontWeight:600,textDecoration:"none",
           display:"block",marginBottom:4,transition:"color 0.15s"}}
         onMouseOver={e=>e.target.style.color="#c0392b"}
-        onMouseOut={e=>e.target.style.color="#dde6f0"}>
+        onMouseOut={e=>e.target.style.color="#1a1a1a"}>
         {displayTitle}
       </a>
 
