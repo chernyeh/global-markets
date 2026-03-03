@@ -190,6 +190,7 @@ ${candidates.map((a,i)=>`${i}. [${a.lang}] ${a.translatedTitle||a.title}`).join(
 // ═══════════════════════════════════════════════════════════════════════════════
 // CLAUDE API HELPER
 // ═══════════════════════════════════════════════════════════════════════════════
+// Haiku: fast + cheap — used for translation, enrichment, summaries
 async function callClaude(prompt, maxTokens=2000) {
   const res = await fetch("/api/chat", {
     method: "POST",
@@ -204,19 +205,37 @@ async function callClaude(prompt, maxTokens=2000) {
   return data.content?.[0]?.text || "";
 }
 
+// Sonnet: used only for watchlist intelligence (needs deeper reasoning)
+async function callClaudeSonnet(prompt, maxTokens=2000) {
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+  const data = await res.json();
+  return data.content?.[0]?.text || "";
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ENRICHMENT — translate + insight + sector
 // ═══════════════════════════════════════════════════════════════════════════════
 async function enrichBatch(articles) {
   if(!articles.length) return [];
   const prompt=`Financial analyst. For each headline return JSON array (one object per item):
-{"translated":"English title (copy if already EN)","insight":"One sentence investor takeaway","sector":"FIN|IT|IND|CD|CS|HC|EN|MAT|COM|RE|UTL|MAC|UNK"}
+{"translated":"English translation of title (if already English, copy it exactly)","insight":"One sentence investor takeaway in English","sector":"FIN|IT|IND|CD|CS|HC|EN|MAT|COM|RE|UTL|MAC|UNK"}
+IMPORTANT: If the headline language is zh, ko, ja, or any non-English language, you MUST translate the title to English. Never leave a non-English title untranslated.
 Sectors: FIN=banks/insurance/capital markets, IT=software/hardware/semis, IND=manufacturing/transport/conglomerates, CD=autos/retail/luxury/leisure, CS=food/beverages/household, HC=pharma/biotech/hospitals, EN=oil/gas/renewables, MAT=mining/chemicals/steel, COM=media/telecom/internet platforms, RE=property/REITs, UTL=power/water, MAC=central bank/rates/GDP/trade/FX/fiscal/elections/tariffs, UNK=unclear.
-Return ONLY valid JSON array. ${articles.length} items:
+Return ONLY valid JSON array, no other text. ${articles.length} items:
 ${articles.map((a,i)=>`${i}. [${a.lang}] ${a.title}`).join("\n")}`;
   try {
     const text=await callClaude(prompt,2000);
-    return JSON.parse(text.replace(/```json|```/g,"").trim());
+    const cleaned=text.replace(/```json|```/g,"").trim();
+    const parsed=JSON.parse(cleaned);
+    return parsed;
   } catch { return []; }
 }
 
@@ -229,13 +248,11 @@ async function generateBriefUnlimited(articles, label) {
 
   // If small enough, do it in one call
   if (articles.length <= CHUNK) {
-    const prompt=`Senior investment analyst. Write a concise but COMPLETE investment brief on ${label} covering ALL of the headlines below.
-Structure: (1) macro/market backdrop, (2) notable corporate & sector developments — mention ALL significant companies and themes, (3) risks and opportunities.
-Be specific, name companies and figures. Flowing prose, no bullets. Include every meaningful story.
+    const prompt=`Investment analyst. Concise brief on ${label}: (1) market backdrop, (2) key corporate/sector moves — name companies, (3) risks & opportunities. Prose, no bullets.
 
 Headlines (${articles.length}):
 ${articles.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
-    return await callClaude(prompt, 2000);
+    return await callClaude(prompt, 1000);
   }
 
   // Multi-chunk: summarise each chunk, then synthesise
@@ -243,20 +260,16 @@ ${articles.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}
   for(let i=0;i<articles.length;i+=CHUNK) chunks.push(articles.slice(i,i+CHUNK));
 
   const chunkSummaries=await Promise.all(chunks.map(async(chunk,ci)=>{
-    const prompt=`Investment analyst. Summarise these ${chunk.length} business headlines for ${label} (batch ${ci+1}/${chunks.length}). Cover all significant stories. Prose only, 2-4 sentences.
+    const prompt=`Summarise these ${chunk.length} business headlines for ${label} in 2-3 sentences. Name key companies/events only.
 ${chunk.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
-    return await callClaude(prompt,1000);
+    return await callClaude(prompt,600);
   }));
 
   // Synthesise all chunk summaries into final brief
-  const synthPrompt=`Senior investment analyst. You have been given ${chunks.length} batched summaries covering ALL recent business news for ${label}.
-Write a single, comprehensive investment brief that synthesises ALL the information below — missing nothing significant.
-Structure: (1) macro/market backdrop, (2) all notable corporate & sector developments, (3) key risks and opportunities.
-Be specific, name companies. Flowing prose, no bullets. This must be complete, not a selection.
+  const synthPrompt=`Investment analyst. Synthesise these ${chunks.length} news summaries for ${label} into one crisp brief: (1) market backdrop, (2) key corporate/sector moves, (3) risks & opportunities. Prose, no bullets.
 
-Batch summaries:
-${chunkSummaries.map((s,i)=>`[Batch ${i+1}]: ${s}`).join("\n\n")}`;
-  return await callClaude(synthPrompt, 3000);
+${chunkSummaries.map((s,i)=>`[${i+1}]: ${s}`).join("\n\n")}`;
+  return await callClaude(synthPrompt, 1500);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -291,7 +304,7 @@ ${articles.length} headlines:
 ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} [${a.source}, ${a.country}]`).join("\n")}`;
 
   try {
-    const text = await callClaude(prompt, 3000);
+    const text = await callClaudeSonnet(prompt, 3000);
     const clean = text.replace(/```json|```/g,"").trim();
     // Find the JSON array in the response
     const match = clean.match(/\[[\s\S]*\]/);
@@ -358,7 +371,7 @@ ${direct.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")||"
 RELATED/INDIRECT (${related.length}):
 ${related.map(a=>`• ${a.translatedTitle||a.title} [${a.source}] — ${a.watchMatches?.find(m=>m.keyword===keyword)?.reason||""}`).join("\n")||"(none)"}`;
 
-  return await callClaude(prompt, 3000);
+  return await callClaudeSonnet(prompt, 3000);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -862,8 +875,10 @@ export default function App() {
         const idx=batch.findIndex(b=>b.id===a.id);
         if(idx===-1||!results[idx]) return a;
         const r=results[idx];
+        // For non-English articles, always store translation even if looks same
+        const shouldStore = a.lang !== "en" ? r.translated : (r.translated && r.translated !== a.title ? r.translated : null);
         return {...a,
-          translatedTitle:r.translated&&r.translated!==a.title?r.translated:a.translatedTitle,
+          translatedTitle: shouldStore || a.translatedTitle,
           insight:r.insight||a.insight,sector:r.sector||a.sector};
       });
       setAllArticles(working);
