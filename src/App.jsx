@@ -117,7 +117,13 @@ async function fetchFeed(source) {
     if (!items.length) return [];
     return items.slice(0,10).map(item => {
       const g = t => item.querySelector(t)?.textContent?.trim() || "";
-      const title = g("title").replace(/<!\[CDATA\[|\]\]>/g,"").trim();
+      let title = g("title").replace(/<!\[CDATA\[|\]\]>/g,"").trim();
+      // Strip Google News source suffix e.g. "Headline - Source Name"
+      // and datestamp garbage e.g. "20260303 - 即時財經新聞 - 明報財經網"
+      title = title
+        .replace(/\s*[-–]\s*\d{8}\s*[-–].*$/,"")   // remove date suffix
+        .replace(/\s*[-–]\s*[^-–]{3,50}$/, "")       // remove source suffix
+        .trim();
       if (!title) return null;
       return {
         id: btoa(encodeURIComponent(title.slice(0,60))).replace(/[^a-zA-Z0-9]/g,"").slice(0,20),
@@ -865,7 +871,7 @@ export default function App() {
 
   const runEnrichment=useCallback(async(currentArticles,toEnrich)=>{
     setEnriching(true);
-    const BATCH=10;
+    const BATCH=15;
     let working=[...currentArticles];
     for(let i=0;i<toEnrich.length;i+=BATCH){
       const batch=toEnrich.slice(i,i+BATCH);
