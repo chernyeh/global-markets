@@ -231,12 +231,20 @@ async function callClaudeSonnet(prompt, maxTokens=2000) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Translate a single non-English title using Google Translate free endpoint
 async function googleTranslate(text, sourceLang) {
-  try {
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=en&dt=t&q=${encodeURIComponent(text)}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return data?.[0]?.map(x=>x?.[0]||"").join("") || text;
-  } catch { return text; }
+  // Try up to 2 language variants
+  const langs = sourceLang === "zh" ? ["zh-CN", "zh-TW"] : [sourceLang];
+  for (const lang of langs) {
+    try {
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${lang}&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const translated = data?.[0]?.map(x=>x?.[0]||"").join("") || "";
+      // Check result is actually English (not CJK)
+      const cjkRatio = (translated.match(/[\u4e00-\u9fff\uac00-\ud7ff]/g)||[]).length / (translated.length||1);
+      if (translated && cjkRatio < 0.1) return translated;
+    } catch {}
+  }
+  return text; // return original if all attempts fail
 }
 
 async function enrichBatch(articles) {
@@ -485,7 +493,11 @@ function Tag({children,color="#c0392b",onClick}) {
 
 function ArticleCard({art, highlightKeyword=null}) {
   const sec = art.sector ? SECTOR_MAP[art.sector] : null;
-  const displayTitle = art.translatedTitle || art.title;
+  const isCJK = s => s && (s.match(/[\u4e00-\u9fff\uac00-\ud7ff\u3040-\u309f]/g)||[]).length / s.length > 0.25;
+  const rawTitle = art.translatedTitle || art.title;
+  const displayTitle = isCJK(rawTitle) && art.lang !== "en"
+    ? (art.translatedTitle && !isCJK(art.translatedTitle) ? art.translatedTitle : "[Translation pending…] " + rawTitle)
+    : rawTitle;
 
   // Watchlist match info
   const directMatches = (art.watchMatches||[]).filter(m=>m.matchType==="direct");
@@ -1022,7 +1034,7 @@ export default function App() {
       const kept=prev.filter(a=>!results.some(r=>r.sourceId===a.sourceId));
       const merged=localDedup([...kept,...fresh]);
       sSet(SK.articles,merged);
-      const toEnrich=fresh.filter(a=>!a.insight);
+      const toEnrich=fresh.filter(a=>!a.insight||(a.lang!=="en"&&!a.translatedTitle));
       if(toEnrich.length) runEnrichment(merged,toEnrich);
       else setStatusMsg("");
       return merged;
@@ -1041,8 +1053,12 @@ export default function App() {
         const idx=batch.findIndex(b=>b.id===a.id);
         if(idx===-1||!results[idx]) return a;
         const r=results[idx];
-        // For non-English articles, always store translation even if looks same
-        const shouldStore = a.lang !== "en" ? r.translated : (r.translated && r.translated !== a.title ? r.translated : null);
+        // For non-English: store translation only if it looks like real English (not CJK chars)
+        const isCJK = s => s && (s.match(/[\u4e00-\u9fff\uac00-\ud7ff\u3040-\u309f]/g)||[]).length / s.length > 0.2;
+        const translationOk = a.lang !== "en" && r.translated && !isCJK(r.translated);
+        const shouldStore = translationOk ? r.translated
+          : a.lang === "en" && r.translated && r.translated !== a.title ? r.translated
+          : null;
         return {...a,
           translatedTitle: shouldStore || a.translatedTitle,
           insight:r.insight||a.insight,sector:r.sector||a.sector};
