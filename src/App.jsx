@@ -631,8 +631,8 @@ function BriefRenderer({text, articles=[]}) {
             <div key={i} style={{display:"flex",gap:8,margin:"8px 0",
               paddingLeft:8,alignItems:"flex-start"}}>
               <span style={{color:"#c0392b",fontWeight:700,marginTop:2,flexShrink:0,fontSize:16}}>•</span>
-              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,
-                color:"#1a1a1a",lineHeight:1.7}}>
+              <span style={{fontFamily:"Georgia,'Times New Roman',serif",fontSize:15,
+                color:"#1a1a1a",lineHeight:1.8}}>
                 {boldMatch
                   ? <><strong style={{color:"#1a1a1a"}}>{boldMatch[1]}</strong>{boldMatch[2] ? ": "+boldMatch[2] : ""}</>
                   : cleanTxt}
@@ -653,9 +653,9 @@ function BriefRenderer({text, articles=[]}) {
         }
         // Plain paragraph — executive summary box
         return (
-          <p key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,
-            color:"#1a1a1a",lineHeight:1.8,margin:"8px 0",
-            background:"#f9f6f0",padding:"10px 14px",borderRadius:4}}>
+          <p key={i} style={{fontFamily:"Georgia,'Times New Roman',serif",fontSize:16,
+            color:"#1a1a1a",lineHeight:1.9,margin:"8px 0",
+            background:"#f9f6f0",padding:"12px 16px",borderRadius:4}}>
             {trimmed}
           </p>
         );
