@@ -266,20 +266,7 @@ async function callClaude(prompt, maxTokens=2000) {
   return data.content?.[0]?.text || "";
 }
 
-// Sonnet: used only for watchlist intelligence (needs deeper reasoning)
-async function callClaudeSonnet(prompt, maxTokens=2000) {
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: maxTokens,
-      messages: [{ role: "user", content: prompt }]
-    })
-  });
-  const data = await res.json();
-  return data.content?.[0]?.text || "";
-}
+// All Claude calls use Haiku — fast and cost-effective
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ENRICHMENT — translate + insight + sector
@@ -442,7 +429,7 @@ ${articles.length} headlines:
 ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} [${a.source}, ${a.country}]`).join("\n")}`;
 
   try {
-    const text = await callClaudeSonnet(prompt, 3000);
+    const text = await callClaude(prompt, 3000);
     const clean = text.replace(/```json|```/g,"").trim();
     // Find the JSON array in the response
     const match = clean.match(/\[[\s\S]*\]/);
@@ -509,7 +496,7 @@ ${direct.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")||"
 RELATED/INDIRECT (${related.length}):
 ${related.map(a=>`• ${a.translatedTitle||a.title} [${a.source}] — ${a.watchMatches?.find(m=>m.keyword===keyword)?.reason||""}`).join("\n")||"(none)"}`;
 
-  const text = await callClaudeSonnet(prompt, 3000);
+  const text = await callClaude(prompt, 3000);
   return text;
 }
 
@@ -1269,11 +1256,31 @@ export default function App() {
       const kept=prev.filter(a=>!results.some(r=>r.sourceId===a.sourceId));
       const merged=localDedup([...kept,...fresh]);
       sSet(SK.articles,merged);
-      const toEnrich=fresh.filter(a=>!a.insight||(a.lang!=="en"&&!a.translatedTitle));
-      if(toEnrich.length) runEnrichment(merged,toEnrich);
+      // Auto-translate non-English titles (free, no API cost) but skip Claude enrichment
+      const toTranslate=fresh.filter(a=>a.lang!=="en"&&!a.translatedTitle);
+      if(toTranslate.length) runAutoTranslate(merged,toTranslate);
       else setStatusMsg("");
       return merged;
     });
+  },[]);
+
+  // Auto-translate only (no Claude cost) — runs on every refresh for non-English titles
+  const runAutoTranslate=useCallback(async(currentArticles,toTranslate)=>{
+    setStatusMsg(`Translating ${toTranslate.length} non-English titles…`);
+    const translated = await Promise.all(toTranslate.map(async a => {
+      const lang = a.lang === "zh" ? "zh-CN" : a.lang;
+      const t = await googleTranslate(a.title, lang);
+      return { ...a, translatedTitle: t };
+    }));
+    setAllArticles(prev => {
+      const updated = prev.map(a => {
+        const t = translated.find(x => x.id === a.id);
+        return t ? { ...a, translatedTitle: t.translatedTitle } : a;
+      });
+      sSet(SK.articles, updated);
+      return updated;
+    });
+    setStatusMsg("");
   },[]);
 
   const runEnrichment=useCallback(async(currentArticles,toEnrich)=>{
@@ -1427,6 +1434,24 @@ export default function App() {
               onMouseOut={e=>e.currentTarget.style.background="none"}>
               <span style={{display:"inline-block",animation:isLoading?"spin 1s linear infinite":"none"}}>⟳</span>
               {isLoading?"refreshing…":"refresh all"}
+            </button>
+            <button
+              onClick={()=>{
+                const toEnrich=allArticles.filter(a=>!a.insight);
+                if(toEnrich.length) runEnrichment(allArticles,toEnrich);
+              }}
+              disabled={isLoading||enriching||allArticles.filter(a=>!a.insight).length===0}
+              title="Add investor insights + sector tags to all headlines (uses Claude API)"
+              style={{display:"flex",alignItems:"center",gap:5,background:"none",
+                border:"1px solid #7b68ee",color:"#7b68ee",padding:"6px 14px",borderRadius:5,
+                cursor:(isLoading||enriching||allArticles.filter(a=>!a.insight).length===0)?"not-allowed":"pointer",
+                fontFamily:"'DM Mono',monospace",fontSize:11,
+                opacity:(isLoading||enriching||allArticles.filter(a=>!a.insight).length===0)?0.4:1,
+                transition:"all 0.2s"}}
+              onMouseOver={e=>{ if(!enriching&&!isLoading) e.currentTarget.style.background="#f0eeff"; }}
+              onMouseOut={e=>e.currentTarget.style.background="none"}>
+              <span style={{animation:enriching?"spin 1s linear infinite":"none",display:"inline-block"}}>✦</span>
+              {enriching?"enriching…":`enrich (${allArticles.filter(a=>!a.insight).length})`}
             </button>
           </div>
         </div>
