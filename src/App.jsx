@@ -1106,8 +1106,9 @@ export default function App() {
   const watchlistHits=canonical.filter(a=>a.watchMatches?.length>0).length;
 
   const MAIN_TABS=[
-    {id:"region", label:"⊕ Regions"},
-    {id:"sector", label:"▦ Sectors"},
+    {id:"region",  label:"⊕ Regions"},
+    {id:"sector",  label:"▦ Sectors"},
+    {id:"sources", label:"◫ Sources"},
     {id:"watchlist", label:`◎ Watchlist${watchlistHits>0?` (${watchlistHits})`:""}` },
   ];
 
@@ -1197,7 +1198,7 @@ export default function App() {
       </header>
 
       {/* SUB-NAV (only for region/sector) */}
-      {mainTab!=="watchlist"&&(
+      {mainTab!=="watchlist"&&mainTab!=="sources"&&(
         <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:58,zIndex:199,overflowX:"auto"}}>
           <div style={{maxWidth:1500,margin:"0 auto",padding:"0 24px",display:"flex",minWidth:"max-content"}}>
             {mainTab==="region"?(
@@ -1385,6 +1386,69 @@ export default function App() {
           </>
         )}
       </div>
+
+        {/* SOURCES */}
+        {mainTab==="sources"&&(
+          <div style={{animation:"fadeIn 0.3s ease"}}>
+            {COUNTRIES.filter(c=>c.code!=="ALL").map(country=>{
+              const countrySources=SOURCES.filter(s=>s.country===country.code);
+              const countryArtsAll=canonical.filter(a=>a.country===country.code);
+              if(!countryArtsAll.length&&!countrySources.length) return null;
+              return (
+                <div key={country.code} style={{marginBottom:32}}>
+                  {/* Country heading */}
+                  <div style={{display:"flex",alignItems:"center",gap:10,
+                    borderBottom:"2px solid #1a1a1a",paddingBottom:8,marginBottom:16}}>
+                    <span style={{fontSize:20}}>{country.flag}</span>
+                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,
+                      fontWeight:700,color:"#1a1a1a",letterSpacing:"-0.02em"}}>
+                      {country.label}
+                    </span>
+                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,
+                      color:"#888",marginLeft:4}}>
+                      {countrySources.length} sources · {countryArtsAll.length} articles
+                    </span>
+                  </div>
+                  {/* Sources grid */}
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:12}}>
+                    {countrySources.map(src=>{
+                      const arts=canonical.filter(a=>a.sourceId===src.id);
+                      return (
+                        <div key={src.id} style={{background:"#fff",border:"1px solid #e0e0e0",
+                          borderRadius:8,padding:"14px 16px",borderTop:`3px solid #c0392b`}}>
+                          {/* Source header */}
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                            marginBottom:10,paddingBottom:8,borderBottom:"1px solid #f0ece4"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:6}}>
+                              <span style={{fontSize:13}}>{src.flag}</span>
+                              <span style={{fontFamily:"'DM Mono',monospace",fontSize:11,
+                                color:"#c0392b",fontWeight:600,letterSpacing:"0.04em"}}>
+                                {src.name}
+                              </span>
+                            </div>
+                            <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,
+                              color:"#888",background:"#f5f5f5",padding:"2px 7px",borderRadius:10}}>
+                              {arts.length} articles
+                            </span>
+                          </div>
+                          {/* Articles */}
+                          {arts.length===0?(
+                            <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,
+                              color:"#bbb",padding:"8px 0",textAlign:"center"}}>
+                              no recent articles
+                            </div>
+                          ):(
+                            arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
       <footer style={{borderTop:"1px solid #ddd",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#182535"}}>{SOURCES.length} sources · {COUNTRIES.length-1} markets · {MSCI_SECTORS.length} GICS sectors</span>
