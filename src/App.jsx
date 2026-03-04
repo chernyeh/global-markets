@@ -51,11 +51,9 @@ const SOURCES = [
   // Business Times SG: paywalled — broader query
   {id:"bt_sg",      country:"SG",name:"Business Times SG",      lang:"en",flag:"🇸🇬",url:GN("Business Times Singapore markets economy")},
   // Straits Times: paywalled — broader query
-  {id:"today_sg",   country:"SG",name:"Today Online Business",  lang:"en",flag:"🇸🇬",url:"https://www.todayonline.com/rss/business"},
-  {id:"mothership",  country:"SG",name:"Mothership Business",      lang:"en",flag:"🇸🇬",url:"https://mothership.sg/feed/"},
   // CNA: free — GN fine
   {id:"cna_sg",     country:"SG",name:"CNA Business",           lang:"en",flag:"🇸🇬",url:GN("site:channelnewsasia.com business")},
-  {id:"edge_sg",    country:"SG",name:"The Edge Singapore",     lang:"en",flag:"🇸🇬",url:"https://www.theedgesingapore.com/latest-news-echobox.rss"},
+  {id:"edge_sg",    country:"SG",name:"The Edge Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:theedgesingapore.com markets economy stocks")},
   {id:"reuters_sg", country:"SG",name:"Reuters Singapore",       lang:"en",flag:"🇸🇬",url:GN("site:reuters.com Singapore economy business")},
   {id:"bloom_sg",   country:"SG",name:"Bloomberg Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:bloomberg.com Singapore markets economy")},
   // ── Hong Kong ──────────────────────────────────────────────────────────────
@@ -81,21 +79,24 @@ const SOURCES = [
   {id:"focus_tw",   country:"TW",name:"Focus Taiwan CNA",       lang:"en",flag:"🇹🇼",url:GN("site:focustaiwan.tw business")},
   {id:"udn_money",  country:"TW",name:"經濟日報 UDN Money",       lang:"zh",flag:"🇹🇼",url:GN("site:money.udn.com","zh-TW","TW","TW:zh-Hant")},
   {id:"ctee",       country:"TW",name:"工商時報 CTEE",            lang:"zh",flag:"🇹🇼",url:GN("site:ctee.com.tw","zh-TW","TW","TW:zh-Hant")},
-  {id:"digitimes",  country:"TW",name:"DigiTimes",              lang:"en",flag:"🇹🇼",url:"https://www.digitimes.com/rss/rss.asp"},
+  {id:"digitimes",  country:"TW",name:"DigiTimes",              lang:"en",flag:"🇹🇼",url:GN("site:digitimes.com Taiwan semiconductor technology supply chain")},
   {id:"reuters_tw", country:"TW",name:"Reuters Taiwan",          lang:"en",flag:"🇹🇼",url:GN("site:reuters.com Taiwan economy business")},
   {id:"bloom_tw",   country:"TW",name:"Bloomberg Taiwan",        lang:"en",flag:"🇹🇼",url:GN("site:bloomberg.com Taiwan markets economy")},
   // ── India ──────────────────────────────────────────────────────────────────
   // Economic Times: direct RSS (free publication)
   {id:"econ_times", country:"IN",name:"Economic Times",         lang:"en",flag:"🇮🇳",url:"https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"},
   // Business Standard: direct RSS
-  {id:"biz_std",    country:"IN",name:"Business Standard",      lang:"en",flag:"🇮🇳",url:"https://www.business-standard.com/rss/latest.rss"},
+  {id:"biz_std",    country:"IN",name:"Business Standard",      lang:"en",flag:"🇮🇳",url:"https://www.business-standard.com/rss/markets-106.rss"},
   // Mint: direct RSS
-  {id:"mint",       country:"IN",name:"Mint / LiveMint",        lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/markets"},
-  {id:"ndtv_p",     country:"IN",name:"NDTV Profit",            lang:"en",flag:"🇮🇳",url:GN("site:ndtvprofit.com")},
+  {id:"mint",       country:"IN",name:"Mint Markets",           lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/markets"},
+  {id:"mint2",      country:"IN",name:"Mint Companies",         lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/companies"},
+  {id:"mint3",      country:"IN",name:"Mint Economy",            lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/economy"},
+  {id:"hindubiz",   country:"IN",name:"Hindu BusinessLine",     lang:"en",flag:"🇮🇳",url:"https://www.thehindubusinessline.com/?service=rss"},
+  {id:"fin_exp",    country:"IN",name:"Financial Express",       lang:"en",flag:"🇮🇳",url:"https://www.financialexpress.com/feed/"},
   // Moneycontrol: direct RSS
-  {id:"moneyctrl",  country:"IN",name:"Moneycontrol Markets",   lang:"en",flag:"🇮🇳",url:"https://www.moneycontrol.com/rss/latestnews.xml"},
+  {id:"moneyctrl",  country:"IN",name:"Moneycontrol Markets",   lang:"en",flag:"🇮🇳",url:"https://www.moneycontrol.com/rss/business.xml"},
   {id:"cnbctv18",   country:"IN",name:"CNBC-TV18 Markets",      lang:"en",flag:"🇮🇳",url:"https://www.cnbctv18.com/commonfeeds/v1/eng/rss/market.xml"},
-  {id:"forbes_in",  country:"IN",name:"Forbes India",           lang:"en",flag:"🇮🇳",url:GN("site:forbesindia.com business economy markets")},
+  {id:"forbes_in",  country:"IN",name:"Forbes India",           lang:"en",flag:"🇮🇳",url:GN("site:forbesindia.com economy business markets")},
   {id:"reuters_in", country:"IN",name:"Reuters India",           lang:"en",flag:"🇮🇳",url:GN("site:reuters.com India economy business markets")},
   {id:"bloom_in",   country:"IN",name:"Bloomberg India",         lang:"en",flag:"🇮🇳",url:GN("site:bloomberg.com India markets economy")},
   // ── Australia ──────────────────────────────────────────────────────────────
@@ -1041,11 +1042,11 @@ function WatchlistTab({allArticles, setAllArticles}) {
 const SOURCE_RANK = {
   US: ["reuters","bloomberg","bloomberg2","wsj","ft","marketwatch"],
   CA: ["reuters_ca","bloom_ca","globe_mail","fin_post","bnn"],
-  SG: ["reuters_sg","bloom_sg","bt_sg","edge_sg","cna_sg","today_sg","mothership"],
+  SG: ["reuters_sg","bloom_sg","bt_sg","edge_sg","cna_sg"],
   HK: ["reuters_hk","bloom_hk","scmp","mingtiandi","hket","mingpao"],
   KR: ["reuters_kr","bloom_kr","kr_herald","yonhap","yonhap2","ktimes","ked","hankyung","maeil","chosunbiz"],
   TW: ["reuters_tw","bloom_tw","focus_tw","taipei_t","digitimes","udn_money","ctee"],
-  IN: ["reuters_in","bloom_in","econ_times","mint","biz_std","cnbctv18","moneyctrl","ndtv_p","forbes_in"],
+  IN: ["reuters_in","bloom_in","econ_times","mint","mint2","mint3","biz_std","hindubiz","fin_exp","cnbctv18","moneyctrl","forbes_in"],
   AU: ["reuters_au","bloom_au","afr","smh","abc_au","guardian_au","the_aus"],
   CN: ["reuters_cn","bloom_cn","xinhua","cgtn","chinadaily","caixin","globaltimes","yicai","peoples_d"],
 };
