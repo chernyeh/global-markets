@@ -603,10 +603,10 @@ function BriefRenderer({text, articles=[]}) {
         // ## Section header
         if (trimmed.startsWith("## ")) {
           return (
-            <div key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,
-              fontWeight:700,color:"#c0392b",margin:"20px 0 8px",
-              textTransform:"uppercase",letterSpacing:"0.08em",
-              borderBottom:"2px solid #e8e2d6",paddingBottom:5}}>
+            <div key={i} style={{fontFamily:"Georgia,'Times New Roman',serif",fontSize:13,
+              fontWeight:700,color:"#8B4513",margin:"22px 0 10px",
+              textTransform:"uppercase",letterSpacing:"0.1em",
+              borderBottom:"2px solid #e0d8cc",paddingBottom:6}}>
               {trimmed.replace(/^## /,"")}
             </div>
           );
@@ -614,8 +614,8 @@ function BriefRenderer({text, articles=[]}) {
         // # Title header
         if (trimmed.startsWith("# ")) {
           return (
-            <div key={i} style={{fontFamily:"'Playfair Display',serif",fontSize:19,
-              fontWeight:700,color:"#1a1a1a",margin:"4px 0 12px",lineHeight:1.3}}>
+            <div key={i} style={{fontFamily:"Georgia,'Times New Roman',serif",fontSize:20,
+              fontWeight:700,color:"#1a1a1a",margin:"4px 0 14px",lineHeight:1.3}}>
               {trimmed.replace(/^# /,"")}
             </div>
           );
@@ -631,8 +631,8 @@ function BriefRenderer({text, articles=[]}) {
             <div key={i} style={{display:"flex",gap:8,margin:"8px 0",
               paddingLeft:8,alignItems:"flex-start"}}>
               <span style={{color:"#c0392b",fontWeight:700,marginTop:2,flexShrink:0,fontSize:16}}>•</span>
-              <span style={{fontFamily:"Georgia,'Times New Roman',serif",fontSize:15,
-                color:"#1a1a1a",lineHeight:1.8}}>
+              <span style={{fontFamily:"Georgia,'Times New Roman',serif",fontSize:17,
+                color:"#1a1a1a",lineHeight:1.85}}>
                 {boldMatch
                   ? <><strong style={{color:"#1a1a1a"}}>{boldMatch[1]}</strong>{boldMatch[2] ? ": "+boldMatch[2] : ""}</>
                   : cleanTxt}
@@ -653,9 +653,9 @@ function BriefRenderer({text, articles=[]}) {
         }
         // Plain paragraph — executive summary box
         return (
-          <p key={i} style={{fontFamily:"Georgia,'Times New Roman',serif",fontSize:16,
-            color:"#1a1a1a",lineHeight:1.9,margin:"8px 0",
-            background:"#f9f6f0",padding:"12px 16px",borderRadius:4}}>
+          <p key={i} style={{fontFamily:"Georgia,'Times New Roman',serif",fontSize:17,
+            color:"#1a1a1a",lineHeight:1.9,margin:"10px 0",
+            background:"#f0ece4",padding:"16px 20px",borderRadius:4}}>
             {trimmed}
           </p>
         );
