@@ -33,12 +33,13 @@ const SOURCES = [
   // MarketWatch: not paywalled, GN fine
   {id:"marketwatch",country:"US",name:"MarketWatch",            lang:"en",flag:"🇺🇸",url:GN("site:marketwatch.com markets stocks")},
   // WSJ: paywalled — direct Dow Jones RSS feed
-  {id:"wsj",        country:"US",name:"Wall Street Journal",    lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/mw_marketpulse"},
+  {id:"wsj",        country:"US",name:"Wall Street Journal",    lang:"en",flag:"🇺🇸",url:GN("site:wsj.com markets economy business finance")},
   // Bloomberg: direct RSS — headlines are public even if articles paywalled
   {id:"bloomberg",  country:"US",name:"Bloomberg Markets",      lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/markets/news.rss"},
   {id:"bloomberg2", country:"US",name:"Bloomberg Business",     lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/business/news.rss"},
   // FT: direct RSS (already switched)
-  {id:"ft",         country:"US",name:"Financial Times",        lang:"en",flag:"🇺🇸",url:"https://www.ft.com/rss/home/UK"},
+  {id:"ft",         country:"US",name:"Financial Times",        lang:"en",flag:"🇺🇸",url:GN("site:ft.com markets economy business")},
+  {id:"nyt",        country:"US",name:"NY Times Business",      lang:"en",flag:"🇺🇸",url:"https://rss.nytimes.com/services/xml/rss/nyt/Business.xml"},
   // ── Canada ─────────────────────────────────────────────────────────────────
   // Globe & Mail: paywalled — broader GN query gets more headlines
   {id:"globe_mail", country:"CA",name:"Globe and Mail",         lang:"en",flag:"🇨🇦",url:"https://www.theglobeandmail.com/arc/outboundfeeds/rss/?outputType=xml&_website=the-globe-and-mail"},
@@ -1027,7 +1028,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Source ranking by influence/circulation per country
 const SOURCE_RANK = {
-  US: ["reuters","bloomberg","bloomberg2","wsj","ft","marketwatch"],
+  US: ["reuters","bloomberg","bloomberg2","wsj","ft","nyt","marketwatch"],
   CA: ["reuters_ca","bloom_ca","globe_mail","fin_post","bnn"],
   SG: ["reuters_sg","bloom_sg","bt_sg","edge_sg","cna_sg"],
   HK: ["reuters_hk","bloom_hk","scmp","mingtiandi","hket","mingpao"],
