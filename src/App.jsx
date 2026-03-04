@@ -1011,56 +1011,155 @@ function WatchlistTab({allArticles, setAllArticles}) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // SOURCES TAB
 // ═══════════════════════════════════════════════════════════════════════════════
-function SourcesTab({canonical, lastFetch}) {
-  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[1].code); // default US
+// Source ranking by influence/circulation per country
+const SOURCE_RANK = {
+  US: ["reuters","bloomberg","bloomberg2","wsj","ft","marketwatch"],
+  CA: ["globe_mail","fin_post","bnn"],
+  SG: ["st_sg","bt_sg","cna_sg","edge_sg"],
+  HK: ["scmp","mingtiandi","hket","mingpao"],
+  KR: ["kr_herald","yonhap","ked","hankyung","maeil","chosunbiz"],
+  TW: ["focus_tw","taipei_t","digitimes","udn_money","ctee"],
+  IN: ["econ_times","mint","biz_std","moneyctrl","ndtv_p"],
+  AU: ["afr","smh","abc_au","the_aus"],
+  CN: ["caixin","yicai","peoples_d"],
+};
 
-  const countrySources = SOURCES.filter(s => s.country === selectedCountry);
-  const countryObj = COUNTRIES.find(c => c.code === selectedCountry);
-  const totalArts = canonical.filter(a => a.country === selectedCountry).length;
+function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[1].code);
+  const [selectedSource,  setSelectedSource]  = useState("ALL");
+  const [briefLoading,    setBriefLoading]    = useState({});
+
+  const countryObj   = COUNTRIES.find(c => c.code === selectedCountry);
+  const rankOrder    = SOURCE_RANK[selectedCountry] || [];
+  // Sort sources by rank, unranked go last
+  const allCountrySources = SOURCES.filter(s => s.country === selectedCountry);
+  const rankedSources = [
+    ...rankOrder.map(id => allCountrySources.find(s => s.id === id)).filter(Boolean),
+    ...allCountrySources.filter(s => !rankOrder.includes(s.id)),
+  ];
+  const visibleSources = selectedSource === "ALL"
+    ? rankedSources
+    : rankedSources.filter(s => s.id === selectedSource);
+
+  const countryArts = canonical.filter(a => a.country === selectedCountry);
+  const briefKey = `sources_country_${selectedCountry}`;
+  const briefData = briefs[briefKey];
+  const brief = briefData?.text ?? (typeof briefData === "string" ? briefData : null);
+  const briefArts = briefData?.articles ?? countryArts;
 
   return (
     <div style={{animation:"fadeIn 0.3s ease"}}>
-      {/* Country dropdown */}
-      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24,
-        background:"#fff",border:"1px solid #e0e0e0",borderRadius:8,padding:"14px 18px"}}>
+
+      {/* ── Controls bar ──────────────────────────────────────────────────── */}
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,
+        background:"#fff",border:"1px solid #e0e0e0",borderRadius:8,padding:"12px 18px",
+        flexWrap:"wrap"}}>
+
+        {/* Country dropdown */}
         <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888",
-          letterSpacing:"0.08em",whiteSpace:"nowrap"}}>SELECT COUNTRY</span>
-        <div style={{position:"relative",flex:"0 0 auto"}}>
-          <select
-            value={selectedCountry}
-            onChange={e=>setSelectedCountry(e.target.value)}
+          letterSpacing:"0.08em",whiteSpace:"nowrap"}}>COUNTRY</span>
+        <div style={{position:"relative"}}>
+          <select value={selectedCountry}
+            onChange={e=>{setSelectedCountry(e.target.value);setSelectedSource("ALL");}}
             style={{appearance:"none",background:"#fff",border:"1px solid #c0392b",
-              borderRadius:6,padding:"8px 36px 8px 14px",
+              borderRadius:6,padding:"7px 32px 7px 12px",
+              fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",
+              cursor:"pointer",outline:"none",minWidth:180}}>
+            {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>(
+              <option key={c.code} value={c.code}>{c.flag} {c.label}</option>
+            ))}
+          </select>
+          <span style={{position:"absolute",right:9,top:"50%",transform:"translateY(-50%)",
+            pointerEvents:"none",color:"#c0392b",fontSize:10}}>▼</span>
+        </div>
+
+        {/* Source dropdown */}
+        <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888",
+          letterSpacing:"0.08em",whiteSpace:"nowrap",marginLeft:8}}>SOURCE</span>
+        <div style={{position:"relative"}}>
+          <select value={selectedSource}
+            onChange={e=>setSelectedSource(e.target.value)}
+            style={{appearance:"none",background:"#fff",border:"1px solid #bbb",
+              borderRadius:6,padding:"7px 32px 7px 12px",
               fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",
               cursor:"pointer",outline:"none",minWidth:200}}>
-            {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>(
-              <option key={c.code} value={c.code}>
-                {c.flag} {c.label}
+            <option value="ALL">All sources ({rankedSources.length})</option>
+            {rankedSources.map((s,i)=>(
+              <option key={s.id} value={s.id}>
+                #{i+1} {s.name} ({canonical.filter(a=>a.sourceId===s.id).length})
               </option>
             ))}
           </select>
-          <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",
-            pointerEvents:"none",color:"#c0392b",fontSize:10}}>▼</span>
+          <span style={{position:"absolute",right:9,top:"50%",transform:"translateY(-50%)",
+            pointerEvents:"none",color:"#888",fontSize:10}}>▼</span>
         </div>
-        <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888"}}>
-          <span style={{color:"#c0392b",fontWeight:600}}>{countrySources.length}</span> sources ·{" "}
-          <span style={{color:"#c0392b",fontWeight:600}}>{totalArts}</span> articles
-        </div>
+
+        {/* Stats */}
+        <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888",marginLeft:4}}>
+          <span style={{color:"#c0392b",fontWeight:600}}>{countryArts.length}</span> articles
+        </span>
+
+        {/* Generate brief button */}
+        <button
+          onClick={async()=>{
+            setBriefLoading(p=>({...p,[briefKey]:true}));
+            const b = await generateBriefUnlimited(countryArts, `${countryObj?.flag} ${countryObj?.label} Markets`);
+            setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
+            setBriefLoading(p=>({...p,[briefKey]:false}));
+          }}
+          disabled={briefLoading[briefKey]||!countryArts.length}
+          style={{marginLeft:"auto",padding:"7px 16px",
+            background:brief?"none":"#fdecea",
+            border:"1px solid #c0392b",color:"#c0392b",borderRadius:6,
+            cursor:(!countryArts.length)?"not-allowed":"pointer",
+            fontFamily:"'DM Mono',monospace",fontSize:11,
+            opacity:!countryArts.length?0.4:1,transition:"all 0.2s"}}
+          onMouseOver={e=>e.currentTarget.style.background="#fdecea"}
+          onMouseOut={e=>e.currentTarget.style.background=brief?"none":"#fdecea"}>
+          {briefLoading[briefKey]
+            ? <><Dots/> generating…</>
+            : brief ? "↺ refresh brief" : "✦ generate country brief"}
+        </button>
       </div>
 
-      {/* Source cards */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(360px,1fr))",gap:16}}>
-        {countrySources.map(src=>{
+      {/* ── Country brief (if generated) ──────────────────────────────────── */}
+      {brief && (
+        <div style={{background:"#fff",borderLeft:"3px solid #c0392b",border:"1px solid #e0e0e0",
+          borderRadius:10,padding:"18px 22px",marginBottom:20,animation:"fadeIn 0.4s ease"}}>
+          <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",
+            letterSpacing:"0.12em",marginBottom:2}}>
+            AI INVESTMENT BRIEF · {countryArts.length} articles analysed
+          </div>
+          <BriefRenderer text={brief} articles={briefArts}/>
+        </div>
+      )}
+
+      {/* ── Source cards grid ─────────────────────────────────────────────── */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16}}>
+        {visibleSources.map((src, idx)=>{
           const arts = canonical.filter(a=>a.sourceId===src.id);
+          const rank = rankOrder.indexOf(src.id);
+          const rankLabel = rank >= 0 ? `#${rank+1}` : null;
           return (
             <div key={src.id} style={{background:"#fff",border:"1px solid #e0e0e0",
-              borderRadius:8,padding:"14px 16px",borderTop:"3px solid #c0392b"}}>
+              borderRadius:8,padding:"14px 16px",
+              borderTop:`3px solid ${rank===0?"#c0392b":rank===1?"#c9a84c":rank===2?"#2980b9":"#ddd"}`}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
                 marginBottom:10,paddingBottom:8,borderBottom:"1px solid #f0ece4"}}>
-                <span style={{fontFamily:"'DM Mono',monospace",fontSize:11,
-                  color:"#c0392b",fontWeight:600,letterSpacing:"0.04em"}}>
-                  {src.flag} {src.name}
-                </span>
+                <div style={{display:"flex",alignItems:"center",gap:7}}>
+                  {rankLabel&&(
+                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,
+                      color:rank===0?"#c0392b":rank===1?"#c9a84c":rank===2?"#2980b9":"#999",
+                      fontWeight:700,background:rank<3?"#fafafa":"none",
+                      padding:"1px 5px",borderRadius:3,border:"1px solid #eee"}}>
+                      {rankLabel}
+                    </span>
+                  )}
+                  <span style={{fontFamily:"'DM Mono',monospace",fontSize:11,
+                    color:"#c0392b",fontWeight:600,letterSpacing:"0.04em"}}>
+                    {src.flag} {src.name}
+                  </span>
+                </div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   {lastFetch[src.id]&&(
                     <span style={{fontFamily:"'DM Mono',monospace",fontSize:8,color:"#aaa"}}>
@@ -1498,7 +1597,7 @@ export default function App() {
 
         {/* SOURCES */}
         {mainTab==="sources"&&(
-          <SourcesTab canonical={canonical} lastFetch={lastFetch}/>
+          <SourcesTab canonical={canonical} lastFetch={lastFetch} briefs={briefs} setBriefs={setBriefs}/>
         )}
 
       <footer style={{borderTop:"1px solid #ddd",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
