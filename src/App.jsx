@@ -45,59 +45,81 @@ const SOURCES = [
   {id:"fin_post",   country:"CA",name:"Financial Post",         lang:"en",flag:"🇨🇦",url:GN("site:financialpost.com")},
   // BNN: not paywalled
   {id:"bnn",        country:"CA",name:"BNN Bloomberg Canada",   lang:"en",flag:"🇨🇦",url:GN("site:bnnbloomberg.ca")},
+  {id:"reuters_ca", country:"CA",name:"Reuters Canada",         lang:"en",flag:"🇨🇦",url:GN("site:reuters.com Canada economy business")},
+  {id:"bloom_ca",   country:"CA",name:"Bloomberg Canada",       lang:"en",flag:"🇨🇦",url:GN("site:bloomberg.com Canada economy markets")},
   // ── Singapore ──────────────────────────────────────────────────────────────
   // Business Times SG: paywalled — broader query
   {id:"bt_sg",      country:"SG",name:"Business Times SG",      lang:"en",flag:"🇸🇬",url:GN("Business Times Singapore markets economy")},
   // Straits Times: paywalled — broader query
-  {id:"st_sg",      country:"SG",name:"Straits Times Business", lang:"en",flag:"🇸🇬",url:GN("Straits Times Singapore economy business finance markets")},
+  {id:"today_sg",   country:"SG",name:"Today Online Business",  lang:"en",flag:"🇸🇬",url:"https://www.todayonline.com/rss/business"},
+  {id:"mothership",  country:"SG",name:"Mothership Business",      lang:"en",flag:"🇸🇬",url:"https://mothership.sg/feed/"},
   // CNA: free — GN fine
   {id:"cna_sg",     country:"SG",name:"CNA Business",           lang:"en",flag:"🇸🇬",url:GN("site:channelnewsasia.com business")},
-  {id:"edge_sg",    country:"SG",name:"The Edge Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:theedgesingapore.com")},
+  {id:"edge_sg",    country:"SG",name:"The Edge Singapore",     lang:"en",flag:"🇸🇬",url:"https://www.theedgesingapore.com/latest-news-echobox.rss"},
+  {id:"reuters_sg", country:"SG",name:"Reuters Singapore",       lang:"en",flag:"🇸🇬",url:GN("site:reuters.com Singapore economy business")},
+  {id:"bloom_sg",   country:"SG",name:"Bloomberg Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:bloomberg.com Singapore markets economy")},
   // ── Hong Kong ──────────────────────────────────────────────────────────────
   {id:"scmp",       country:"HK",name:"South China Morning Post",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com business finance")},
   {id:"mingtiandi", country:"HK",name:"Mingtiandi",             lang:"en",flag:"🇭🇰",url:GN("site:mingtiandi.com")},
   {id:"hket",       country:"HK",name:"香港經濟日報 HKET",        lang:"zh",flag:"🇭🇰",url:GN("site:hket.com 財經","zh-HK","HK","HK:zh-Hant")},
   {id:"mingpao",    country:"HK",name:"明報財經 Ming Pao",       lang:"zh",flag:"🇭🇰",url:GN("site:mingpao.com 財經","zh-HK","HK","HK:zh-Hant")},
+  {id:"reuters_hk", country:"HK",name:"Reuters Hong Kong",       lang:"en",flag:"🇭🇰",url:GN("site:reuters.com \"Hong Kong\" economy business finance")},
+  {id:"bloom_hk",   country:"HK",name:"Bloomberg Hong Kong",     lang:"en",flag:"🇭🇰",url:GN("site:bloomberg.com \"Hong Kong\" markets economy")},
   // ── Korea ──────────────────────────────────────────────────────────────────
   {id:"ked",        country:"KR",name:"KED Global",             lang:"en",flag:"🇰🇷",url:GN("site:kedglobal.com")},
-  {id:"ktimes",      country:"KR",name:"Korea Times Business",    lang:"en",flag:"🇰🇷",url:"https://www.koreatimes.co.kr/www2/common/rss.asp?key=132"},
+  {id:"ktimes",      country:"KR",name:"Korea Times Business",    lang:"en",flag:"🇰🇷",url:"https://feed.koreatimes.co.kr/k/business.xml"},
   {id:"kr_herald",  country:"KR",name:"Korea Herald Business",  lang:"en",flag:"🇰🇷",url:"https://www.koreaherald.com/rss/kh_Business"},
-  {id:"yonhap",     country:"KR",name:"Yonhap Economy",         lang:"en",flag:"🇰🇷",url:"https://en.yna.co.kr/RSS/news.xml"},
+  {id:"yonhap",     country:"KR",name:"Yonhap Economy",         lang:"en",flag:"🇰🇷",url:"https://en.yna.co.kr/RSS/economy.xml"},
+  {id:"yonhap2",     country:"KR",name:"Yonhap Finance",          lang:"en",flag:"🇰🇷",url:"https://en.yna.co.kr/RSS/industry.xml"},
   {id:"hankyung",   country:"KR",name:"한국경제 Hankyung",        lang:"ko",flag:"🇰🇷",url:"https://www.hankyung.com/feed/economy"},
   {id:"maeil",      country:"KR",name:"매일경제 Maeil",           lang:"ko",flag:"🇰🇷",url:"https://www.mk.co.kr/rss/30100041/"},
   {id:"chosunbiz",  country:"KR",name:"조선비즈 Chosunbiz",      lang:"ko",flag:"🇰🇷",url:"https://biz.chosun.com/arc/outboundfeeds/rss/"},
+  {id:"reuters_kr", country:"KR",name:"Reuters Korea",           lang:"en",flag:"🇰🇷",url:GN("site:reuters.com \"South Korea\" economy business")},
+  {id:"bloom_kr",   country:"KR",name:"Bloomberg Korea",         lang:"en",flag:"🇰🇷",url:GN("site:bloomberg.com \"South Korea\" markets economy")},
   // ── Taiwan ─────────────────────────────────────────────────────────────────
   {id:"taipei_t",   country:"TW",name:"Taipei Times Business",  lang:"en",flag:"🇹🇼",url:GN("site:taipeitimes.com business")},
   {id:"focus_tw",   country:"TW",name:"Focus Taiwan CNA",       lang:"en",flag:"🇹🇼",url:GN("site:focustaiwan.tw business")},
   {id:"udn_money",  country:"TW",name:"經濟日報 UDN Money",       lang:"zh",flag:"🇹🇼",url:GN("site:money.udn.com","zh-TW","TW","TW:zh-Hant")},
   {id:"ctee",       country:"TW",name:"工商時報 CTEE",            lang:"zh",flag:"🇹🇼",url:GN("site:ctee.com.tw","zh-TW","TW","TW:zh-Hant")},
   {id:"digitimes",  country:"TW",name:"DigiTimes",              lang:"en",flag:"🇹🇼",url:"https://www.digitimes.com/rss/rss.asp"},
+  {id:"reuters_tw", country:"TW",name:"Reuters Taiwan",          lang:"en",flag:"🇹🇼",url:GN("site:reuters.com Taiwan economy business")},
+  {id:"bloom_tw",   country:"TW",name:"Bloomberg Taiwan",        lang:"en",flag:"🇹🇼",url:GN("site:bloomberg.com Taiwan markets economy")},
   // ── India ──────────────────────────────────────────────────────────────────
   // Economic Times: direct RSS (free publication)
   {id:"econ_times", country:"IN",name:"Economic Times",         lang:"en",flag:"🇮🇳",url:"https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"},
   // Business Standard: direct RSS
-  {id:"biz_std",    country:"IN",name:"Business Standard",      lang:"en",flag:"🇮🇳",url:"https://www.business-standard.com/rss/markets-106.rss"},
+  {id:"biz_std",    country:"IN",name:"Business Standard",      lang:"en",flag:"🇮🇳",url:"https://www.business-standard.com/rss/latest.rss"},
   // Mint: direct RSS
   {id:"mint",       country:"IN",name:"Mint / LiveMint",        lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/markets"},
   {id:"ndtv_p",     country:"IN",name:"NDTV Profit",            lang:"en",flag:"🇮🇳",url:GN("site:ndtvprofit.com")},
   // Moneycontrol: direct RSS
-  {id:"moneyctrl",  country:"IN",name:"Moneycontrol",           lang:"en",flag:"🇮🇳",url:"https://www.moneycontrol.com/rss/marketreports.xml"},
+  {id:"moneyctrl",  country:"IN",name:"Moneycontrol Markets",   lang:"en",flag:"🇮🇳",url:"https://www.moneycontrol.com/rss/latestnews.xml"},
+  {id:"cnbctv18",   country:"IN",name:"CNBC-TV18 Markets",      lang:"en",flag:"🇮🇳",url:"https://www.cnbctv18.com/commonfeeds/v1/eng/rss/market.xml"},
+  {id:"forbes_in",  country:"IN",name:"Forbes India",           lang:"en",flag:"🇮🇳",url:GN("site:forbesindia.com business economy markets")},
+  {id:"reuters_in", country:"IN",name:"Reuters India",           lang:"en",flag:"🇮🇳",url:GN("site:reuters.com India economy business markets")},
+  {id:"bloom_in",   country:"IN",name:"Bloomberg India",         lang:"en",flag:"🇮🇳",url:GN("site:bloomberg.com India markets economy")},
   // ── Australia ──────────────────────────────────────────────────────────────
   // AFR: heavily paywalled — broader query without site: filter
   {id:"afr",        country:"AU",name:"Australian Fin. Review", lang:"en",flag:"🇦🇺",url:GN("Australian Financial Review markets economy business")},
   // The Australian: paywalled — broader query
+  {id:"guardian_au",country:"AU",name:"Guardian Australia Business",lang:"en",flag:"🇦🇺",url:"https://www.theguardian.com/australia-news/rss"},
   {id:"the_aus",    country:"AU",name:"The Australian Business",lang:"en",flag:"🇦🇺",url:GN("The Australian newspaper business economy finance")},
   // ABC: free public broadcaster — GN fine
   {id:"abc_au",     country:"AU",name:"ABC Business",           lang:"en",flag:"🇦🇺",url:"https://www.abc.net.au/news/feed/51120/rss.xml"},
   // SMH: soft paywall — direct RSS
   {id:"smh",        country:"AU",name:"Sydney Morning Herald",  lang:"en",flag:"🇦🇺",url:"https://www.smh.com.au/rss/feed.xml"},
+  {id:"reuters_au", country:"AU",name:"Reuters Australia",       lang:"en",flag:"🇦🇺",url:GN("site:reuters.com Australia economy business")},
+  {id:"bloom_au",   country:"AU",name:"Bloomberg Australia",     lang:"en",flag:"🇦🇺",url:GN("site:bloomberg.com Australia markets economy")},
   // ── China ──────────────────────────────────────────────────────────────────
   {id:"caixin",     country:"CN",name:"Caixin Global",          lang:"en",flag:"🇨🇳",url:GN("site:caixinglobal.com economy finance")},
-  {id:"xinhua",      country:"CN",name:"Xinhua Finance",           lang:"en",flag:"🇨🇳",url:"https://english.news.cn/home/index.htm"},
+  {id:"xinhua",      country:"CN",name:"Xinhua Finance",           lang:"en",flag:"🇨🇳",url:GN("site:english.news.cn economy business finance")},
+  {id:"cgtn",        country:"CN",name:"CGTN Business",             lang:"en",flag:"🇨🇳",url:"https://www.cgtn.com/subscribe/rss/section/business.xml"},
   {id:"chinadaily",  country:"CN",name:"China Daily Business",     lang:"en",flag:"🇨🇳",url:"https://rss.chinadaily.com.cn/rss/cndy_businessfeed.xml"},
   {id:"yicai",       country:"CN",name:"Yicai Global",            lang:"en",flag:"🇨🇳",url:"https://www.yicaiglobal.com/feed"},
   {id:"globaltimes", country:"CN",name:"Global Times Economy",     lang:"en",flag:"🇨🇳",url:"https://www.globaltimes.cn/rss/economy.xml"},
   {id:"peoples_d",   country:"CN",name:"People's Daily",          lang:"en",flag:"🇨🇳",url:"https://en.people.cn/rss/economy.xml"},
+  {id:"reuters_cn", country:"CN",name:"Reuters China",            lang:"en",flag:"🇨🇳",url:GN("site:reuters.com China economy business finance")},
+  {id:"bloom_cn",   country:"CN",name:"Bloomberg China",          lang:"en",flag:"🇨🇳",url:GN("site:bloomberg.com China markets economy")},
 ];
 
 const COUNTRIES = [
@@ -1018,15 +1040,14 @@ function WatchlistTab({allArticles, setAllArticles}) {
 // Source ranking by influence/circulation per country
 const SOURCE_RANK = {
   US: ["reuters","bloomberg","bloomberg2","wsj","ft","marketwatch"],
-  CA: ["globe_mail","fin_post","bnn"],
-  SG: ["st_sg","bt_sg","cna_sg","edge_sg"],
-  HK: ["scmp","mingtiandi","hket","mingpao"],
-  KR: ["kr_herald","yonhap","ked","hankyung","maeil","chosunbiz"],
-  TW: ["focus_tw","taipei_t","digitimes","udn_money","ctee"],
-  IN: ["econ_times","mint","biz_std","moneyctrl","ndtv_p"],
-  AU: ["afr","smh","abc_au","the_aus"],
-  CN: ["xinhua","chinadaily","caixin","globaltimes","yicai","peoples_d"],
-  KR: ["kr_herald","yonhap","ktimes","ked","hankyung","maeil","chosunbiz"],
+  CA: ["reuters_ca","bloom_ca","globe_mail","fin_post","bnn"],
+  SG: ["reuters_sg","bloom_sg","bt_sg","edge_sg","cna_sg","today_sg","mothership"],
+  HK: ["reuters_hk","bloom_hk","scmp","mingtiandi","hket","mingpao"],
+  KR: ["reuters_kr","bloom_kr","kr_herald","yonhap","yonhap2","ktimes","ked","hankyung","maeil","chosunbiz"],
+  TW: ["reuters_tw","bloom_tw","focus_tw","taipei_t","digitimes","udn_money","ctee"],
+  IN: ["reuters_in","bloom_in","econ_times","mint","biz_std","cnbctv18","moneyctrl","ndtv_p","forbes_in"],
+  AU: ["reuters_au","bloom_au","afr","smh","abc_au","guardian_au","the_aus"],
+  CN: ["reuters_cn","bloom_cn","xinhua","cgtn","chinadaily","caixin","globaltimes","yicai","peoples_d"],
 };
 
 function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
