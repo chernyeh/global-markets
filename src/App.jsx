@@ -271,7 +271,8 @@ ${withTranslations.map((a,i)=>`${i}. ${a._preTranslated}`).join("\n")}`;
 // UNLIMITED SUMMARY — splits into chunks, summarises each, then synthesises
 // ═══════════════════════════════════════════════════════════════════════════════
 async function generateBriefUnlimited(articles, label) {
-  if (!articles.length) return "";
+  if (!articles.length) return {text:"", articles:[]};
+  const sourceArticles = articles; // keep reference for link matching
 
   // Split into chunks of 25 and summarise ALL in parallel — no sequential steps
   const CHUNK = 25;
@@ -304,12 +305,14 @@ Use this exact format:
 Rules:
 - Each bullet must be 1-2 sentences with real detail and investor perspective
 - Name EVERY company mentioned in the headlines
+- End each bullet with [REF:N] citing the article number(s) that support it (e.g. [REF:2] or [REF:0,4])
 - Group related stories under thematic section headers
 - Do not use vague language — be specific about what happened and why it matters
 
-Headlines (${articles.length}):
-${articles.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
-    return await callClaude(prompt, 1800);
+Articles (cite using [REF:N] at end of each bullet, N = article number, can cite multiple e.g. [REF:0,3]):
+${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n")}`;
+    const text = await callClaude(prompt, 2000);
+    return {text, articles: sourceArticles};
   }
 
   // Multiple chunks — ALL summarised in parallel, then one fast synthesis
@@ -340,7 +343,8 @@ Rules: name every company, be specific with figures/percentages, explain investo
 
 Summaries to synthesise:
 ${summaries.map((s,i)=>`[${i+1}]: ${s}`).join("\n")}`;
-  return await callClaude(synthPrompt, 1800);
+  const text = await callClaude(synthPrompt, 1800);
+  return {text, articles: sourceArticles};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -442,7 +446,8 @@ ${direct.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")||"
 RELATED/INDIRECT (${related.length}):
 ${related.map(a=>`• ${a.translatedTitle||a.title} [${a.source}] — ${a.watchMatches?.find(m=>m.keyword===keyword)?.reason||""}`).join("\n")||"(none)"}`;
 
-  return await callClaudeSonnet(prompt, 3000);
+  const text = await callClaudeSonnet(prompt, 3000);
+  return text;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -549,8 +554,33 @@ function ArticleCard({art, highlightKeyword=null}) {
   );
 }
 
-// Renders brief text with headers (##) and bullets (-) nicely formatted
-function BriefRenderer({text}) {
+// Find articles relevant to a bullet line by keyword overlap
+function findLinksForBullet(bulletText, articles) {
+  if (!articles?.length || !bulletText) return [];
+  // Extract [REF:N,M,...] markers Claude inserts
+  const refMatch = bulletText.match(/\[REF:([\d,\s]+)\]/);
+  if (refMatch) {
+    const indices = refMatch[1].split(",").map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
+    return indices.map(i=>articles[i]).filter(Boolean);
+  }
+  // Fallback: keyword matching
+  const words = bulletText.toLowerCase()
+    .replace(/[^a-z0-9\s]/g," ").split(/\s+/)
+    .filter(w => w.length > 4);
+  return articles
+    .map(a => {
+      const haystack = ((a.translatedTitle||a.title)+" "+(a.source||"")).toLowerCase();
+      const hits = words.filter(w => haystack.includes(w)).length;
+      return {art: a, score: hits};
+    })
+    .filter(x => x.score >= 2)
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 3)
+    .map(x => x.art);
+}
+
+// Renders brief text with headers (##) and bullets (-) and LINK badges
+function BriefRenderer({text, articles=[]}) {
   if (!text) return null;
   const lines = text.split("\n");
   return (
@@ -558,18 +588,18 @@ function BriefRenderer({text}) {
       {lines.map((line, i) => {
         const trimmed = line.trim();
         if (!trimmed) return <div key={i} style={{height:6}}/>;
-        // ## Header
+        // ## Section header
         if (trimmed.startsWith("## ")) {
           return (
-            <div key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,
-              fontWeight:700,color:"#c0392b",margin:"18px 0 8px",
-              textTransform:"uppercase",letterSpacing:"0.06em",
+            <div key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,
+              fontWeight:700,color:"#c0392b",margin:"20px 0 8px",
+              textTransform:"uppercase",letterSpacing:"0.08em",
               borderBottom:"2px solid #e8e2d6",paddingBottom:5}}>
               {trimmed.replace(/^## /,"")}
             </div>
           );
         }
-        // # Header
+        // # Title header
         if (trimmed.startsWith("# ")) {
           return (
             <div key={i} style={{fontFamily:"'Playfair Display',serif",fontSize:19,
@@ -578,25 +608,38 @@ function BriefRenderer({text}) {
             </div>
           );
         }
-        // Bullet point - or *
+        // Bullet point
         if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
           const txt = trimmed.replace(/^[-*] /,"");
-          // Bold company name if starts with **text**
-          const boldMatch = txt.match(/^\*\*(.+?)\*\*:?\s*(.*)/);
+          // Strip [REF:...] from display, use for links
+          const cleanTxt = txt.replace(/\[REF:[\d,\s]+\]/g, "").trim();
+          const boldMatch = cleanTxt.match(/^\*\*(.+?)\*\*:?\s*(.*)/s);
+          const links = findLinksForBullet(txt, articles);
           return (
-            <div key={i} style={{display:"flex",gap:8,margin:"5px 0",
+            <div key={i} style={{display:"flex",gap:8,margin:"8px 0",
               paddingLeft:8,alignItems:"flex-start"}}>
-              <span style={{color:"#c0392b",fontWeight:700,marginTop:1,flexShrink:0}}>•</span>
+              <span style={{color:"#c0392b",fontWeight:700,marginTop:2,flexShrink:0,fontSize:16}}>•</span>
               <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,
-                color:"#222",lineHeight:1.7}}>
+                color:"#1a1a1a",lineHeight:1.7}}>
                 {boldMatch
-                  ? <><strong>{boldMatch[1]}</strong>{boldMatch[2]?" — "+boldMatch[2]:""}</>
-                  : txt}
+                  ? <><strong style={{color:"#1a1a1a"}}>{boldMatch[1]}</strong>{boldMatch[2] ? ": "+boldMatch[2] : ""}</>
+                  : cleanTxt}
+                {links.map((a,li) => (
+                  <a key={li} href={a.link} target="_blank" rel="noopener noreferrer"
+                    style={{display:"inline-block",marginLeft:7,padding:"2px 8px",
+                      background:"#8B4513",color:"#fff",borderRadius:3,
+                      fontSize:10,fontFamily:"'DM Mono',monospace",fontWeight:700,
+                      textDecoration:"none",letterSpacing:"0.05em",verticalAlign:"middle"}}
+                    onMouseOver={e=>e.currentTarget.style.background="#a0522d"}
+                    onMouseOut={e=>e.currentTarget.style.background="#8B4513"}>
+                    LINK
+                  </a>
+                ))}
               </span>
             </div>
           );
         }
-        // Plain paragraph text — executive summary style
+        // Plain paragraph — executive summary box
         return (
           <p key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,
             color:"#1a1a1a",lineHeight:1.8,margin:"8px 0",
@@ -610,7 +653,9 @@ function BriefRenderer({text}) {
 }
 
 function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, setLoading}) {
-  const brief=briefs[briefKey];
+  const briefData=briefs[briefKey]; // {text, articles} or legacy string
+  const brief = briefData?.text ?? (typeof briefData==="string" ? briefData : null);
+  const briefArts = briefData?.articles ?? articles;
   const isLoading=loading[briefKey];
   const run=async()=>{
     setLoading(p=>({...p,[briefKey]:true}));
@@ -642,7 +687,7 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
           {isLoading?<><Dots/> generating…</>:brief?"↺ refresh":"✦ generate brief"}
         </button>
       </div>
-      {brief && <BriefRenderer text={brief}/>}
+      {brief && <BriefRenderer text={brief} articles={briefArts}/>}
     </div>
   );
 }
@@ -857,7 +902,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
               </button>
             </div>
             {kwBriefs[activeKw]&&(
-              <BriefRenderer text={kwBriefs[activeKw]}/>
+              <BriefRenderer text={kwBriefs[activeKw]} articles={kwArticles}/>
             )}
           </div>
 
@@ -1281,7 +1326,7 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                      {briefs[briefKey]&&<div style={{marginBottom:10,borderBottom:"1px solid #e8e2d6",paddingBottom:10}}><BriefRenderer text={briefs[briefKey]}/></div>}
+                      {briefs[briefKey]&&<div style={{marginBottom:10,borderBottom:"1px solid #e8e2d6",paddingBottom:10}}><BriefRenderer text={typeof briefs[briefKey]==="string"?briefs[briefKey]:briefs[briefKey]?.text} articles={typeof briefs[briefKey]==="string"?arts:briefs[briefKey]?.articles||arts}/></div>}
                       <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
                         {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{
                           const n=arts.filter(a=>a.country===c.code).length;
