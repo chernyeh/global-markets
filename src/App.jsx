@@ -27,42 +27,70 @@ const GN = (q,hl="en-US",gl="US",ceid="US:en") =>
   `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=${hl}&gl=${gl}&ceid=${ceid}`;
 
 const SOURCES = [
+  // ── United States ──────────────────────────────────────────────────────────
+  // Reuters: not paywalled, Google News works well
   {id:"reuters",    country:"US",name:"Reuters Business",       lang:"en",flag:"🇺🇸",url:GN("site:reuters.com business finance")},
+  // MarketWatch: not paywalled, GN fine
   {id:"marketwatch",country:"US",name:"MarketWatch",            lang:"en",flag:"🇺🇸",url:GN("site:marketwatch.com markets stocks")},
-  {id:"wsj",        country:"US",name:"Wall Street Journal",    lang:"en",flag:"🇺🇸",url:GN("site:wsj.com business finance markets")},
-  {id:"bloomberg",  country:"US",name:"Bloomberg",              lang:"en",flag:"🇺🇸",url:GN("site:bloomberg.com finance markets economy")},
-  {id:"ft",         country:"US",name:"Financial Times",        lang:"en",flag:"🇺🇸",url:GN("site:ft.com business economy markets")},
-  {id:"globe_mail", country:"CA",name:"Globe and Mail",         lang:"en",flag:"🇨🇦",url:GN("site:theglobeandmail.com business")},
+  // WSJ: paywalled — direct Dow Jones RSS feed
+  {id:"wsj",        country:"US",name:"Wall Street Journal",    lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/mw_marketpulse"},
+  // Bloomberg: direct RSS — headlines are public even if articles paywalled
+  {id:"bloomberg",  country:"US",name:"Bloomberg Markets",      lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/markets/news.rss"},
+  {id:"bloomberg2", country:"US",name:"Bloomberg Business",     lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/business/news.rss"},
+  // FT: direct RSS (already switched)
+  {id:"ft",         country:"US",name:"Financial Times",        lang:"en",flag:"🇺🇸",url:"https://www.ft.com/rss/home/UK"},
+  // ── Canada ─────────────────────────────────────────────────────────────────
+  // Globe & Mail: paywalled — broader GN query gets more headlines
+  {id:"globe_mail", country:"CA",name:"Globe and Mail",         lang:"en",flag:"🇨🇦",url:GN("Globe Mail Canada business economy markets")},
   {id:"fin_post",   country:"CA",name:"Financial Post",         lang:"en",flag:"🇨🇦",url:GN("site:financialpost.com")},
+  // BNN: not paywalled
   {id:"bnn",        country:"CA",name:"BNN Bloomberg Canada",   lang:"en",flag:"🇨🇦",url:GN("site:bnnbloomberg.ca")},
-  {id:"bt_sg",      country:"SG",name:"Business Times SG",      lang:"en",flag:"🇸🇬",url:GN("site:businesstimes.com.sg")},
-  {id:"st_sg",      country:"SG",name:"Straits Times Business", lang:"en",flag:"🇸🇬",url:GN("site:straitstimes.com business")},
+  // ── Singapore ──────────────────────────────────────────────────────────────
+  // Business Times SG: paywalled — broader query
+  {id:"bt_sg",      country:"SG",name:"Business Times SG",      lang:"en",flag:"🇸🇬",url:GN("Business Times Singapore markets economy")},
+  // Straits Times: paywalled — broader query
+  {id:"st_sg",      country:"SG",name:"Straits Times Business", lang:"en",flag:"🇸🇬",url:GN("Straits Times Singapore business economy finance")},
+  // CNA: free — GN fine
   {id:"cna_sg",     country:"SG",name:"CNA Business",           lang:"en",flag:"🇸🇬",url:GN("site:channelnewsasia.com business")},
   {id:"edge_sg",    country:"SG",name:"The Edge Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:theedgesingapore.com")},
+  // ── Hong Kong ──────────────────────────────────────────────────────────────
   {id:"scmp",       country:"HK",name:"South China Morning Post",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com business finance")},
   {id:"mingtiandi", country:"HK",name:"Mingtiandi",             lang:"en",flag:"🇭🇰",url:GN("site:mingtiandi.com")},
   {id:"hket",       country:"HK",name:"香港經濟日報 HKET",        lang:"zh",flag:"🇭🇰",url:GN("site:hket.com 財經","zh-HK","HK","HK:zh-Hant")},
   {id:"mingpao",    country:"HK",name:"明報財經 Ming Pao",       lang:"zh",flag:"🇭🇰",url:GN("site:mingpao.com 財經","zh-HK","HK","HK:zh-Hant")},
+  // ── Korea ──────────────────────────────────────────────────────────────────
   {id:"ked",        country:"KR",name:"KED Global",             lang:"en",flag:"🇰🇷",url:GN("site:kedglobal.com")},
   {id:"kr_herald",  country:"KR",name:"Korea Herald Business",  lang:"en",flag:"🇰🇷",url:GN("site:koreaherald.com business")},
   {id:"yonhap",     country:"KR",name:"Yonhap Economy",         lang:"en",flag:"🇰🇷",url:GN("site:en.yna.co.kr economy business")},
   {id:"hankyung",   country:"KR",name:"한국경제 Hankyung",        lang:"ko",flag:"🇰🇷",url:GN("site:hankyung.com 경제 주식","ko","KR","KR:ko")},
   {id:"maeil",      country:"KR",name:"매일경제 Maeil",           lang:"ko",flag:"🇰🇷",url:GN("site:mk.co.kr 경제 주식","ko","KR","KR:ko")},
   {id:"chosunbiz",  country:"KR",name:"조선비즈 Chosunbiz",      lang:"ko",flag:"🇰🇷",url:GN("site:biz.chosun.com 경제 기업","ko","KR","KR:ko")},
+  // ── Taiwan ─────────────────────────────────────────────────────────────────
   {id:"taipei_t",   country:"TW",name:"Taipei Times Business",  lang:"en",flag:"🇹🇼",url:GN("site:taipeitimes.com business")},
   {id:"focus_tw",   country:"TW",name:"Focus Taiwan CNA",       lang:"en",flag:"🇹🇼",url:GN("site:focustaiwan.tw business")},
   {id:"udn_money",  country:"TW",name:"經濟日報 UDN Money",       lang:"zh",flag:"🇹🇼",url:GN("site:money.udn.com","zh-TW","TW","TW:zh-Hant")},
   {id:"ctee",       country:"TW",name:"工商時報 CTEE",            lang:"zh",flag:"🇹🇼",url:GN("site:ctee.com.tw","zh-TW","TW","TW:zh-Hant")},
   {id:"digitimes",  country:"TW",name:"DigiTimes",              lang:"en",flag:"🇹🇼",url:GN("site:digitimes.com")},
-  {id:"econ_times", country:"IN",name:"Economic Times",         lang:"en",flag:"🇮🇳",url:GN("site:economictimes.indiatimes.com markets stocks")},
-  {id:"biz_std",    country:"IN",name:"Business Standard",      lang:"en",flag:"🇮🇳",url:GN("site:business-standard.com markets")},
-  {id:"mint",       country:"IN",name:"Mint / LiveMint",        lang:"en",flag:"🇮🇳",url:GN("site:livemint.com markets business")},
+  // ── India ──────────────────────────────────────────────────────────────────
+  // Economic Times: direct RSS (free publication)
+  {id:"econ_times", country:"IN",name:"Economic Times",         lang:"en",flag:"🇮🇳",url:"https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"},
+  // Business Standard: direct RSS
+  {id:"biz_std",    country:"IN",name:"Business Standard",      lang:"en",flag:"🇮🇳",url:"https://www.business-standard.com/rss/markets-106.rss"},
+  // Mint: direct RSS
+  {id:"mint",       country:"IN",name:"Mint / LiveMint",        lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/markets"},
   {id:"ndtv_p",     country:"IN",name:"NDTV Profit",            lang:"en",flag:"🇮🇳",url:GN("site:ndtvprofit.com")},
-  {id:"moneyctrl",  country:"IN",name:"Moneycontrol",           lang:"en",flag:"🇮🇳",url:GN("site:moneycontrol.com markets stocks")},
-  {id:"afr",        country:"AU",name:"Australian Fin. Review", lang:"en",flag:"🇦🇺",url:GN("site:afr.com business markets")},
-  {id:"the_aus",    country:"AU",name:"The Australian Business",lang:"en",flag:"🇦🇺",url:GN("site:theaustralian.com.au business")},
-  {id:"abc_au",     country:"AU",name:"ABC Business",           lang:"en",flag:"🇦🇺",url:GN("site:abc.net.au business economy")},
-  {id:"smh",        country:"AU",name:"Sydney Morning Herald",  lang:"en",flag:"🇦🇺",url:GN("site:smh.com.au business")},
+  // Moneycontrol: direct RSS
+  {id:"moneyctrl",  country:"IN",name:"Moneycontrol",           lang:"en",flag:"🇮🇳",url:"https://www.moneycontrol.com/rss/marketreports.xml"},
+  // ── Australia ──────────────────────────────────────────────────────────────
+  // AFR: heavily paywalled — broader query without site: filter
+  {id:"afr",        country:"AU",name:"Australian Fin. Review", lang:"en",flag:"🇦🇺",url:GN("Australian Financial Review markets economy business")},
+  // The Australian: paywalled — broader query
+  {id:"the_aus",    country:"AU",name:"The Australian Business",lang:"en",flag:"🇦🇺",url:GN("The Australian newspaper business economy finance")},
+  // ABC: free public broadcaster — GN fine
+  {id:"abc_au",     country:"AU",name:"ABC Business",           lang:"en",flag:"🇦🇺",url:"https://www.abc.net.au/news/feed/51120/rss.xml"},
+  // SMH: soft paywall — direct RSS
+  {id:"smh",        country:"AU",name:"Sydney Morning Herald",  lang:"en",flag:"🇦🇺",url:"https://www.smh.com.au/rss/business.xml"},
+  // ── China ──────────────────────────────────────────────────────────────────
   {id:"caixin",     country:"CN",name:"Caixin Global",          lang:"en",flag:"🇨🇳",url:GN("site:caixinglobal.com")},
   {id:"yicai",      country:"CN",name:"Yicai Global",           lang:"en",flag:"🇨🇳",url:GN("site:yicaiglobal.com")},
   {id:"peoples_d",  country:"CN",name:"People's Daily",         lang:"en",flag:"🇨🇳",url:GN("site:en.people.cn business economy")},
@@ -981,6 +1009,87 @@ function WatchlistTab({allArticles, setAllArticles}) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// SOURCES TAB
+// ═══════════════════════════════════════════════════════════════════════════════
+function SourcesTab({canonical, lastFetch}) {
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[1].code); // default US
+
+  const countrySources = SOURCES.filter(s => s.country === selectedCountry);
+  const countryObj = COUNTRIES.find(c => c.code === selectedCountry);
+  const totalArts = canonical.filter(a => a.country === selectedCountry).length;
+
+  return (
+    <div style={{animation:"fadeIn 0.3s ease"}}>
+      {/* Country dropdown */}
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24,
+        background:"#fff",border:"1px solid #e0e0e0",borderRadius:8,padding:"14px 18px"}}>
+        <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888",
+          letterSpacing:"0.08em",whiteSpace:"nowrap"}}>SELECT COUNTRY</span>
+        <div style={{position:"relative",flex:"0 0 auto"}}>
+          <select
+            value={selectedCountry}
+            onChange={e=>setSelectedCountry(e.target.value)}
+            style={{appearance:"none",background:"#fff",border:"1px solid #c0392b",
+              borderRadius:6,padding:"8px 36px 8px 14px",
+              fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",
+              cursor:"pointer",outline:"none",minWidth:200}}>
+            {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>(
+              <option key={c.code} value={c.code}>
+                {c.flag} {c.label}
+              </option>
+            ))}
+          </select>
+          <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",
+            pointerEvents:"none",color:"#c0392b",fontSize:10}}>▼</span>
+        </div>
+        <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888"}}>
+          <span style={{color:"#c0392b",fontWeight:600}}>{countrySources.length}</span> sources ·{" "}
+          <span style={{color:"#c0392b",fontWeight:600}}>{totalArts}</span> articles
+        </div>
+      </div>
+
+      {/* Source cards */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(360px,1fr))",gap:16}}>
+        {countrySources.map(src=>{
+          const arts = canonical.filter(a=>a.sourceId===src.id);
+          return (
+            <div key={src.id} style={{background:"#fff",border:"1px solid #e0e0e0",
+              borderRadius:8,padding:"14px 16px",borderTop:"3px solid #c0392b"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                marginBottom:10,paddingBottom:8,borderBottom:"1px solid #f0ece4"}}>
+                <span style={{fontFamily:"'DM Mono',monospace",fontSize:11,
+                  color:"#c0392b",fontWeight:600,letterSpacing:"0.04em"}}>
+                  {src.flag} {src.name}
+                </span>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  {lastFetch[src.id]&&(
+                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:8,color:"#aaa"}}>
+                      {timeAgo(lastFetch[src.id])}
+                    </span>
+                  )}
+                  <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,
+                    color:"#888",background:"#f5f5f5",padding:"2px 7px",borderRadius:10}}>
+                    {arts.length}
+                  </span>
+                </div>
+              </div>
+              {arts.length===0?(
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,
+                  color:"#bbb",padding:"12px 0",textAlign:"center"}}>
+                  no recent articles
+                </div>
+              ):(
+                arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN APP
 // ═══════════════════════════════════════════════════════════════════════════════
 const STALE_MS = 45*60*1000;
@@ -1389,65 +1498,7 @@ export default function App() {
 
         {/* SOURCES */}
         {mainTab==="sources"&&(
-          <div style={{animation:"fadeIn 0.3s ease"}}>
-            {COUNTRIES.filter(c=>c.code!=="ALL").map(country=>{
-              const countrySources=SOURCES.filter(s=>s.country===country.code);
-              const countryArtsAll=canonical.filter(a=>a.country===country.code);
-              if(!countryArtsAll.length&&!countrySources.length) return null;
-              return (
-                <div key={country.code} style={{marginBottom:32}}>
-                  {/* Country heading */}
-                  <div style={{display:"flex",alignItems:"center",gap:10,
-                    borderBottom:"2px solid #1a1a1a",paddingBottom:8,marginBottom:16}}>
-                    <span style={{fontSize:20}}>{country.flag}</span>
-                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,
-                      fontWeight:700,color:"#1a1a1a",letterSpacing:"-0.02em"}}>
-                      {country.label}
-                    </span>
-                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,
-                      color:"#888",marginLeft:4}}>
-                      {countrySources.length} sources · {countryArtsAll.length} articles
-                    </span>
-                  </div>
-                  {/* Sources grid */}
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:12}}>
-                    {countrySources.map(src=>{
-                      const arts=canonical.filter(a=>a.sourceId===src.id);
-                      return (
-                        <div key={src.id} style={{background:"#fff",border:"1px solid #e0e0e0",
-                          borderRadius:8,padding:"14px 16px",borderTop:`3px solid #c0392b`}}>
-                          {/* Source header */}
-                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
-                            marginBottom:10,paddingBottom:8,borderBottom:"1px solid #f0ece4"}}>
-                            <div style={{display:"flex",alignItems:"center",gap:6}}>
-                              <span style={{fontSize:13}}>{src.flag}</span>
-                              <span style={{fontFamily:"'DM Mono',monospace",fontSize:11,
-                                color:"#c0392b",fontWeight:600,letterSpacing:"0.04em"}}>
-                                {src.name}
-                              </span>
-                            </div>
-                            <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,
-                              color:"#888",background:"#f5f5f5",padding:"2px 7px",borderRadius:10}}>
-                              {arts.length} articles
-                            </span>
-                          </div>
-                          {/* Articles */}
-                          {arts.length===0?(
-                            <div style={{fontFamily:"'DM Mono',monospace",fontSize:10,
-                              color:"#bbb",padding:"8px 0",textAlign:"center"}}>
-                              no recent articles
-                            </div>
-                          ):(
-                            arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <SourcesTab canonical={canonical} lastFetch={lastFetch}/>
         )}
 
       <footer style={{borderTop:"1px solid #ddd",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
