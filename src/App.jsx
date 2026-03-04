@@ -279,10 +279,23 @@ async function generateBriefUnlimited(articles, label) {
   for (let i = 0; i < articles.length; i += CHUNK) chunks.push(articles.slice(i, i + CHUNK));
 
   if (chunks.length === 1) {
-    // Single chunk — one fast call, 500 token cap
-    const prompt = `Brief for ${label}. 2 paragraphs max. Name every company. Cover macro + key moves + risks.
+    const prompt = `You are a financial analyst. Write a structured investment brief for ${label} using this exact format:
+
+## Market Overview
+2-3 sentences on macro backdrop and market conditions.
+
+## Key Developments
+- **Company/Topic**: what happened and why it matters
+- **Company/Topic**: what happened and why it matters
+(one bullet per significant story, name every company mentioned)
+
+## Risks & Opportunities
+- Key risk or opportunity
+- Key risk or opportunity
+
+Headlines:
 ${articles.map(a=>`• ${a.translatedTitle||a.title}`).join("\n")}`;
-    return await callClaude(prompt, 500);
+    return await callClaude(prompt, 700);
   }
 
   // Multiple chunks — ALL summarised in parallel, then one fast synthesis
@@ -292,9 +305,20 @@ ${chunk.map(a=>`• ${a.translatedTitle||a.title}`).join("\n")}`;
     return callClaude(prompt, 300);
   }));
 
-  const synthPrompt = `${label} brief — 2 paragraphs, name every company, cover macro + risks:
-${summaries.join(" ")}`;
-  return await callClaude(synthPrompt, 500);
+  const synthPrompt = `You are a financial analyst. Synthesise these news summaries into a structured brief for ${label}:
+
+## Market Overview
+2-3 sentences on macro backdrop.
+
+## Key Developments
+- **Company/Topic**: what happened and why it matters
+(one bullet per significant story, name every company)
+
+## Risks & Opportunities
+- Key risk or opportunity
+
+Summaries: ${summaries.join(" ")}`;
+  return await callClaude(synthPrompt, 700);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -503,6 +527,64 @@ function ArticleCard({art, highlightKeyword=null}) {
   );
 }
 
+// Renders brief text with headers (##) and bullets (-) nicely formatted
+function BriefRenderer({text}) {
+  if (!text) return null;
+  const lines = text.split("\n");
+  return (
+    <div style={{borderTop:"1px solid #e0e0e0",paddingTop:14,marginTop:4}}>
+      {lines.map((line, i) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={i} style={{height:6}}/>;
+        // ## Header
+        if (trimmed.startsWith("## ")) {
+          return (
+            <div key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,
+              fontWeight:700,color:"#1a1a1a",margin:"14px 0 6px",
+              borderBottom:"1px solid #e8e2d6",paddingBottom:4}}>
+              {trimmed.replace(/^## /,"")}
+            </div>
+          );
+        }
+        // # Header
+        if (trimmed.startsWith("# ")) {
+          return (
+            <div key={i} style={{fontFamily:"'Playfair Display',serif",fontSize:16,
+              fontWeight:700,color:"#1a1a1a",margin:"16px 0 8px"}}>
+              {trimmed.replace(/^# /,"")}
+            </div>
+          );
+        }
+        // Bullet point - or *
+        if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+          const txt = trimmed.replace(/^[-*] /,"");
+          // Bold company name if starts with **text**
+          const boldMatch = txt.match(/^\*\*(.+?)\*\*:?\s*(.*)/);
+          return (
+            <div key={i} style={{display:"flex",gap:8,margin:"5px 0",
+              paddingLeft:8,alignItems:"flex-start"}}>
+              <span style={{color:"#c0392b",fontWeight:700,marginTop:1,flexShrink:0}}>•</span>
+              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,
+                color:"#1a1a1a",lineHeight:1.6}}>
+                {boldMatch
+                  ? <><strong>{boldMatch[1]}</strong>{boldMatch[2]?" — "+boldMatch[2]:""}</>
+                  : txt}
+              </span>
+            </div>
+          );
+        }
+        // Plain paragraph text
+        return (
+          <p key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,
+            color:"#1a1a1a",lineHeight:1.7,margin:"6px 0"}}>
+            {trimmed}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, setLoading}) {
   const brief=briefs[briefKey];
   const isLoading=loading[briefKey];
@@ -515,14 +597,14 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
   return (
     <div style={{background:"#fff",borderLeft:"3px solid #c0392b",border:"1px solid #e0e0e0",borderRadius:10,
       padding:"18px 22px",marginBottom:20,animation:"fadeIn 0.4s ease"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:brief?12:0}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
         <div style={{display:"flex",alignItems:"center",gap:9}}>
           <span style={{fontSize:16}}>{icon}</span>
           <div>
             <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.12em"}}>
               AI INVESTMENT BRIEF · {articles.length} articles analysed
             </div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#1a1a1a",fontWeight:700}}>
               {label}
             </div>
           </div>
@@ -536,13 +618,7 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
           {isLoading?<><Dots/> generating…</>:brief?"↺ refresh":"✦ generate brief"}
         </button>
       </div>
-      {brief&&(
-        <p style={{fontSize:13,color:"#555",lineHeight:1.9,fontStyle:"italic",
-          margin:0,borderTop:"1px solid #e8e2d6",paddingTop:12,
-          fontFamily:"'DM Sans',sans-serif",whiteSpace:"pre-wrap"}}>
-          {brief}
-        </p>
-      )}
+      {brief && <BriefRenderer text={brief}/>}
     </div>
   );
 }
@@ -757,11 +833,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
               </button>
             </div>
             {kwBriefs[activeKw]&&(
-              <p style={{fontSize:13,color:"#555",lineHeight:1.9,fontStyle:"italic",
-                margin:0,borderTop:"1px solid #e8e2d6",paddingTop:12,
-                fontFamily:"'DM Sans',sans-serif",whiteSpace:"pre-wrap"}}>
-                {kwBriefs[activeKw]}
-              </p>
+              <BriefRenderer text={kwBriefs[activeKw]}/>
             )}
           </div>
 
@@ -1179,7 +1251,7 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                      {briefs[briefKey]&&<p style={{fontSize:11,color:"#666",lineHeight:1.8,fontStyle:"italic",margin:"0 0 10px",borderBottom:"1px solid #e8e2d6",paddingBottom:10,fontFamily:"'DM Sans',sans-serif",whiteSpace:"pre-wrap"}}>{briefs[briefKey]}</p>}
+                      {briefs[briefKey]&&<div style={{marginBottom:10,borderBottom:"1px solid #e8e2d6",paddingBottom:10}}><BriefRenderer text={briefs[briefKey]}/></div>}
                       <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
                         {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{
                           const n=arts.filter(a=>a.country===c.code).length;
