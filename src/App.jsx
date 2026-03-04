@@ -279,46 +279,68 @@ async function generateBriefUnlimited(articles, label) {
   for (let i = 0; i < articles.length; i += CHUNK) chunks.push(articles.slice(i, i + CHUNK));
 
   if (chunks.length === 1) {
-    const prompt = `You are a financial analyst. Write a structured investment brief for ${label} using this exact format:
+    const prompt = `You are a senior financial analyst writing a detailed investment briefing for ${label}.
 
-## Market Overview
-2-3 sentences on macro backdrop and market conditions.
+Use this exact format:
 
-## Key Developments
-- **Company/Topic**: what happened and why it matters
-- **Company/Topic**: what happened and why it matters
-(one bullet per significant story, name every company mentioned)
+## [Descriptive title summarising the main theme, e.g. "Korea Markets: Tech Sell-off Amid Fed Uncertainty"]
 
-## Risks & Opportunities
-- Key risk or opportunity
-- Key risk or opportunity
+[2-3 sentence executive summary of the most important developments and overall market tone]
 
-Headlines:
-${articles.map(a=>`• ${a.translatedTitle||a.title}`).join("\n")}`;
-    return await callClaude(prompt, 700);
+## [Section heading for first major theme, e.g. "Energy & Commodities"]
+- [Specific development with context and investor implication. Be precise — name companies, figures, percentages where available. Explain WHY it matters to investors.]
+- [Next bullet — same level of detail]
+
+## [Section heading for second major theme]
+- [Detailed bullet with company names and implications]
+- [Next bullet]
+
+(Add as many sections and bullets as needed to cover all significant stories)
+
+## Risks & Outlook
+- [Specific risk with context]
+- [Opportunity or thing to watch]
+
+Rules:
+- Each bullet must be 1-2 sentences with real detail and investor perspective
+- Name EVERY company mentioned in the headlines
+- Group related stories under thematic section headers
+- Do not use vague language — be specific about what happened and why it matters
+
+Headlines (${articles.length}):
+${articles.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
+    return await callClaude(prompt, 1800);
   }
 
   // Multiple chunks — ALL summarised in parallel, then one fast synthesis
   const summaries = await Promise.all(chunks.map(chunk => {
-    const prompt = `3 sentences: key companies and events from these headlines.
-${chunk.map(a=>`• ${a.translatedTitle||a.title}`).join("\n")}`;
-    return callClaude(prompt, 300);
+    const prompt = `Summarise these headlines for ${label}. For each story name the company, what happened, and the investor implication in 1 sentence.
+${chunk.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
+    return callClaude(prompt, 600);
   }));
 
-  const synthPrompt = `You are a financial analyst. Synthesise these news summaries into a structured brief for ${label}:
+  const synthPrompt = `You are a senior financial analyst. Synthesise these summaries into a detailed investment briefing for ${label}.
 
-## Market Overview
-2-3 sentences on macro backdrop.
+Format:
+## [Descriptive title capturing the main theme]
 
-## Key Developments
-- **Company/Topic**: what happened and why it matters
-(one bullet per significant story, name every company)
+[2-3 sentence executive summary of the key developments]
 
-## Risks & Opportunities
-- Key risk or opportunity
+## [Thematic section heading]
+- [Detailed bullet: company name + what happened + investor implication, 1-2 sentences]
+- [Next bullet with same detail]
 
-Summaries: ${summaries.join(" ")}`;
-  return await callClaude(synthPrompt, 700);
+## [Next thematic section]
+- [Detailed bullet]
+
+## Risks & Outlook
+- [Specific risk or opportunity with context]
+
+Rules: name every company, be specific with figures/percentages, explain investor implications, group by theme.
+
+Summaries to synthesise:
+${summaries.map((s,i)=>`[${i+1}]: ${s}`).join("\n")}`;
+  return await callClaude(synthPrompt, 1800);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -539,9 +561,10 @@ function BriefRenderer({text}) {
         // ## Header
         if (trimmed.startsWith("## ")) {
           return (
-            <div key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,
-              fontWeight:700,color:"#1a1a1a",margin:"14px 0 6px",
-              borderBottom:"1px solid #e8e2d6",paddingBottom:4}}>
+            <div key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,
+              fontWeight:700,color:"#c0392b",margin:"18px 0 8px",
+              textTransform:"uppercase",letterSpacing:"0.06em",
+              borderBottom:"2px solid #e8e2d6",paddingBottom:5}}>
               {trimmed.replace(/^## /,"")}
             </div>
           );
@@ -549,8 +572,8 @@ function BriefRenderer({text}) {
         // # Header
         if (trimmed.startsWith("# ")) {
           return (
-            <div key={i} style={{fontFamily:"'Playfair Display',serif",fontSize:16,
-              fontWeight:700,color:"#1a1a1a",margin:"16px 0 8px"}}>
+            <div key={i} style={{fontFamily:"'Playfair Display',serif",fontSize:19,
+              fontWeight:700,color:"#1a1a1a",margin:"4px 0 12px",lineHeight:1.3}}>
               {trimmed.replace(/^# /,"")}
             </div>
           );
@@ -565,7 +588,7 @@ function BriefRenderer({text}) {
               paddingLeft:8,alignItems:"flex-start"}}>
               <span style={{color:"#c0392b",fontWeight:700,marginTop:1,flexShrink:0}}>•</span>
               <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,
-                color:"#1a1a1a",lineHeight:1.6}}>
+                color:"#222",lineHeight:1.7}}>
                 {boldMatch
                   ? <><strong>{boldMatch[1]}</strong>{boldMatch[2]?" — "+boldMatch[2]:""}</>
                   : txt}
@@ -573,10 +596,11 @@ function BriefRenderer({text}) {
             </div>
           );
         }
-        // Plain paragraph text
+        // Plain paragraph text — executive summary style
         return (
-          <p key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,
-            color:"#1a1a1a",lineHeight:1.7,margin:"6px 0"}}>
+          <p key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,
+            color:"#1a1a1a",lineHeight:1.8,margin:"8px 0",
+            background:"#f9f6f0",padding:"10px 14px",borderRadius:4}}>
             {trimmed}
           </p>
         );
@@ -1192,20 +1216,26 @@ export default function App() {
                 )}
               </>
             )}
-            {sourceGroups.length===0?(
+            {countryArts.length===0?(
               <div style={{textAlign:"center",padding:"80px 0",fontFamily:"'DM Mono',monospace",color:"#1a2a38",fontSize:13}}>
                 {isLoading?<><Dots/> fetching feeds…</>:"no articles — hit refresh"}
               </div>
+            ):activeCountry==="ALL"?(
+              // All Markets: flat chronological list, newest first
+              <div style={{maxWidth:860,margin:"0 auto"}}>
+                {countryArts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
+              </div>
             ):(
+              // Individual country: grouped by source
               <div style={{columns:"2 520px",columnGap:24}}>
                 {sourceGroups.map(({s,arts})=>(
                   <div key={s.id} style={{breakInside:"avoid",marginBottom:4}}>
-                    <div style={{display:"flex",alignItems:"center",gap:7,padding:"9px 0 7px",borderBottom:"1px solid #c9a84c18",marginBottom:1}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7,padding:"9px 0 7px",borderBottom:"1px solid #e8e2d6",marginBottom:1}}>
                       <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c0392b",fontWeight:600,letterSpacing:"0.06em"}}>
                         {s.flag} {s.name.toUpperCase()}
                       </span>
-                      <span style={{fontSize:9,color:"#1e2e3e",fontFamily:"'DM Mono',monospace"}}>{arts.length}</span>
-                      {lastFetch[s.id]&&<span style={{fontSize:8,color:"#182535",fontFamily:"'DM Mono',monospace",marginLeft:"auto"}}>{timeAgo(lastFetch[s.id])}</span>}
+                      <span style={{fontSize:9,color:"#888",fontFamily:"'DM Mono',monospace"}}>{arts.length}</span>
+                      {lastFetch[s.id]&&<span style={{fontSize:8,color:"#aaa",fontFamily:"'DM Mono',monospace",marginLeft:"auto"}}>{timeAgo(lastFetch[s.id])}</span>}
                     </div>
                     {arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
                   </div>
