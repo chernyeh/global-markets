@@ -113,6 +113,7 @@ const SOURCES = [
   {id:"reuters_au", country:"AU",name:"Reuters Australia",       lang:"en",flag:"🇦🇺",url:GN("site:reuters.com Australia economy business")},
   {id:"bloom_au",   country:"AU",name:"Bloomberg Australia",     lang:"en",flag:"🇦🇺",url:GN("site:bloomberg.com Australia markets economy")},
   // ── China ──────────────────────────────────────────────────────────────────
+  {id:"kr36",        country:"CN",name:"36Kr 快讯",              lang:"zh",flag:"🇨🇳",url:"https://rsshub.app/36kr/newsflashes"},
   {id:"caixin",     country:"CN",name:"Caixin Global",          lang:"en",flag:"🇨🇳",url:GN("site:caixinglobal.com economy finance")},
   {id:"xinhua",      country:"CN",name:"Xinhua Finance",           lang:"en",flag:"🇨🇳",url:GN("site:english.news.cn economy business finance")},
   {id:"cgtn",        country:"CN",name:"CGTN Business",             lang:"en",flag:"🇨🇳",url:"https://www.cgtn.com/subscribe/rss/section/business.xml"},
@@ -1036,7 +1037,7 @@ const SOURCE_RANK = {
   TW: ["reuters_tw","bloom_tw","focus_tw","taipei_t","digitimes","udn_money","ctee"],
   IN: ["reuters_in","bloom_in","econ_times","mint","mint2","mint3","biz_std","hindubiz","fin_exp","cnbctv18","moneyctrl","forbes_in"],
   AU: ["reuters_au","bloom_au","afr","smh","abc_au","guardian_au","the_aus"],
-  CN: ["reuters_cn","bloom_cn","xinhua","cgtn","chinadaily","caixin","globaltimes","yicai","peoples_d"],
+  CN: ["reuters_cn","bloom_cn","xinhua","cgtn","chinadaily","caixin","kr36","globaltimes","yicai","peoples_d"],
 };
 
 function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
@@ -1348,7 +1349,14 @@ export default function App() {
   countryArts.forEach(a=>{if(a.sector)sectorCountsForCountry[a.sector]=(sectorCountsForCountry[a.sector]||0)+1;});
   const watchlistHits=canonical.filter(a=>a.watchMatches?.length>0).length;
 
+  const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+  const breakingArts = canonical.filter(a => {
+    const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
+    return t > 0 && (Date.now() - t) < SIX_HOURS_MS;
+  });
+
   const MAIN_TABS=[
+    {id:"breaking", label:`⚡ Breaking${breakingArts.length>0?` (${breakingArts.length})`:""}`},
     {id:"region",  label:"⊕ Regions"},
     {id:"sector",  label:"▦ Sectors"},
     {id:"sources", label:"◫ Sources"},
@@ -1567,6 +1575,71 @@ export default function App() {
             )}
           </>
         )}
+
+        {/* BREAKING NEWS */}
+        {mainTab==="breaking"&&(()=>{
+          const briefKey="breaking";
+          const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+          const TWO_HOURS_MS  = 2 * 60 * 60 * 1000;
+          const buckets = [
+            { label:"Last 2 hours",  arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); return (Date.now()-t)<TWO_HOURS_MS; }) },
+            { label:"2 – 4 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=TWO_HOURS_MS&&age<FOUR_HOURS_MS; }) },
+            { label:"4 – 6 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=FOUR_HOURS_MS; }) },
+          ].filter(b=>b.arts.length>0);
+          return (
+            <div>
+              {/* Brief card */}
+              <div style={{background:"#fff",border:"1px solid #e8e2d6",borderRadius:10,padding:"16px 18px",marginBottom:20,animation:"fadeIn 0.4s ease"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:20}}>⚡</span>
+                    <div>
+                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>BREAKING · {breakingArts.length} stories · last 6h</div>
+                      <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Breaking News Intelligence</div>
+                    </div>
+                  </div>
+                  <button onClick={async()=>{
+                      setBriefLoading(p=>({...p,[briefKey]:true}));
+                      const b=await generateBriefUnlimited(breakingArts,"Breaking News");
+                      setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
+                      setBriefLoading(p=>({...p,[briefKey]:false}));
+                    }}
+                    disabled={briefLoading[briefKey]||breakingArts.length===0}
+                    style={{fontSize:9,padding:"4px 12px",border:"1px solid #c0392b44",borderRadius:4,background:"none",color:"#c0392b",cursor:briefLoading[briefKey]||breakingArts.length===0?"not-allowed":"pointer",fontFamily:"'DM Mono',monospace",opacity:breakingArts.length===0?0.4:1}}
+                    onMouseOver={e=>{ if(!briefLoading[briefKey]) e.currentTarget.style.background="#fdecea"; }}
+                    onMouseOut={e=>e.currentTarget.style.background="none"}>
+                    {briefLoading[briefKey]?<Dots color="#c0392b"/>:"✦ brief"}
+                  </button>
+                </div>
+                {briefs[briefKey]&&(
+                  <div style={{borderTop:"1px solid #e8e2d6",paddingTop:12}}>
+                    <BriefRenderer text={typeof briefs[briefKey]==="string"?briefs[briefKey]:briefs[briefKey]?.text} articles={typeof briefs[briefKey]==="string"?breakingArts:briefs[briefKey]?.articles||breakingArts}/>
+                  </div>
+                )}
+              </div>
+
+              {/* Time-bucketed articles */}
+              {buckets.length===0?(
+                <div style={{textAlign:"center",color:"#888",fontFamily:"'DM Mono',monospace",fontSize:11,padding:40}}>no articles in the last 6 hours — try refreshing</div>
+              ):buckets.map(bucket=>(
+                <div key={bucket.label} style={{marginBottom:24}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c0392b",fontWeight:600,letterSpacing:"0.08em"}}>⚡ {bucket.label.toUpperCase()}</span>
+                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#aaa"}}>{bucket.arts.length} stories</span>
+                    <div style={{flex:1,height:1,background:"#e8e2d6"}}/>
+                    {/* Country breakdown pills */}
+                    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                      {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{ const n=bucket.arts.filter(a=>a.country===c.code).length; return n?<span key={c.code} style={{fontSize:9,color:"#3a6080",fontFamily:"'DM Mono',monospace"}}>{c.flag}{n}</span>:null; })}
+                    </div>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                    {bucket.arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* SECTOR */}
         {mainTab==="sector"&&(
