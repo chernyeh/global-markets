@@ -363,7 +363,7 @@ Rules:
 
 Articles (cite using [REF:N] at end of each bullet, N = article number, can cite multiple e.g. [REF:0,3]):
 ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n")}`;
-    const text = await callClaude(prompt, 2000);
+    const text = await callClaude(prompt, 4096);
     return {text, articles: sourceArticles};
   }
 
@@ -371,7 +371,7 @@ ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).joi
   const summaries = await Promise.all(chunks.map(chunk => {
     const prompt = `Summarise these headlines for ${label}. For each story name the company, what happened, and the investor implication in 1 sentence.
 ${chunk.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
-    return callClaude(prompt, 600);
+    return callClaude(prompt, 800);
   }));
 
   const synthPrompt = `You are a senior financial analyst. Synthesise these summaries into a detailed investment briefing for ${label}.
@@ -395,7 +395,7 @@ Rules: name every company, be specific with figures/percentages, explain investo
 
 Summaries to synthesise:
 ${summaries.map((s,i)=>`[${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, 1800);
+  const text = await callClaude(synthPrompt, 4096);
   return {text, articles: sourceArticles};
 }
 
