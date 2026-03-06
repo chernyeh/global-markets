@@ -124,7 +124,7 @@ const SOURCES = [
   {id:"reuters_cn", country:"CN",name:"Reuters China",            lang:"en",flag:"🇨🇳",url:GN("site:reuters.com China economy business finance")},
   {id:"bloom_cn",   country:"CN",name:"Bloomberg China",          lang:"en",flag:"🇨🇳",url:GN("site:bloomberg.com China markets economy"),paywall:true},
   // ── Israel ─────────────────────────────────────────────────────────────────
-  {id:"globes_il",  country:"IL",name:"Globes Israel",            lang:"en",flag:"🇮🇱",url:"https://en.globes.co.il/WebService/Rss/RssFeeder.asmx/FeederNode?iID=942"},
+  {id:"globes_il",  country:"IL",name:"Globes Israel",            lang:"en",flag:"🇮🇱",url:GN("site:en.globes.co.il")},
   {id:"jpost_il",   country:"IL",name:"Jerusalem Post Business",  lang:"en",flag:"🇮🇱",url:"https://www.jpost.com/Rss/RssFeedsBusinessAndTech.aspx"},
   {id:"toi_il",     country:"IL",name:"Times of Israel",          lang:"en",flag:"🇮🇱",url:"https://www.timesofisrael.com/feed/"},
   {id:"haaretz_il", country:"IL",name:"Haaretz Israel",           lang:"en",flag:"🇮🇱",url:GN("site:haaretz.com Israel economy business technology"),paywall:true},
@@ -1409,9 +1409,9 @@ export default function App() {
   countryArts.forEach(a=>{if(a.sector)sectorCountsForCountry[a.sector]=(sectorCountsForCountry[a.sector]||0)+1;});
   const watchlistHits=canonical.filter(a=>a.watchMatches?.length>0).length;
 
-  const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+  const SIX_HOURS_MS = 9 * 60 * 60 * 1000;
   const breakingArts = (() => {
-    // Filter to last 6 hours
+    // Filter to last 9 hours
     const raw = canonical.filter(a => {
       const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
       return t > 0 && (Date.now() - t) < SIX_HOURS_MS;
@@ -1549,9 +1549,9 @@ export default function App() {
       </header>
 
       {/* SUB-NAV (only for region/sector) */}
-      {mainTab!=="watchlist"&&mainTab!=="sources"&&(
-        <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:58,zIndex:199,overflowX:"auto"}}>
-          <div style={{maxWidth:1500,margin:"0 auto",padding:"0 24px",display:"flex",minWidth:"max-content"}}>
+      {mainTab!=="watchlist"&&mainTab!=="sources"&&mainTab!=="breaking"&&(
+        <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:58,zIndex:199,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+          <div style={{maxWidth:1500,margin:"0 auto",padding:"0 24px",display:"flex",width:"max-content",minWidth:"100%"}}>
             {mainTab==="region"?(
               COUNTRIES.map(c=>{
                 const cnt=c.code==="ALL"?canonical.length:canonical.filter(a=>a.country===c.code).length;
@@ -1661,12 +1661,14 @@ export default function App() {
         {/* BREAKING NEWS */}
         {mainTab==="breaking"&&(()=>{
           const briefKey="breaking";
-          const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
           const TWO_HOURS_MS  = 2 * 60 * 60 * 1000;
+          const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+          const SIX_H_MS      = 6 * 60 * 60 * 1000;
           const buckets = [
             { label:"Last 2 hours",  arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); return (Date.now()-t)<TWO_HOURS_MS; }) },
             { label:"2 – 4 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=TWO_HOURS_MS&&age<FOUR_HOURS_MS; }) },
-            { label:"4 – 6 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=FOUR_HOURS_MS; }) },
+            { label:"4 – 6 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=FOUR_HOURS_MS&&age<SIX_H_MS; }) },
+            { label:"6 – 9 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=SIX_H_MS; }) },
           ].filter(b=>b.arts.length>0);
           return (
             <div>
@@ -1676,7 +1678,7 @@ export default function App() {
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <span style={{fontSize:20}}>⚡</span>
                     <div>
-                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>BREAKING · {breakingArts.length} stories · last 6h</div>
+                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>BREAKING · {breakingArts.length} stories · last 9h</div>
                       <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Breaking News Intelligence</div>
                     </div>
                   </div>
@@ -1702,7 +1704,7 @@ export default function App() {
 
               {/* Time-bucketed articles */}
               {buckets.length===0?(
-                <div style={{textAlign:"center",color:"#888",fontFamily:"'DM Mono',monospace",fontSize:11,padding:40}}>no articles in the last 6 hours — try refreshing</div>
+                <div style={{textAlign:"center",color:"#888",fontFamily:"'DM Mono',monospace",fontSize:11,padding:40}}>no articles in the last 9 hours — try refreshing</div>
               ):buckets.map(bucket=>(
                 <div key={bucket.label} style={{marginBottom:24}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
