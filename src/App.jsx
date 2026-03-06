@@ -123,6 +123,39 @@ const SOURCES = [
   {id:"peoples_d",   country:"CN",name:"People's Daily",          lang:"en",flag:"🇨🇳",url:"https://en.people.cn/rss/economy.xml"},
   {id:"reuters_cn", country:"CN",name:"Reuters China",            lang:"en",flag:"🇨🇳",url:GN("site:reuters.com China economy business finance")},
   {id:"bloom_cn",   country:"CN",name:"Bloomberg China",          lang:"en",flag:"🇨🇳",url:GN("site:bloomberg.com China markets economy"),paywall:true},
+  // ── Israel ─────────────────────────────────────────────────────────────────
+  {id:"globes_il",  country:"IL",name:"Globes Israel",            lang:"en",flag:"🇮🇱",url:"https://en.globes.co.il/WebService/Rss/RssFeeder.asmx/FeederNode?iID=942"},
+  {id:"jpost_il",   country:"IL",name:"Jerusalem Post Business",  lang:"en",flag:"🇮🇱",url:"https://www.jpost.com/Rss/RssFeedsBusinessAndTech.aspx"},
+  {id:"toi_il",     country:"IL",name:"Times of Israel",          lang:"en",flag:"🇮🇱",url:"https://www.timesofisrael.com/feed/"},
+  {id:"haaretz_il", country:"IL",name:"Haaretz Israel",           lang:"en",flag:"🇮🇱",url:GN("site:haaretz.com Israel economy business technology"),paywall:true},
+  {id:"ctech_il",   country:"IL",name:"Calcalist CTech",          lang:"en",flag:"🇮🇱",url:GN("site:calcalistech.com")},
+  {id:"calcalist",  country:"IL",name:"כלכליסט Calcalist",        lang:"he",flag:"🇮🇱",url:GN("site:calcalist.co.il","iw","IL","IL:he")},
+  {id:"reuters_il", country:"IL",name:"Reuters Israel",           lang:"en",flag:"🇮🇱",url:GN("site:reuters.com Israel economy business shekel TASE")},
+  {id:"bloom_il",   country:"IL",name:"Bloomberg Israel",         lang:"en",flag:"🇮🇱",url:GN("site:bloomberg.com Israel economy markets shekel"),paywall:true},
+  // ── Middle East / Gulf ─────────────────────────────────────────────────────
+  {id:"arabnews",    country:"ME",name:"Arab News",               lang:"en",flag:"🌍",url:"https://www.arabnews.com/rss.xml"},
+  {id:"arabnews_biz",country:"ME",name:"Arab News Economy",       lang:"en",flag:"🌍",url:GN("site:arabnews.com economy business energy Saudi giga-projects")},
+  {id:"national_ae", country:"ME",name:"The National UAE",        lang:"en",flag:"🌍",url:GN("site:thenationalnews.com business economy energy")},
+  {id:"gulfnews",    country:"ME",name:"Gulf News Business",      lang:"en",flag:"🌍",url:GN("site:gulfnews.com business economy")},
+  {id:"arabianbiz",  country:"ME",name:"Arabian Business",        lang:"en",flag:"🌍",url:"https://www.arabianbusiness.com/feed"},
+  {id:"agbi",        country:"ME",name:"AGBI Gulf Business",      lang:"en",flag:"🌍",url:"https://www.agbi.com/feed"},
+  {id:"tradearabia", country:"ME",name:"TradeArabia",             lang:"en",flag:"🌍",url:"https://www.tradearabia.com/rss/ALL_RSS.xml"},
+  {id:"gulftimes",   country:"ME",name:"Gulf Times Qatar",        lang:"en",flag:"🌍",url:GN("site:gulf-times.com business economy")},
+  {id:"khaleej",     country:"ME",name:"Khaleej Times UAE",       lang:"en",flag:"🌍",url:GN("site:khaleejtimes.com business economy")},
+  {id:"alarabiya",   country:"ME",name:"Al Arabiya Business",     lang:"en",flag:"🌍",url:"https://english.alarabiya.net/rss/business.xml"},
+  {id:"saudigazette",country:"ME",name:"Saudi Gazette",           lang:"en",flag:"🌍",url:"https://www.saudigazette.com.sa/feed"},
+  {id:"zawya",       country:"ME",name:"Zawya MENA",              lang:"en",flag:"🌍",url:"https://www.zawya.com/sitemaps/en/rss"},
+  {id:"gulfbiz",     country:"ME",name:"Gulf Business",           lang:"en",flag:"🌍",url:"https://gulfbusiness.com/feed/"},
+  // MENAFN: regional financial wire with per-GCC-country RSS
+  {id:"menafn_sa",   country:"ME",name:"MENAFN Saudi",            lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=SaudiArabia"},
+  {id:"menafn_uae",  country:"ME",name:"MENAFN UAE",              lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=UAE"},
+  {id:"menafn_qa",   country:"ME",name:"MENAFN Qatar",            lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Qatar"},
+  {id:"menafn_kw",   country:"ME",name:"MENAFN Kuwait",           lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Kuwait"},
+  {id:"menafn_bh",   country:"ME",name:"MENAFN Bahrain",          lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Bahrain"},
+  {id:"menafn_om",   country:"ME",name:"MENAFN Oman",             lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Oman"},
+  {id:"reuters_me",  country:"ME",name:"Reuters Gulf",            lang:"en",flag:"🌍",url:GN("site:reuters.com Saudi Arabia UAE Qatar Kuwait Oman Bahrain economy")},
+  {id:"bloom_me",    country:"ME",name:"Bloomberg Gulf",          lang:"en",flag:"🌍",url:GN("site:bloomberg.com Saudi Arabia UAE Qatar Kuwait Gulf economy"),paywall:true},
+  {id:"alarabiya_ar",country:"ME",name:"العربية أعمال",           lang:"ar",flag:"🌍",url:"https://www.alarabiya.net/rss/aswaq"},
 ];
 
 const COUNTRIES = [
@@ -136,6 +169,8 @@ const COUNTRIES = [
   {code:"IN", label:"India",         flag:"🇮🇳"},
   {code:"AU", label:"Australia",     flag:"🇦🇺"},
   {code:"CN", label:"China",         flag:"🇨🇳"},
+  {code:"IL", label:"Israel",        flag:"🇮🇱"},
+  {code:"ME", label:"Middle East",   flag:"🌍"},
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -368,11 +403,15 @@ ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).joi
   }
 
   // Multiple chunks — ALL summarised in parallel, then one fast synthesis
-  const summaries = await Promise.all(chunks.map(chunk => {
-    const prompt = `Summarise these headlines for ${label}. For each story name the company, what happened, and the investor implication in 1 sentence.
-${chunk.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
+  const summaries = await Promise.all(chunks.map((chunk, ci) => {
+    const offset = ci * CHUNK;
+    const prompt = `Summarise these headlines for ${label}. For each story, name the company, what happened, and the investor implication in 1 sentence. Include the article number in parentheses at the end of each sentence so it can be cited, e.g. "(article 3)".
+${chunk.map((a,i)=>`${offset+i}. ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
     return callClaude(prompt, 800);
   }));
+
+  // Build a flat article index so the synthesis can emit [REF:N] links
+  const articleIndex = articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n");
 
   const synthPrompt = `You are a senior financial analyst. Synthesise these summaries into a detailed investment briefing for ${label}.
 
@@ -382,19 +421,26 @@ Format:
 [2-3 sentence executive summary of the key developments]
 
 ## [Thematic section heading]
-- [Detailed bullet: company name + what happened + investor implication, 1-2 sentences]
-- [Next bullet with same detail]
+- [Detailed bullet: company name + what happened + investor implication, 1-2 sentences. End with [REF:N] citing the article number.]
+- [Next bullet — same detail and citation]
 
 ## [Next thematic section]
-- [Detailed bullet]
+- [Detailed bullet with [REF:N] citation]
 
 ## Risks & Outlook
-- [Specific risk or opportunity with context]
+- [Specific risk or opportunity with [REF:N] citation]
 
-Rules: name every company, be specific with figures/percentages, explain investor implications, group by theme.
+Rules:
+- Name every company, be specific with figures/percentages, explain investor implications, group by theme.
+- EVERY bullet must end with [REF:N] or [REF:N,M] citing the article number(s) from the index below that support it.
+- Use the article index to find the correct N for each claim.
+- The summaries include "(article N)" references — convert these to [REF:N] in the format above.
+
+Article index (use N in [REF:N]):
+${articleIndex}
 
 Summaries to synthesise:
-${summaries.map((s,i)=>`[${i+1}]: ${s}`).join("\n")}`;
+${summaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
   const text = await callClaude(synthPrompt, 4096);
   return {text, articles: sourceArticles};
 }
@@ -1050,6 +1096,8 @@ const SOURCE_RANK = {
   IN: ["reuters_in","bloom_in","econ_times","mint","mint2","mint3","biz_std","hindubiz","fin_exp","cnbctv18","moneyctrl","forbes_in"],
   AU: ["reuters_au","bloom_au","afr","smh","abc_au","guardian_au","the_aus"],
   CN: ["reuters_cn","bloom_cn","xinhua","cgtn","chinadaily","caixin","kr36","globaltimes","yicai","peoples_d"],
+  IL: ["globes_il","reuters_il","bloom_il","jpost_il","toi_il","haaretz_il","ctech_il","calcalist"],
+  ME: ["arabnews","arabnews_biz","national_ae","gulfnews","arabianbiz","reuters_me","bloom_me","agbi","tradearabia","alarabiya","zawya","gulfbiz","gulftimes","khaleej","saudigazette","menafn_sa","menafn_uae","menafn_qa","menafn_kw","menafn_bh","menafn_om","alarabiya_ar"],
 };
 
 function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
@@ -1362,10 +1410,32 @@ export default function App() {
   const watchlistHits=canonical.filter(a=>a.watchMatches?.length>0).length;
 
   const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
-  const breakingArts = canonical.filter(a => {
-    const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
-    return t > 0 && (Date.now() - t) < SIX_HOURS_MS;
-  });
+  const breakingArts = (() => {
+    // Filter to last 6 hours
+    const raw = canonical.filter(a => {
+      const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
+      return t > 0 && (Date.now() - t) < SIX_HOURS_MS;
+    }).sort((a,b) => {
+      // Sort newest first so caps keep freshest articles
+      const ta = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
+      const tb = b.pubDate ? new Date(b.pubDate).getTime() : (b.fetchedAt||0);
+      return tb - ta;
+    });
+    // Cap 1: max 3 articles per source (prevent single high-volume feeds dominating)
+    const countPerSource = {};
+    // Cap 2: max 12 articles per country (balance across markets)
+    const countPerCountry = {};
+    const MAX_PER_SOURCE = 3;
+    const MAX_PER_COUNTRY = 12;
+    return raw.filter(a => {
+      const ns = (countPerSource[a.sourceId] || 0);
+      const nc = (countPerCountry[a.country] || 0);
+      if (ns >= MAX_PER_SOURCE || nc >= MAX_PER_COUNTRY) return false;
+      countPerSource[a.sourceId] = ns + 1;
+      countPerCountry[a.country] = nc + 1;
+      return true;
+    });
+  })();
 
   const MAIN_TABS=[
     {id:"breaking", label:`⚡ Breaking${breakingArts.length>0?` (${breakingArts.length})`:""}`},
