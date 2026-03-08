@@ -156,6 +156,29 @@ const SOURCES = [
   {id:"reuters_me",  country:"ME",name:"Reuters Gulf",            lang:"en",flag:"🌍",url:GN("site:reuters.com Saudi Arabia UAE Qatar Kuwait Oman Bahrain economy")},
   {id:"bloom_me",    country:"ME",name:"Bloomberg Gulf",          lang:"en",flag:"🌍",url:GN("site:bloomberg.com Saudi Arabia UAE Qatar Kuwait Gulf economy"),paywall:true},
   {id:"alarabiya_ar",country:"ME",name:"العربية أعمال",           lang:"ar",flag:"🌍",url:"https://www.alarabiya.net/rss/aswaq"},
+
+  // ── Iran ──────────────────────────────────────────────────────────────────
+  // Iran International: London-based, critical of regime, English + Farsi; best external coverage
+  {id:"iranintl",    country:"IR",name:"Iran International",     lang:"en",flag:"🇮🇷",url:GN("site:iranintl.com")},
+  // Tehran Times: state-adjacent English daily, useful for official Iran perspective
+  {id:"tehrantimes", country:"IR",name:"Tehran Times",           lang:"en",flag:"🇮🇷",url:"https://www.tehrantimes.com/rss"},
+  // Financial Tribune: only non-govt Iranian English business paper (may be offline during conflict)
+  {id:"fin_trib",    country:"IR",name:"Financial Tribune",      lang:"en",flag:"🇮🇷",url:GN("site:financialtribune.com economy business")},
+  // IRNA: official Islamic Republic News Agency, English feed
+  {id:"irna_en",     country:"IR",name:"IRNA English",           lang:"en",flag:"🇮🇷",url:"https://en.irna.ir/rss"},
+  // Tasnim News: semi-official Iranian wire agency, English RSS
+  {id:"tasnim",      country:"IR",name:"Tasnim News",            lang:"en",flag:"🇮🇷",url:"https://www.tasnimnews.com/en/rss/0/0/0/top-stories.rss"},
+  // Mehr News: state-owned Iranian news agency, English
+  {id:"mehrnews",    country:"IR",name:"Mehr News Agency",       lang:"en",flag:"🇮🇷",url:GN("site:mehrnews.com/en economy")},
+  // IFP News: Independent (covers wide Iran topics), English RSS
+  {id:"ifpnews",     country:"IR",name:"IFP News",               lang:"en",flag:"🇮🇷",url:"https://ifpnews.com/feed"},
+  // Entekhab: major Persian-language news site, auto-translated
+  {id:"entekhab",    country:"IR",name:"انتخاب Entekhab",        lang:"fa",flag:"🇮🇷",url:"https://www.entekhab.ir/fa/rss/allnews"},
+  // Tabnak: Persian news site covering economy/politics, auto-translated
+  {id:"tabnak",      country:"IR",name:"تابناک Tabnak",          lang:"fa",flag:"🇮🇷",url:GN("site:tabnak.ir اقتصاد","fa","IR","IR:fa")},
+  // Reuters & Bloomberg Iran-specific feeds
+  {id:"reuters_ir",  country:"IR",name:"Reuters Iran",           lang:"en",flag:"🇮🇷",url:GN("site:reuters.com Iran economy nuclear sanctions")},
+  {id:"bloom_ir",    country:"IR",name:"Bloomberg Iran",         lang:"en",flag:"🇮🇷",url:GN("site:bloomberg.com Iran economy nuclear sanctions"),paywall:true},
 ];
 
 const COUNTRIES = [
@@ -171,6 +194,7 @@ const COUNTRIES = [
   {code:"CN", label:"China",         flag:"🇨🇳"},
   {code:"IL", label:"Israel",        flag:"🇮🇱"},
   {code:"ME", label:"Middle East",   flag:"🌍"},
+  {code:"IR", label:"Iran",          flag:"🇮🇷"},
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -395,6 +419,7 @@ Rules:
 - End each bullet with [REF:N] citing the article number(s) that support it (e.g. [REF:2] or [REF:0,4])
 - Group related stories under thematic section headers
 - Do not use vague language — be specific about what happened and why it matters
+- COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Then HK, Korea, Taiwan, India, Australia, Israel, Middle East, Iran. Then Singapore and Canada. Ensure at least one bullet for each market with stories.
 
 Articles (cite using [REF:N] at end of each bullet, N = article number, can cite multiple e.g. [REF:0,3]):
 ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n")}`;
@@ -435,6 +460,7 @@ Rules:
 - EVERY bullet must end with [REF:N] or [REF:N,M] citing the article number(s) from the index below that support it.
 - Use the article index to find the correct N for each claim.
 - The summaries include "(article N)" references — convert these to [REF:N] in the format above.
+- COVERAGE PRIORITY: When this is a Breaking News brief, lead with US and China stories, then HK/Korea/Taiwan/India/Australia/Israel/Middle East/Iran, then Singapore/Canada. Ensure every market with articles gets at least one bullet.
 
 Article index (use N in [REF:N]):
 ${articleIndex}
@@ -1098,6 +1124,7 @@ const SOURCE_RANK = {
   CN: ["reuters_cn","bloom_cn","xinhua","cgtn","chinadaily","caixin","kr36","globaltimes","yicai","peoples_d"],
   IL: ["globes_il","reuters_il","bloom_il","jpost_il","toi_il","haaretz_il","ctech_il","calcalist"],
   ME: ["arabnews","arabnews_biz","national_ae","gulfnews","arabianbiz","reuters_me","bloom_me","agbi","tradearabia","alarabiya","zawya","gulfbiz","gulftimes","khaleej","saudigazette","menafn_sa","menafn_uae","menafn_qa","menafn_kw","menafn_bh","menafn_om","alarabiya_ar"],
+  IR: ["iranintl","reuters_ir","bloom_ir","tehrantimes","fin_trib","irna_en","tasnim","ifpnews","mehrnews","entekhab","tabnak"],
 };
 
 function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
@@ -1684,7 +1711,14 @@ export default function App() {
                   </div>
                   <button onClick={async()=>{
                       setBriefLoading(p=>({...p,[briefKey]:true}));
-                      const b=await generateBriefUnlimited(breakingArts,"Breaking News");
+                      const BRIEF_COUNTRY_ORDER = ["US","CN","HK","KR","TW","IN","AU","IL","ME","IR","SG","CA"];
+                        const prioritisedArts = [...breakingArts].sort((a,b)=>{
+                          const ra = BRIEF_COUNTRY_ORDER.indexOf(a.country);
+                          const rb = BRIEF_COUNTRY_ORDER.indexOf(b.country);
+                          const sa = ra===-1?999:ra, sb = rb===-1?999:rb;
+                          return sa !== sb ? sa - sb : 0; // stable within same country
+                        });
+                        const b=await generateBriefUnlimited(prioritisedArts,"Breaking News");
                       setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
                       setBriefLoading(p=>({...p,[briefKey]:false}));
                     }}
