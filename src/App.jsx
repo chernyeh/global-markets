@@ -54,7 +54,7 @@ const SOURCES = [
   // Straits Times: paywalled — broader query
   // CNA: free — GN fine
   {id:"cna_sg",     country:"SG",name:"CNA Business",           lang:"en",flag:"🇸🇬",url:GN("site:channelnewsasia.com business")},
-  {id:"edge_sg",    country:"SG",name:"The Edge Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:theedgesingapore.com markets economy stocks"),paywall:true},
+  {id:"edge_sg",    country:"SG",name:"The Edge Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:theedgesingapore.com"),paywall:true},
   {id:"reuters_sg", country:"SG",name:"Reuters Singapore",       lang:"en",flag:"🇸🇬",url:GN("site:reuters.com Singapore economy business")},
   {id:"bloom_sg",   country:"SG",name:"Bloomberg Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:bloomberg.com Singapore markets economy"),paywall:true},
   // ── Hong Kong ──────────────────────────────────────────────────────────────
@@ -113,36 +113,36 @@ const SOURCES = [
   {id:"reuters_au", country:"AU",name:"Reuters Australia",       lang:"en",flag:"🇦🇺",url:GN("site:reuters.com Australia economy business")},
   {id:"bloom_au",   country:"AU",name:"Bloomberg Australia",     lang:"en",flag:"🇦🇺",url:GN("site:bloomberg.com Australia markets economy"),paywall:true},
   // ── China ──────────────────────────────────────────────────────────────────
-  {id:"kr36",        country:"CN",name:"36Kr 快讯",              lang:"zh",flag:"🇨🇳",url:"https://rsshub.app/36kr/newsflashes"},
+  {id:"kr36",        country:"CN",name:"36Kr 快讯",              lang:"zh",flag:"🇨🇳",url:GN("site:36kr.com","zh-CN","CN","CN:zh-Hans")},
   {id:"caixin",     country:"CN",name:"Caixin Global",          lang:"en",flag:"🇨🇳",url:GN("site:caixinglobal.com economy finance"),paywall:true},
-  {id:"xinhua",      country:"CN",name:"Xinhua Finance",           lang:"en",flag:"🇨🇳",url:GN("site:english.news.cn economy business finance")},
+  {id:"xinhua",      country:"CN",name:"Xinhua Finance",           lang:"en",flag:"🇨🇳",url:GN("site:english.news.cn OR site:xinhuanet.com economy finance")},
   {id:"cgtn",        country:"CN",name:"CGTN Business",             lang:"en",flag:"🇨🇳",url:"https://www.cgtn.com/subscribe/rss/section/business.xml"},
-  {id:"chinadaily",  country:"CN",name:"China Daily Business",     lang:"en",flag:"🇨🇳",url:"https://rss.chinadaily.com.cn/rss/cndy_businessfeed.xml"},
-  {id:"yicai",       country:"CN",name:"Yicai Global",            lang:"en",flag:"🇨🇳",url:"https://www.yicaiglobal.com/feed"},
-  {id:"globaltimes", country:"CN",name:"Global Times Economy",     lang:"en",flag:"🇨🇳",url:"https://www.globaltimes.cn/rss/economy.xml"},
+  {id:"chinadaily",  country:"CN",name:"China Daily Business",     lang:"en",flag:"🇨🇳",url:GN("site:chinadaily.com.cn business economy")},
+  {id:"yicai",       country:"CN",name:"Yicai Global",            lang:"en",flag:"🇨🇳",url:GN("site:yicaiglobal.com")},
+  {id:"globaltimes", country:"CN",name:"Global Times Economy",     lang:"en",flag:"🇨🇳",url:GN("site:globaltimes.cn economy")},
   {id:"peoples_d",   country:"CN",name:"People's Daily",          lang:"en",flag:"🇨🇳",url:"https://en.people.cn/rss/economy.xml"},
   {id:"reuters_cn", country:"CN",name:"Reuters China",            lang:"en",flag:"🇨🇳",url:GN("site:reuters.com China economy business finance")},
   {id:"bloom_cn",   country:"CN",name:"Bloomberg China",          lang:"en",flag:"🇨🇳",url:GN("site:bloomberg.com China markets economy"),paywall:true},
   // ── Israel ─────────────────────────────────────────────────────────────────
   {id:"globes_il",  country:"IL",name:"Globes Israel",            lang:"en",flag:"🇮🇱",url:GN("site:en.globes.co.il")},
-  {id:"jpost_il",   country:"IL",name:"Jerusalem Post Business",  lang:"en",flag:"🇮🇱",url:"https://www.jpost.com/Rss/RssFeedsBusinessAndTech.aspx"},
-  {id:"toi_il",     country:"IL",name:"Times of Israel",          lang:"en",flag:"🇮🇱",url:"https://www.timesofisrael.com/feed/"},
+  {id:"jpost_il",   country:"IL",name:"Jerusalem Post Business",  lang:"en",flag:"🇮🇱",url:GN("site:jpost.com business innovation technology")},
+  {id:"toi_il",     country:"IL",name:"Times of Israel",          lang:"en",flag:"🇮🇱",url:GN("site:timesofisrael.com")},
   {id:"haaretz_il", country:"IL",name:"Haaretz Israel",           lang:"en",flag:"🇮🇱",url:GN("site:haaretz.com Israel economy business technology"),paywall:true},
   {id:"ctech_il",   country:"IL",name:"Calcalist CTech",          lang:"en",flag:"🇮🇱",url:GN("site:calcalistech.com")},
   {id:"calcalist",  country:"IL",name:"כלכליסט Calcalist",        lang:"he",flag:"🇮🇱",url:GN("site:calcalist.co.il","iw","IL","IL:he")},
-  {id:"reuters_il", country:"IL",name:"Reuters Israel",           lang:"en",flag:"🇮🇱",url:GN("site:reuters.com Israel economy business shekel TASE")},
+  {id:"reuters_il", country:"IL",name:"Reuters Israel",           lang:"en",flag:"🇮🇱",url:GN("site:reuters.com Israel")},
   {id:"bloom_il",   country:"IL",name:"Bloomberg Israel",         lang:"en",flag:"🇮🇱",url:GN("site:bloomberg.com Israel economy markets shekel"),paywall:true},
   // ── Middle East / Gulf ─────────────────────────────────────────────────────
-  {id:"arabnews",    country:"ME",name:"Arab News",               lang:"en",flag:"🌍",url:"https://www.arabnews.com/rss.xml"},
-  {id:"arabnews_biz",country:"ME",name:"Arab News Economy",       lang:"en",flag:"🌍",url:GN("site:arabnews.com economy business energy Saudi giga-projects")},
+  {id:"arabnews",    country:"ME",name:"Arab News",               lang:"en",flag:"🌍",url:GN("site:arabnews.com")},
+  {id:"arabnews_biz",country:"ME",name:"Arab News Economy",       lang:"en",flag:"🌍",url:GN("site:arabnews.com economy energy")},
   {id:"national_ae", country:"ME",name:"The National UAE",        lang:"en",flag:"🌍",url:GN("site:thenationalnews.com business economy energy")},
   {id:"gulfnews",    country:"ME",name:"Gulf News Business",      lang:"en",flag:"🌍",url:GN("site:gulfnews.com business economy")},
   {id:"arabianbiz",  country:"ME",name:"Arabian Business",        lang:"en",flag:"🌍",url:"https://www.arabianbusiness.com/feed"},
   {id:"agbi",        country:"ME",name:"AGBI Gulf Business",      lang:"en",flag:"🌍",url:"https://www.agbi.com/feed"},
-  {id:"tradearabia", country:"ME",name:"TradeArabia",             lang:"en",flag:"🌍",url:"https://www.tradearabia.com/rss/ALL_RSS.xml"},
+  {id:"tradearabia", country:"ME",name:"Asharq Al-Awsat Business",             lang:"en",flag:"🌍",url:GN("site:english.aawsat.com business economy Gulf")},
   {id:"gulftimes",   country:"ME",name:"Gulf Times Qatar",        lang:"en",flag:"🌍",url:GN("site:gulf-times.com business economy")},
   {id:"khaleej",     country:"ME",name:"Khaleej Times UAE",       lang:"en",flag:"🌍",url:GN("site:khaleejtimes.com business economy")},
-  {id:"alarabiya",   country:"ME",name:"Al Arabiya Business",     lang:"en",flag:"🌍",url:"https://english.alarabiya.net/rss/business.xml"},
+  {id:"alarabiya",   country:"ME",name:"Al Arabiya Business",     lang:"en",flag:"🌍",url:GN("site:english.alarabiya.net business economy")},
   {id:"saudigazette",country:"ME",name:"Saudi Gazette",           lang:"en",flag:"🌍",url:"https://www.saudigazette.com.sa/feed"},
   {id:"zawya",       country:"ME",name:"Zawya MENA",              lang:"en",flag:"🌍",url:"https://www.zawya.com/sitemaps/en/rss"},
   {id:"gulfbiz",     country:"ME",name:"Gulf Business",           lang:"en",flag:"🌍",url:"https://gulfbusiness.com/feed/"},
@@ -155,25 +155,25 @@ const SOURCES = [
   {id:"menafn_om",   country:"ME",name:"MENAFN Oman",             lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Oman"},
   {id:"reuters_me",  country:"ME",name:"Reuters Gulf",            lang:"en",flag:"🌍",url:GN("site:reuters.com Saudi Arabia UAE Qatar Kuwait Oman Bahrain economy")},
   {id:"bloom_me",    country:"ME",name:"Bloomberg Gulf",          lang:"en",flag:"🌍",url:GN("site:bloomberg.com Saudi Arabia UAE Qatar Kuwait Gulf economy"),paywall:true},
-  {id:"alarabiya_ar",country:"ME",name:"العربية أعمال",           lang:"ar",flag:"🌍",url:"https://www.alarabiya.net/rss/aswaq"},
+  {id:"alarabiya_ar",country:"ME",name:"العربية أعمال",           lang:"ar",flag:"🌍",url:GN("site:alarabiya.net اقتصاد أعمال","ar","SA","SA:ar")},
 
   // ── Iran ──────────────────────────────────────────────────────────────────
   // Iran International: London-based, critical of regime, English + Farsi; best external coverage
   {id:"iranintl",    country:"IR",name:"Iran International",     lang:"en",flag:"🇮🇷",url:GN("site:iranintl.com")},
   // Tehran Times: state-adjacent English daily, useful for official Iran perspective
-  {id:"tehrantimes", country:"IR",name:"Tehran Times",           lang:"en",flag:"🇮🇷",url:"https://www.tehrantimes.com/rss"},
+  {id:"tehrantimes", country:"IR",name:"Tehran Times",           lang:"en",flag:"🇮🇷",url:GN("site:tehrantimes.com")},
   // Financial Tribune: only non-govt Iranian English business paper (may be offline during conflict)
-  {id:"fin_trib",    country:"IR",name:"Financial Tribune",      lang:"en",flag:"🇮🇷",url:GN("site:financialtribune.com economy business")},
+  {id:"fin_trib",    country:"IR",name:"Financial Tribune",      lang:"en",flag:"🇮🇷",url:GN("site:financialtribune.com")},
   // IRNA: official Islamic Republic News Agency, English feed
-  {id:"irna_en",     country:"IR",name:"IRNA English",           lang:"en",flag:"🇮🇷",url:"https://en.irna.ir/rss"},
+  {id:"irna_en",     country:"IR",name:"IRNA English",           lang:"en",flag:"🇮🇷",url:GN("site:en.irna.ir")},
   // Tasnim News: semi-official Iranian wire agency, English RSS
-  {id:"tasnim",      country:"IR",name:"Tasnim News",            lang:"en",flag:"🇮🇷",url:"https://www.tasnimnews.com/en/rss/0/0/0/top-stories.rss"},
+  {id:"tasnim",      country:"IR",name:"Tasnim News",            lang:"en",flag:"🇮🇷",url:GN("site:tasnimnews.com")},
   // Mehr News: state-owned Iranian news agency, English
-  {id:"mehrnews",    country:"IR",name:"Mehr News Agency",       lang:"en",flag:"🇮🇷",url:GN("site:mehrnews.com/en economy")},
+  {id:"mehrnews",    country:"IR",name:"Mehr News Agency",       lang:"en",flag:"🇮🇷",url:GN("site:en.mehrnews.com")},
   // IFP News: Independent (covers wide Iran topics), English RSS
-  {id:"ifpnews",     country:"IR",name:"IFP News",               lang:"en",flag:"🇮🇷",url:"https://ifpnews.com/feed"},
+  {id:"ifpnews",     country:"IR",name:"IFP News",               lang:"en",flag:"🇮🇷",url:GN("site:ifpnews.com")},
   // Entekhab: major Persian-language news site, auto-translated
-  {id:"entekhab",    country:"IR",name:"انتخاب Entekhab",        lang:"fa",flag:"🇮🇷",url:"https://www.entekhab.ir/fa/rss/allnews"},
+  {id:"entekhab",    country:"IR",name:"انتخاب Entekhab",        lang:"fa",flag:"🇮🇷",url:GN("site:entekhab.ir","fa","IR","IR:fa")},
   // Tabnak: Persian news site covering economy/politics, auto-translated
   {id:"tabnak",      country:"IR",name:"تابناک Tabnak",          lang:"fa",flag:"🇮🇷",url:GN("site:tabnak.ir اقتصاد","fa","IR","IR:fa")},
   // Reuters & Bloomberg Iran-specific feeds
