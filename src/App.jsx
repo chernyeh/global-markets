@@ -275,14 +275,52 @@ function jaccard(a,b) {
   const union=new Set([...sa,...sb]).size;
   return union===0?0:inter/union;
 }
+// Resolve a duplicate group: prefer free article; track original paywalled source
+function resolveGroup(arts) {
+  // arts = array of articles that are duplicates of each other
+  const src = id => SOURCES.find(s=>s.id===id);
+  // Separate free vs paywalled
+  const free    = arts.filter(a=>!src(a.sourceId)?.paywall);
+  const paywalled = arts.filter(a=> src(a.sourceId)?.paywall);
+  // Pick best canonical: free first (most recent free), else most recent overall
+  const byDate = a => a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
+  const pool   = free.length ? free : paywalled;
+  const canon  = pool.slice().sort((a,b)=>byDate(b)-byDate(a))[0];
+  // If canon is free but there are paywalled originals, record original source for attribution
+  // We pick the highest-ranked paywalled source as the "original"
+  const paywallSource = paywalled.length
+    ? paywalled.slice().sort((a,b)=>byDate(b)-byDate(a))[0].sourceId
+    : null;
+  const canonUpdated = {
+    ...canon,
+    duplicateOf: null,
+    originalSourceId: (free.length && paywallSource) ? paywallSource : (canon.originalSourceId||null),
+  };
+  const dupes = arts.filter(a=>a.id!==canon.id).map(a=>({...a,duplicateOf:canon.id}));
+  return [canonUpdated, ...dupes];
+}
 function localDedup(articles) {
-  const seen=[];
-  return articles.map(art=>{
+  const seen=[];   // {fp, id, idx}
+  const groups={}; // id -> [article]
+  const out=articles.map(art=>{
     const fp=fingerprint(art.translatedTitle||art.title);
     const match=seen.find(s=>jaccard(fp,s.fp)>0.45);
-    if(match) return {...art,duplicateOf:match.id};
+    if(match){
+      if(!groups[match.id]) groups[match.id]=[articles.find(a=>a.id===match.id)];
+      groups[match.id].push(art);
+      return null; // placeholder — resolved below
+    }
     seen.push({fp,id:art.id});
-    return {...art,duplicateOf:null};
+    return art;
+  });
+  // Resolve each group and splice results back
+  const resolved={};
+  Object.entries(groups).forEach(([canonId,grpArts])=>{
+    resolveGroup(grpArts).forEach(a=>{ resolved[a.id]=a; });
+  });
+  return out.map((art,i)=>{
+    if(!art) return resolved[articles[i].id] || {...articles[i],duplicateOf:articles[i].id};
+    return resolved[art.id] || art;
   });
 }
 async function claudeDedup(articles) {
@@ -294,16 +332,15 @@ ${candidates.map((a,i)=>`${i}. [${a.lang}] ${a.translatedTitle||a.title}`).join(
   try {
     const res=await callClaude(prompt,600);
     const groups=JSON.parse(res.replace(/```json|```/g,"").trim());
-    const updated=[...articles];
+    let updated=[...articles];
     groups.forEach(grp=>{
       if(!Array.isArray(grp)||grp.length<2) return;
-      const canon=candidates[grp[0]];
-      if(!canon) return;
-      grp.slice(1).forEach(idx=>{
-        const dup=candidates[idx];
-        if(!dup) return;
-        const i=updated.findIndex(a=>a.id===dup.id);
-        if(i!==-1) updated[i]={...updated[i],duplicateOf:canon.id};
+      const grpArts=grp.map(idx=>candidates[idx]).filter(Boolean);
+      if(grpArts.length<2) return;
+      const resolved=resolveGroup(grpArts);
+      resolved.forEach(a=>{
+        const i=updated.findIndex(u=>u.id===a.id);
+        if(i!==-1) updated[i]=a;
       });
     });
     return updated;
@@ -639,6 +676,16 @@ function ArticleCard({art, highlightKeyword=null}) {
         <span style={{fontSize:11,color:"#c0392b",fontFamily:"'DM Mono',monospace",fontWeight:600}}>
           {art.flag} {art.source}
         </span>
+        {art.originalSourceId&&(()=>{
+          const orig=SOURCES.find(s=>s.id===art.originalSourceId);
+          return orig?(
+            <span style={{fontSize:9,fontFamily:"'DM Mono',monospace",color:"#888",
+              background:"#f5f0e8",padding:"1px 6px",borderRadius:3,
+              border:"1px solid #e0d8cc"}}>
+              via {orig.name.split(" ").slice(0,2).join(" ")}
+            </span>
+          ):null;
+        })()}
         {art.lang!=="en" && <Tag color="#7a8fa6">{art.lang.toUpperCase()}→EN</Tag>}
         {sec && sec.code!=="UNK" && <Tag color={sec.color}>{sec.icon} {sec.label}</Tag>}
         {/* Watchlist match badges */}
@@ -1190,7 +1237,7 @@ function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
             <option value="ALL">All sources ({rankedSources.length})</option>
             {rankedSources.map((s,i)=>(
               <option key={s.id} value={s.id}>
-                #{i+1} {s.name} ({canonical.filter(a=>a.sourceId===s.id).length})
+                #{i+1} {s.name} ({canonical.filter(a=>a.sourceId===s.id||a.originalSourceId===s.id).length})
               </option>
             ))}
           </select>
@@ -1241,7 +1288,7 @@ function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
       {/* ── Source cards grid ─────────────────────────────────────────────── */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16}}>
         {visibleSources.map((src, idx)=>{
-          const arts = canonical.filter(a=>a.sourceId===src.id);
+          const arts = canonical.filter(a=>a.sourceId===src.id||a.originalSourceId===src.id);
           const rank = rankOrder.indexOf(src.id);
           const rankLabel = rank >= 0 ? `#${rank+1}` : null;
           return (
@@ -1290,7 +1337,16 @@ function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
                   no recent articles
                 </div>
               ):(
-                arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)
+                <>
+                  {src.paywall&&arts.some(a=>a.originalSourceId===src.id)&&(
+                    <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#888",
+                      background:"#f9f6f0",border:"1px solid #e8e0d0",borderRadius:4,
+                      padding:"5px 10px",marginBottom:8}}>
+                      ✦ includes free versions of {src.name} stories from other outlets
+                    </div>
+                  )}
+                  {arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
+                </>
               )}
             </div>
           );
@@ -1433,7 +1489,7 @@ export default function App() {
   const countryArts=forCountry(activeCountry);
   const sectorArts=forSector(activeSector);
   const sourcesInView=SOURCES.filter(s=>activeCountry==="ALL"||s.country===activeCountry);
-  const sourceGroups=sourcesInView.map(s=>({s,arts:canonical.filter(a=>a.sourceId===s.id)})).filter(g=>g.arts.length);
+  const sourceGroups=sourcesInView.map(s=>({s,arts:canonical.filter(a=>a.sourceId===s.id||a.originalSourceId===s.id)})).filter(g=>g.arts.length);
   const sectorGroups=MSCI_SECTORS.map(sec=>({sec,arts:canonical.filter(a=>a.sector===sec.code)})).filter(g=>g.arts.length).sort((a,b)=>b.arts.length-a.arts.length);
   // Also show unenriched articles under a pending group if sectors tab is empty
   const unenrichedArts=canonical.filter(a=>!a.sector);
