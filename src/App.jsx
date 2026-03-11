@@ -160,19 +160,19 @@ const SOURCES = [
 
   // ── Iran ──────────────────────────────────────────────────────────────────
   // Iran International: London-based, critical of regime, English + Farsi; best external coverage
-  {id:"iranintl",desc:"Iran International — London-based, independent; most trusted external source on Iran's economy and crisis.",    country:"IR",name:"Iran International",     lang:"en",flag:"🇮🇷",url:GN("site:iranintl.com")},
+  {id:"iranintl",desc:"Iran International — London-based, independent; most trusted external source on Iran's economy and crisis.",    country:"IR",name:"Iran International",     lang:"en",flag:"🇮🇷",url:GN("\"Iran International\" Iran politics military economy Hormuz")},
   // Tehran Times: state-adjacent English daily, useful for official Iran perspective
-  {id:"tehrantimes",desc:"Tehran Times — state-adjacent English daily; reflects official Iranian government economic narrative.", country:"IR",name:"Tehran Times",           lang:"en",flag:"🇮🇷",url:GN("site:tehrantimes.com")},
+  {id:"tehrantimes",desc:"Tehran Times — state-adjacent English daily; reflects official Iranian government economic narrative.", country:"IR",name:"Tehran Times",           lang:"en",flag:"🇮🇷",url:GN("Tehran Times Iran economy politics")},
   // Financial Tribune: only non-govt Iranian English business paper (may be offline during conflict)
-  {id:"fin_trib",desc:"Financial Tribune — Iran's only non-government English business paper; covers Iranian equities and trade.",    country:"IR",name:"Financial Tribune",      lang:"en",flag:"🇮🇷",url:GN("site:financialtribune.com")},
+  {id:"fin_trib",desc:"Financial Tribune — Iran's only non-government English business paper; covers Iranian equities and trade.",    country:"IR",name:"Financial Tribune",      lang:"en",flag:"🇮🇷",url:GN("Financial Tribune Iran business economy markets")},
   // IRNA: official Islamic Republic News Agency, English feed
-  {id:"irna_en",desc:"IRNA — Islamic Republic's official wire; first with government statements, sanctions responses, and data.",     country:"IR",name:"IRNA English",           lang:"en",flag:"🇮🇷",url:GN("site:en.irna.ir")},
+  {id:"irna_en",desc:"IRNA — Islamic Republic's official wire; first with government statements, sanctions responses, and data.",     country:"IR",name:"IRNA English",           lang:"en",flag:"🇮🇷",url:GN("IRNA Iran official government economy")},
   // Tasnim News: semi-official Iranian wire agency, English RSS
-  {id:"tasnim",desc:"Tasnim News — semi-official Iranian agency; covers IRGC-linked industries, energy, and trade.",      country:"IR",name:"Tasnim News",            lang:"en",flag:"🇮🇷",url:GN("site:tasnimnews.com")},
+  {id:"tasnim",desc:"Tasnim News — semi-official Iranian agency; covers IRGC-linked industries, energy, and trade.",      country:"IR",name:"Tasnim News",            lang:"en",flag:"🇮🇷",url:GN("Tasnim News Iran IRGC energy")},
   // Mehr News: state-owned Iranian news agency, English
-  {id:"mehrnews",desc:"Mehr News — state-owned Iranian agency; strong on industry, infrastructure, and domestic economy.",    country:"IR",name:"Mehr News Agency",       lang:"en",flag:"🇮🇷",url:GN("site:en.mehrnews.com")},
+  {id:"mehrnews",desc:"Mehr News — state-owned Iranian agency; strong on industry, infrastructure, and domestic economy.",    country:"IR",name:"Mehr News Agency",       lang:"en",flag:"🇮🇷",url:GN("Mehr News Iran industry infrastructure")},
   // IFP News: Independent (covers wide Iran topics), English RSS
-  {id:"ifpnews",desc:"IFP News — aggregates and translates from leading Persian sources; useful cross-section of Iranian press.",     country:"IR",name:"IFP News",               lang:"en",flag:"🇮🇷",url:GN("site:ifpnews.com")},
+  {id:"ifpnews",desc:"IFP News — aggregates and translates from leading Persian sources; useful cross-section of Iranian press.",     country:"IR",name:"IFP News",               lang:"en",flag:"🇮🇷",url:GN("IFP News Iran politics economy")},
   // Entekhab: major Persian-language news site, auto-translated
   {id:"entekhab",desc:"انتخاب — one of Iran's most-read Persian news portals, auto-translated; broad economic and political coverage.",    country:"IR",name:"انتخاب Entekhab",        lang:"fa",flag:"🇮🇷",url:GN("site:entekhab.ir","fa","IR","IR:fa")},
   // Tabnak: Persian news site covering economy/politics, auto-translated
@@ -245,6 +245,7 @@ async function fetchFeed(source) {
       // Filter bot-challenge / captcha junk titles that some sites return via proxy
       const JUNK_PATTERNS = [
         /please complete.*verif/i,
+        /tehrantimes pdf/i,
         /verif.*to continue/i,
         /access denied/i,
         /just a moment/i,
