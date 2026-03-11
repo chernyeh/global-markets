@@ -114,7 +114,7 @@ const SOURCES = [
   {id:"reuters_au",desc:"Reuters Australia; covers RBA, iron ore, LNG, and major ASX corporates.", country:"AU",name:"Reuters Australia",       lang:"en",flag:"🇦🇺",url:GN("site:reuters.com Australia economy business")},
   {id:"bloom_au",desc:"Bloomberg Australia; strong on RBA rate decisions, mining majors, and AUD moves.",   country:"AU",name:"Bloomberg Australia",     lang:"en",flag:"🇦🇺",url:GN("site:bloomberg.com Australia markets economy"),paywall:true},
   // ── China ──────────────────────────────────────────────────────────────────
-  {id:"kr36",desc:"36Kr — China's leading tech and startup news site, auto-translated; essential for VC deals and unicorns.",        country:"CN",name:"36Kr 快讯",              lang:"zh",flag:"🇨🇳",url:GN("site:36kr.com","zh-CN","CN","CN:zh-Hans")},
+  {id:"kr36",desc:"36Kr — China's leading tech and startup news site, auto-translated; essential for VC deals and unicorns.",        country:"CN",name:"36Kr 快讯",              lang:"zh",flag:"🇨🇳",url:GN("36氪 融资 科技 独角兽","zh-CN","CN","CN:zh-Hans")},
   {id:"caixin",desc:"Caixin Global — China's most credible independent financial journalism; known for breaking regulatory news.",     country:"CN",name:"Caixin Global",          lang:"en",flag:"🇨🇳",url:GN("site:caixinglobal.com economy finance"),paywall:true},
   {id:"xinhua",desc:"Xinhua — China's state wire; first with official announcements, policy signals, and economic data releases.",      country:"CN",name:"Xinhua Finance",           lang:"en",flag:"🇨🇳",url:GN("site:english.news.cn OR site:xinhuanet.com economy finance")},
   {id:"cgtn",desc:"CGTN Business — state broadcaster's English arm; reflects official Chinese economic narrative.",        country:"CN",name:"CGTN Business",             lang:"en",flag:"🇨🇳",url:"https://www.cgtn.com/subscribe/rss/section/business.xml"},
@@ -242,6 +242,19 @@ async function fetchFeed(source) {
         .replace(/\s*[-–]\s*[^-–]{3,50}$/, "")       // remove source suffix
         .trim();
       if (!title) return null;
+      // Filter bot-challenge / captcha junk titles that some sites return via proxy
+      const JUNK_PATTERNS = [
+        /please complete.*verif/i,
+        /verif.*to continue/i,
+        /access denied/i,
+        /just a moment/i,
+        /checking your browser/i,
+        /ddos protection/i,
+        /cloudflare/i,
+        /enable javascript/i,
+        /why do i have to complete a captcha/i,
+      ];
+      if (JUNK_PATTERNS.some(p => p.test(title))) return null;
       return {
         id: btoa(encodeURIComponent(title.slice(0,60))).replace(/[^a-zA-Z0-9]/g,"").slice(0,20),
         title,
