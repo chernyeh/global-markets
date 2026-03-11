@@ -41,6 +41,7 @@ const SOURCES = [
   {id:"ft",         country:"US",name:"Financial Times",        lang:"en",flag:"🇺🇸",url:GN("site:ft.com markets economy business"),paywall:true},
   {id:"nyt",        country:"US",name:"NY Times Business",      lang:"en",flag:"🇺🇸",url:"https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",paywall:true},
   {id:"axios_biz",  desc:"Axios — smart brevity format; fast, context-rich on tech, policy, and market-moving Washington news.",country:"US",name:"Axios Business",         lang:"en",flag:"🇺🇸",url:GN("site:axios.com business economy markets finance")},
+  {id:"wapo",       desc:"Washington Post — authoritative on US politics, policy, and national security; essential for Washington-driven market moves.",country:"US",name:"Washington Post",        lang:"en",flag:"🇺🇸",url:GN("site:washingtonpost.com business economy policy"),paywall:true},
   // ── Canada ─────────────────────────────────────────────────────────────────
   // Globe & Mail: paywalled — broader GN query gets more headlines
   {id:"globe_mail",desc:"Canada's newspaper of record; best source for Bay Street and TSX corporate news.", country:"CA",name:"Globe and Mail",         lang:"en",flag:"🇨🇦",url:"https://www.theglobeandmail.com/arc/outboundfeeds/rss/?outputType=xml&_website=the-globe-and-mail",paywall:true},
@@ -305,37 +306,77 @@ function resolveGroup(arts) {
   const paywallSource = paywalled.length
     ? paywalled.slice().sort((a,b)=>byDate(b)-byDate(a))[0].sourceId
     : null;
+  const paywallArticle = paywalled.length
+    ? paywalled.slice().sort((a,b)=>byDate(b)-byDate(a))[0]
+    : null;
   const canonUpdated = {
     ...canon,
     duplicateOf: null,
-    originalSourceId: (free.length && paywallSource) ? paywallSource : (canon.originalSourceId||null),
+    originalSourceId: (free.length && paywallSource && !sameFamily(canon.sourceId, paywallSource))
+      ? paywallSource
+      : (canon.originalSourceId||null),
+    originalSourceLink: (free.length && paywallArticle && !sameFamily(canon.sourceId, paywallSource))
+      ? (paywallArticle.link || null)
+      : (canon.originalSourceLink||null),
   };
   const dupes = arts.filter(a=>a.id!==canon.id).map(a=>({...a,duplicateOf:canon.id}));
   return [canonUpdated, ...dupes];
 }
+// Publisher families: same outlet, different feed IDs — deduplicate more aggressively
+const PUBLISHER_FAMILIES = [
+  ["bloomberg","bloomberg2"],
+];
+function sameFamily(idA, idB) {
+  return PUBLISHER_FAMILIES.some(fam=>fam.includes(idA)&&fam.includes(idB));
+}
 function localDedup(articles) {
-  const seen=[];   // {fp, id, idx}
-  const groups={}; // id -> [article]
-  const out=articles.map(art=>{
-    const fp=fingerprint(art.translatedTitle||art.title);
-    const match=seen.find(s=>jaccard(fp,s.fp)>0.45);
-    if(match){
-      if(!groups[match.id]) groups[match.id]=[articles.find(a=>a.id===match.id)];
-      groups[match.id].push(art);
-      return null; // placeholder — resolved below
+  // Step 1: exact-ID dedup — same title hash = same article, keep only the first occurrence
+  const seenIds = new Set();
+  const uniqueArts = [];
+  const exactDupes = [];
+  for (const art of articles) {
+    if (seenIds.has(art.id)) exactDupes.push({...art, duplicateOf: art.id});
+    else { seenIds.add(art.id); uniqueArts.push(art); }
+  }
+
+  // Step 2: fuzzy Jaccard dedup — track by index to avoid same-ID collisions
+  const seen = [];        // [{fp, idx}]
+  const groupMap = {};    // canonIdx -> [art, ...]
+  const posToGroup = {};  // artIdx -> canonIdx (for null slots)
+
+  uniqueArts.forEach((art, i) => {
+    const fp = fingerprint(art.translatedTitle || art.title);
+    const match = seen.find(s => {
+      const threshold = sameFamily(art.sourceId, uniqueArts[s.idx]?.sourceId) ? 0.25 : 0.45;
+      return jaccard(fp, s.fp) > threshold;
+    });
+    if (match) {
+      if (!groupMap[match.idx]) groupMap[match.idx] = [uniqueArts[match.idx]];
+      groupMap[match.idx].push(art);
+      posToGroup[i] = match.idx;
+    } else {
+      seen.push({fp, idx: i});
     }
-    seen.push({fp,id:art.id});
-    return art;
   });
-  // Resolve each group and splice results back
-  const resolved={};
-  Object.entries(groups).forEach(([canonId,grpArts])=>{
-    resolveGroup(grpArts).forEach(a=>{ resolved[a.id]=a; });
+
+  // Pre-resolve each group once; build a map: original art position → resolved art
+  const resolvedAtPos = {}; // artIdx → resolved article
+  Object.entries(groupMap).forEach(([canonIdxStr, grpArts]) => {
+    const canonIdx = Number(canonIdxStr);
+    const resolved = resolveGroup(grpArts);
+    // resolved[0] is the new canonical; rest are marked duplicateOf
+    grpArts.forEach((origArt, j) => {
+      // find the matching resolved article (matched by original id+sourceId)
+      const match = resolved.find(r => r.sourceId === origArt.sourceId && r.id === origArt.id)
+                 || resolved[j];
+      // find the position in uniqueArts
+      const pos = uniqueArts.indexOf(origArt);
+      if (pos >= 0) resolvedAtPos[pos] = match;
+    });
   });
-  return out.map((art,i)=>{
-    if(!art) return resolved[articles[i].id] || {...articles[i],duplicateOf:articles[i].id};
-    return resolved[art.id] || art;
-  });
+
+  const result = uniqueArts.map((art, i) => resolvedAtPos[i] || art);
+  return [...result, ...exactDupes];
 }
 async function claudeDedup(articles) {
   const candidates=articles.filter(a=>!a.duplicateOf);
@@ -692,13 +733,22 @@ function ArticleCard({art, highlightKeyword=null}) {
         </span>
         {art.originalSourceId&&(()=>{
           const orig=SOURCES.find(s=>s.id===art.originalSourceId);
-          return orig?(
+          if(!orig) return null;
+          const label = "Originally from " + orig.name.split(" ").slice(0,2).join(" ");
+          return art.originalSourceLink ? (
+            <a href={art.originalSourceLink} target="_blank" rel="noopener noreferrer"
+              style={{fontSize:9,fontFamily:"'DM Mono',monospace",color:"#8a6a20",
+                background:"#fdf6e3",padding:"1px 6px",borderRadius:3,
+                border:"1px solid #e8d9a0",textDecoration:"none",cursor:"pointer"}}>
+              ↗ {label}
+            </a>
+          ) : (
             <span style={{fontSize:9,fontFamily:"'DM Mono',monospace",color:"#888",
               background:"#f5f0e8",padding:"1px 6px",borderRadius:3,
               border:"1px solid #e0d8cc"}}>
-              via {orig.name.split(" ").slice(0,2).join(" ")}
+              {label}
             </span>
-          ):null;
+          );
         })()}
         {art.lang!=="en" && <Tag color="#7a8fa6">{art.lang.toUpperCase()}→EN</Tag>}
         {sec && sec.code!=="UNK" && <Tag color={sec.color}>{sec.icon} {sec.label}</Tag>}
@@ -1175,7 +1225,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Source ranking by influence/circulation per country
 const SOURCE_RANK = {
-  US: ["reuters","bloomberg","bloomberg2","wsj","ft","nyt","marketwatch","axios_biz"],
+  US: ["reuters","bloomberg","bloomberg2","wsj","ft","wapo","nyt","marketwatch","axios_biz"],
   CA: ["reuters_ca","bloom_ca","globe_mail","fin_post","bnn"],
   SG: ["reuters_sg","bloom_sg","bt_sg","edge_sg","cna_sg"],
   HK: ["reuters_hk","bloom_hk","scmp","mingtiandi","hket","mingpao"],
