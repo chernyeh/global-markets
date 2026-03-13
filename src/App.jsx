@@ -33,7 +33,8 @@ const SOURCES = [
   // MarketWatch: not paywalled, GN fine
   {id:"marketwatch",desc:"Dow Jones-owned; strong on US equities, earnings, and retail investor flow.",country:"US",name:"MarketWatch",            lang:"en",flag:"🇺🇸",url:GN("site:marketwatch.com markets stocks")},
   // WSJ: paywalled — direct Dow Jones RSS feed
-  {id:"wsj",        country:"US",name:"Wall Street Journal",    lang:"en",flag:"🇺🇸",url:GN("site:wsj.com markets economy business finance"),paywall:true},
+  {id:"wsj",        country:"US",name:"WSJ Markets",            lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",paywall:true},
+  {id:"wsj2",       country:"US",name:"WSJ Business",           lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/WSJcomUSBusiness",paywall:true},
   // Bloomberg: direct RSS — headlines are public even if articles paywalled
   {id:"bloomberg",  country:"US",name:"Bloomberg Markets",      lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/markets/news.rss",paywall:true},
   {id:"bloomberg2", country:"US",name:"Bloomberg Business",     lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/business/news.rss",paywall:true},
@@ -42,6 +43,16 @@ const SOURCES = [
   {id:"nyt",        country:"US",name:"NY Times Business",      lang:"en",flag:"🇺🇸",url:"https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",paywall:true},
   {id:"axios_biz",  desc:"Axios — smart brevity format; fast, context-rich on tech, policy, and market-moving Washington news.",country:"US",name:"Axios Business",         lang:"en",flag:"🇺🇸",url:GN("site:axios.com business economy markets finance")},
   {id:"wapo",       desc:"Washington Post — authoritative on US politics, policy, and national security; essential for Washington-driven market moves.",country:"US",name:"Washington Post",        lang:"en",flag:"🇺🇸",url:GN("site:washingtonpost.com business economy policy"),paywall:true},
+  // ── Germany ────────────────────────────────────────────────────────────────
+  {id:"handelsblatt",  desc:"Handelsblatt — Germany's leading financial daily; required reading for DAX, German industry and European monetary policy.",               country:"DE",name:"Handelsblatt",        lang:"de",flag:"🇩🇪",url:"https://www.handelsblatt.com/contentexport/feed/schlagzeilen",paywall:true},
+  {id:"handelsblatt_en",desc:"Handelsblatt English — curated English-language coverage of German business and European economic news.",                                 country:"DE",name:"Handelsblatt (EN)",    lang:"en",flag:"🇩🇪",url:GN("site:handelsblatt.com english economy business"),paywall:true},
+  {id:"faz",           desc:"FAZ (Frankfurter Allgemeine) — Germany's newspaper of record; authoritative on politics, economics and ECB.",                             country:"DE",name:"FAZ",                  lang:"de",flag:"🇩🇪",url:"https://www.faz.net/rss/aktuell",paywall:true},
+  {id:"faz_finance",   desc:"FAZ Finance — financial markets, banking and investment coverage from Germany's most authoritative broadsheet.",                          country:"DE",name:"FAZ Finance",          lang:"de",flag:"🇩🇪",url:GN("site:faz.net Wirtschaft Finanzen","de","DE","DE:de")},
+  {id:"spiegel_de",    desc:"Der Spiegel (International) — Germany's top news magazine; investigative, with strong European and geopolitical depth in English.",        country:"DE",name:"Der Spiegel",          lang:"en",flag:"🇩🇪",url:"https://www.spiegel.de/international/index.rss"},
+  {id:"sz_de",         desc:"Süddeutsche Zeitung — centrist German broadsheet; strong on investigative journalism and European affairs.",                               country:"DE",name:"Süddeutsche Zeitung",  lang:"de",flag:"🇩🇪",url:GN("site:sueddeutsche.de Wirtschaft Finanzen","de","DE","DE:de")},
+  {id:"dw_de",         desc:"Deutsche Welle Business — Germany's international broadcaster; English-language coverage of German and European economic news.",           country:"DE",name:"Deutsche Welle",       lang:"en",flag:"🇩🇪",url:"https://rss.dw.com/xml/rss-en-bus"},
+  {id:"reuters_de",    desc:"Reuters Germany — wire coverage of German markets, DAX companies and European economic policy.",                                          country:"DE",name:"Reuters Germany",      lang:"en",flag:"🇩🇪",url:GN("site:reuters.com Germany economy business finance DAX")},
+  {id:"bloom_de",      desc:"Bloomberg Germany — markets and corporate coverage with a Germany/DACH focus.",                                                           country:"DE",name:"Bloomberg Germany",    lang:"en",flag:"🇩🇪",url:GN("site:bloomberg.com Germany economy business"),paywall:true},
   // ── Canada ─────────────────────────────────────────────────────────────────
   // Globe & Mail: paywalled — broader GN query gets more headlines
   {id:"globe_mail",desc:"Canada's newspaper of record; best source for Bay Street and TSX corporate news.", country:"CA",name:"Globe and Mail",         lang:"en",flag:"🇨🇦",url:"https://www.theglobeandmail.com/arc/outboundfeeds/rss/?outputType=xml&_website=the-globe-and-mail",paywall:true},
@@ -186,6 +197,7 @@ const SOURCES = [
 const COUNTRIES = [
   {code:"ALL",label:"All Markets",   flag:"🌐"},
   {code:"US", label:"United States", flag:"🇺🇸"},
+  {code:"DE", label:"Germany",       flag:"🇩🇪"},
   {code:"CA", label:"Canada",        flag:"🇨🇦"},
   {code:"SG", label:"Singapore",     flag:"🇸🇬"},
   {code:"HK", label:"Hong Kong",     flag:"🇭🇰"},
@@ -325,6 +337,7 @@ function resolveGroup(arts) {
 // Publisher families: same outlet, different feed IDs — deduplicate more aggressively
 const PUBLISHER_FAMILIES = [
   ["bloomberg","bloomberg2"],
+  ["wsj","wsj2"],
 ];
 function sameFamily(idA, idB) {
   return PUBLISHER_FAMILIES.some(fam=>fam.includes(idA)&&fam.includes(idB));
@@ -1225,7 +1238,8 @@ function WatchlistTab({allArticles, setAllArticles}) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Source ranking by influence/circulation per country
 const SOURCE_RANK = {
-  US: ["reuters","bloomberg","bloomberg2","wsj","ft","wapo","nyt","marketwatch","axios_biz"],
+  US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","ft","wapo","nyt","marketwatch","axios_biz"],
+  DE: ["reuters_de","bloom_de","handelsblatt","handelsblatt_en","faz","faz_finance","spiegel_de","sz_de","dw_de"],
   CA: ["reuters_ca","bloom_ca","globe_mail","fin_post","bnn"],
   SG: ["reuters_sg","bloom_sg","bt_sg","edge_sg","cna_sg"],
   HK: ["reuters_hk","bloom_hk","scmp","mingtiandi","hket","mingpao"],
@@ -1840,7 +1854,7 @@ export default function App() {
                   </div>
                   <button onClick={async()=>{
                       setBriefLoading(p=>({...p,[briefKey]:true}));
-                      const BRIEF_COUNTRY_ORDER = ["US","CN","HK","KR","TW","IN","AU","IL","ME","IR","SG","CA"];
+                      const BRIEF_COUNTRY_ORDER = ["US","CN","DE","HK","KR","TW","IN","AU","IL","ME","IR","SG","CA"];
                         const prioritisedArts = [...breakingArts].sort((a,b)=>{
                           const ra = BRIEF_COUNTRY_ORDER.indexOf(a.country);
                           const rb = BRIEF_COUNTRY_ORDER.indexOf(b.country);
