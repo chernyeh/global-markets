@@ -43,6 +43,9 @@ const SOURCES = [
   {id:"nyt",        country:"US",name:"NY Times Business",      lang:"en",flag:"🇺🇸",url:"https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",paywall:true},
   {id:"axios_biz",  desc:"Axios — smart brevity format; fast, context-rich on tech, policy, and market-moving Washington news.",country:"US",name:"Axios Business",         lang:"en",flag:"🇺🇸",url:GN("site:axios.com business economy markets finance")},
   {id:"wapo",       desc:"Washington Post — authoritative on US politics, policy, and national security; essential for Washington-driven market moves.",country:"US",name:"Washington Post",        lang:"en",flag:"🇺🇸",url:GN("site:washingtonpost.com business economy policy"),paywall:true},
+  {id:"barrons",    desc:"Barron's — Dow Jones's premier investment weekly; stock-specific analysis, ratings, earnings previews, and buy/sell calls. Highly actionable for fundamental investors.",country:"US",name:"Barron's",              lang:"en",flag:"🇺🇸",url:GN("site:barrons.com stocks earnings analysis"),paywall:true},
+  {id:"seekalpha",  desc:"Seeking Alpha Earnings — earnings beats/misses, dividend announcements, and analyst rating changes. Filtered to high-signal corporate events only.",country:"US",name:"Seeking Alpha Earnings",  lang:"en",flag:"🇺🇸",url:GN("site:seekingalpha.com earnings beat miss dividend CEO acquires merger")},
+  {id:"prnewswire", desc:"PR Newswire — filtered to primary corporate events: earnings results, M&A, dividend changes, and CEO/CFO appointments only.",country:"US",name:"PR Newswire",            lang:"en",flag:"🇺🇸",url:GN("site:prnewswire.com quarterly results OR earnings per share OR acquires OR merger agreement OR dividend OR appoints CEO OR names CFO")},
   // ── Germany ────────────────────────────────────────────────────────────────
   {id:"handelsblatt",  desc:"Handelsblatt — Germany's leading financial daily; required reading for DAX, German industry and European monetary policy.",               country:"DE",name:"Handelsblatt",        lang:"de",flag:"🇩🇪",url:"https://www.handelsblatt.com/contentexport/feed/schlagzeilen",paywall:true},
   {id:"handelsblatt_en",desc:"Handelsblatt English — curated English-language coverage of German business and European economic news.",                                 country:"DE",name:"Handelsblatt (EN)",    lang:"en",flag:"🇩🇪",url:GN("site:handelsblatt.com english economy business"),paywall:true},
@@ -59,8 +62,12 @@ const SOURCES = [
   {id:"fin_post",desc:"Canada's leading dedicated financial daily; covers TSX, commodities, and energy.",   country:"CA",name:"Financial Post",         lang:"en",flag:"🇨🇦",url:GN("site:financialpost.com"),paywall:true},
   // BNN: not paywalled
   {id:"bnn",desc:"BNN Bloomberg's Canadian TV wire; fast-moving market updates and Bay Street commentary.",        country:"CA",name:"BNN Bloomberg Canada",   lang:"en",flag:"🇨🇦",url:GN("site:bnnbloomberg.ca")},
+  {id:"globemail_rob",  desc:"Globe and Mail Report on Business — Canada's most read business section; TSX company earnings, Bay Street M&A, and corporate actions.",   country:"CA",name:"Globe: Report on Business",lang:"en",flag:"🇨🇦",url:"https://www.theglobeandmail.com/arc/outboundfeeds/rss/section/report-on-business/?outputType=xml",paywall:true},
+  {id:"fp_companies",   desc:"Financial Post Companies — company-specific feed; TSX earnings, executive moves, and resource sector corporate actions.",                  country:"CA",name:"FP Companies",         lang:"en",flag:"🇨🇦",url:GN("site:financialpost.com company earnings acquisition TSX"),paywall:true},
   {id:"reuters_ca",desc:"Reuters' Canada-focused feed; strong on energy, mining, and macro.", country:"CA",name:"Reuters Canada",         lang:"en",flag:"🇨🇦",url:GN("site:reuters.com Canada economy business")},
   {id:"bloom_ca",desc:"Bloomberg's Canada feed; authoritative on oil sands, housing, and BoC policy.",   country:"CA",name:"Bloomberg Canada",       lang:"en",flag:"🇨🇦",url:GN("site:bloomberg.com Canada economy markets"),paywall:true},
+  // ── Nikkei Asia (pan-Asian; covers JP, KR, TW, IN, SG, SE Asia corporate news) ──────
+  {id:"nikkei_asia",   desc:"Nikkei Asia — premier English-language source for Asian corporate news; essential for Japan, Korea, SEA company-level coverage.",          country:"JP",name:"Nikkei Asia",          lang:"en",flag:"🇯🇵",url:"https://asia.nikkei.com/rss/feed/nar",paywall:true},
   // ── Singapore ──────────────────────────────────────────────────────────────
   // Business Times SG: paywalled — broader query
   {id:"bt_sg",desc:"SGX's go-to daily; essential for listed companies, REITs, and MAS policy.",      country:"SG",name:"Business Times SG",      lang:"en",flag:"🇸🇬",url:GN("Business Times Singapore markets economy"),paywall:true},
@@ -257,6 +264,10 @@ async function fetchFeed(source) {
       if (!title) return null;
       // Filter bot-challenge / captcha junk titles that some sites return via proxy
       const JUNK_PATTERNS = [
+        // Promotional / non-essential corporate PR noise
+        /\\b(award[s]?|recogni[sz]|certif|named one of|best place|top \\d+ company|proud to announce|thrilled to|excited to|sponsorship|celebrate[s]?|anniversary)\\b/i,
+        // Seeking Alpha opinion/income-investing noise
+        /\\b(why i (bought|sold|own|like)|my top pick|portfolio update|buy the dip|passive income|monthly dividend|drip investing|high yield|income investor|deep dive into|a closer look at|dividend king|dividend aristocrat)\\b/i,
         /please complete.*verif/i,
         /tehrantimes pdf/i,
         /verif.*to continue/i,
@@ -278,7 +289,7 @@ async function fetchFeed(source) {
         source: source.name, sourceId: source.id,
         country: source.country, flag: source.flag, lang: source.lang,
         fetchedAt: Date.now(),
-        translatedTitle: null, insight: null, sector: null, duplicateOf: null,
+        translatedTitle: null, insight: null, sector: null, duplicateOf: null, isMicro: classifyMicro(title),
         watchMatches: [],
       };
     }).filter(Boolean);
@@ -291,6 +302,11 @@ async function fetchFeed(source) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // DEDUPLICATION
 // ═══════════════════════════════════════════════════════════════════════════════
+// Company/micro news classifier — keywords indicating company-specific, actionable news
+const MICRO_KEYWORDS = /\b(earnings|revenue|profit|loss|EPS|guidance|dividend|buyback|repurchase|acquisition|merger|takeover|IPO|listing|delisting|CEO|CFO|CTO|appoint|resign|downgrade|upgrade|target price|analyst|price target|beat|miss|outlook|forecast|results|quarterly|annual report|rights issue|placement|disposal|stake|JV|joint venture|contract|deal|award|tender|lawsuit|settlement|fine|penalty|recall|bankruptcy|restructur|spinoff|spin-off|demerger|rights offer|AGM|EGM|shareholder|insider|buyout|LBO|PE fund|privatisation|privatization|delist|default|impairment|writedown|write-off|capex|guidance|raise|cut|lifted|lowered|reaffirm|initiat|reiterat)\b/i;
+function classifyMicro(title) {
+  return MICRO_KEYWORDS.test(title);
+}
 const STOP = new Set(["that","this","with","from","have","been","will","were","their","they","about","after","into","over","under","more","also","when","than","just","like","says","said"]);
 function fingerprint(t) {
   return (t||"").toLowerCase().replace(/[^\w\s]/g,"").split(/\s+/)
@@ -526,6 +542,8 @@ Rules:
 - Group related stories under thematic section headers
 - Do not use vague language — be specific about what happened and why it matters
 - COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Then HK, Korea, Taiwan, India, Australia, Israel, Middle East, Iran. Then Singapore and Canada. Ensure at least one bullet for each market with stories.
+- MICRO/COMPANY BALANCE: At least 30% of bullets must be company-specific — name the exact company, what happened (earnings beat/miss, M&A, dividend, CEO change, contract win, downgrade etc.) and the investment implication. Do NOT let macro dominate entirely. If company-specific articles exist, always include them.
+- MICRO PRIORITY: Articles tagged as company-specific news (earnings, dividends, M&A, analyst calls, guidance, appointments) are HIGH PRIORITY — include as many as possible, even at the expense of secondary macro stories.
 
 Articles (cite using [REF:N] at end of each bullet, N = article number, can cite multiple e.g. [REF:0,3]):
 ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n")}`;
@@ -567,6 +585,7 @@ Rules:
 - Use the article index to find the correct N for each claim.
 - The summaries include "(article N)" references — convert these to [REF:N] in the format above.
 - COVERAGE PRIORITY: When this is a Breaking News brief, lead with US and China stories, then HK/Korea/Taiwan/India/Australia/Israel/Middle East/Iran, then Singapore/Canada. Ensure every market with articles gets at least one bullet.
+- MICRO/COMPANY BALANCE: Dedicate at least one full section to company-specific developments (earnings, M&A, analyst rating changes, dividends, executive changes). Name every company explicitly.
 
 Article index (use N in [REF:N]):
 ${articleIndex}
@@ -1238,15 +1257,15 @@ function WatchlistTab({allArticles, setAllArticles}) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Source ranking by influence/circulation per country
 const SOURCE_RANK = {
-  US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","ft","wapo","nyt","marketwatch","axios_biz"],
+  US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","ft","wapo","nyt","barrons","marketwatch","axios_biz","seekalpha","prnewswire"],
   DE: ["reuters_de","bloom_de","handelsblatt","handelsblatt_en","faz","faz_finance","spiegel_de","sz_de","dw_de"],
-  CA: ["reuters_ca","bloom_ca","globe_mail","fin_post","bnn"],
-  SG: ["reuters_sg","bloom_sg","bt_sg","edge_sg","cna_sg"],
-  HK: ["reuters_hk","bloom_hk","scmp","mingtiandi","hket","mingpao"],
-  KR: ["reuters_kr","bloom_kr","kr_herald","yonhap","yonhap2","ktimes","ked","hankyung","maeil","chosunbiz"],
+  CA: ["reuters_ca","bloom_ca","globe_mail","globemail_rob","fin_post","fp_companies","bnn"],
+  SG: ["reuters_sg","bloom_sg","bt_sg","edge_sg","cna_sg","sgx_annc","sg_biz_review"],
+  HK: ["reuters_hk","bloom_hk","scmp","hkex_news","mingtiandi","aastocks_hk","etnet_hk","hket","mingpao"],
+  KR: ["reuters_kr","bloom_kr","kr_herald","yonhap","yonhap2","ktimes","ked","pulse_kr","thebell_kr","businesskorea","hankyung","maeil","chosunbiz"],
   TW: ["reuters_tw","bloom_tw","focus_tw","taipei_t","digitimes","udn_money","ctee"],
   IN: ["reuters_in","bloom_in","econ_times","mint","mint2","mint3","biz_std","hindubiz","fin_exp","cnbctv18","moneyctrl","forbes_in"],
-  AU: ["reuters_au","bloom_au","afr","smh","abc_au","guardian_au","the_aus"],
+  AU: ["reuters_au","bloom_au","afr","market_herald","smh","abc_au","stockhead_au","guardian_au","the_aus"],
   CN: ["reuters_cn","bloom_cn","xinhua","cgtn","chinadaily","caixin","kr36","globaltimes","yicai","peoples_d"],
   IL: ["globes_il","reuters_il","bloom_il","jpost_il","toi_il","haaretz_il","ctech_il","calcalist"],
   ME: ["arabnews","arabnews_biz","national_ae","gulfnews","arabianbiz","reuters_me","bloom_me","agbi","tradearabia","alarabiya","zawya","gulfbiz","gulftimes","khaleej","saudigazette","menafn_sa","menafn_uae","menafn_qa","menafn_kw","menafn_bh","menafn_om","alarabiya_ar"],
