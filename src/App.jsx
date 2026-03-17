@@ -1014,13 +1014,7 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
 // REGULATORY FILINGS TAB
 // ═══════════════════════════════════════════════════════════════════════════════
 const FILING_EXCHANGES = [
-  { code:"US",  label:"SEC (US)",      flag:"🇺🇸", desc:"8-K / 10-Q / 10-K from SEC EDGAR" },
-  { code:"SG",  label:"SGX",           flag:"🇸🇬", desc:"SGX-listed company announcements" },
-  { code:"HK",  label:"HKEX",          flag:"🇭🇰", desc:"Hong Kong listed company disclosures" },
-  { code:"AU",  label:"ASX",           flag:"🇦🇺", desc:"ASX-listed company announcements" },
-  { code:"CA",  label:"TSX / SEDAR+",  flag:"🇨🇦", desc:"Canadian listed company filings" },
-  { code:"DE",  label:"Germany",       flag:"🇩🇪", desc:"DAX / German listed company filings" },
-  { code:"TW",  label:"TWSE",          flag:"🇹🇼", desc:"Taiwan listed company announcements" },
+  { code:"US",  label:"SEC (US)",      flag:"🇺🇸", desc:"8-K / 10-Q / 10-K from SEC EDGAR — free public API, real-time" },
 ];
 
 const SEC_FORM_TYPES = [
@@ -1055,240 +1049,47 @@ async function fetchSecFilings(formType, count=40) {
   }
 }
 
-async function fetchExchangeFilings(exchangeCode) {
-  const configs = {
-    SG: {
-      queries: [
-        // sginvestors.io directly mirrors SGXNET filings — most reliable SGX source
-        "site:sginvestors.io announcement financial statements dividend rights issue acquisition placement",
-        // SGX's own market updates and company news releases
-        "site:sgx.com announcement results dividend acquisition placement rights",
-        // listedcompany.com aggregates SGXNET filings for SGX-listed firms
-        "site:listedcompany.com SGX financial statements dividend acquisition",
-      ],
-      lang:"en-SG", gl:"SG", ceid:"SG:en",
-    },
-    HK: {
-      queries: [
-        // Use English-language sources for HK filings to avoid Chinese-only results
-        "site:scmp.com results earnings dividend acquisition HKEX Hong Kong listed",
-        "site:aastocks.com earnings results dividend acquisition Hong Kong",
-        "HKEX "annual results" OR "interim results" OR "acquisition" OR "dividend" Hong Kong listed company",
-      ],
-      lang:"en-US", gl:"US", ceid:"US:en",
-    },
-    AU: {
-      queries: [
-        // marketindex.com.au is a pure ASX data aggregator — mirrors actual ASX announcements
-        "site:marketindex.com.au announcement results dividend acquisition placement",
-        // asx.com.au news releases (company announcements published by ASX itself)
-        "site:asx.com.au announcement results dividend acquisition",
-        // listcorp.com aggregates ASX company announcements directly from filings
-        "site:listcorp.com ASX announcement results dividend acquisition placement",
-      ],
-      lang:"en-AU", gl:"AU", ceid:"AU:en",
-    },
-    CA: {
-      queries: [
-        // sedar.com / sedarplus.ca — Canada's official filing system (SEDAR+)
-        "site:sedarplus.ca company filing earnings dividend acquisition",
-        // newswire.ca — CNW Group press releases from TSX-listed companies
-        "site:newswire.ca earnings results dividend acquisition TSX listed company",
-        // stockwatch.com — Canadian company filing aggregator
-        "site:stockwatch.com earnings results dividend acquisition TSX listed",
-      ],
-      lang:"en-CA", gl:"CA", ceid:"CA:en",
-    },
-    DE: {
-      queries: [
-        "site:reuters.com Germany earnings results dividend acquisition DAX listed",
-        "site:handelsblatt.com Quartalsergebnis Dividende Übernahme Fusion DAX",
-        "site:finanzen.net Quartalsbericht Ergebnis Dividende Übernahme",
-      ],
-      lang:"en-US", gl:"US", ceid:"US:en",
-    },
-    TW: {
-      queries: [
-        "site:digitimes.com Taiwan earnings results dividend acquisition TWSE",
-        "site:reuters.com Taiwan earnings results dividend acquisition listed",
-        "site:focustaiwan.tw earnings results dividend acquisition company",
-      ],
-      lang:"en-US", gl:"US", ceid:"US:en",
-    },
-  };
-
-  const cfg = configs[exchangeCode];
-  if (!cfg) return [];
-  const allItems = [];
-  const seenTitles = new Set();
-  await Promise.all(cfg.queries.map(async q => {
-    try {
-      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=${cfg.lang}&gl=${cfg.gl}&ceid=${cfg.ceid}`;
-      const r = await fetch(`/api/rss?url=${encodeURIComponent(url)}`);
-      const text = await r.text();
-      const doc = new DOMParser().parseFromString(text, "text/xml");
-      [...doc.querySelectorAll("item")].slice(0,15).forEach(item => {
-        const title = item.querySelector("title")?.textContent || "";
-        const key = title.toLowerCase().slice(0,40);
-        if (seenTitles.has(key)) return;
-        seenTitles.add(key);
-        if (/appendix|rulebook|links\.sgx|listing rules|guidance note|practice note|SGX RuleBook/i.test(title)) return;
-        allItems.push({
-          id: item.querySelector("guid")?.textContent || (title+q).replace(/\s/g,"").slice(0,30),
-          title,
-          company: title.split(/[:–-]/)?.[0]?.trim() || "",
-          formType: "Announcement",
-          filed: item.querySelector("pubDate")?.textContent || "",
-          link: item.querySelector("link")?.textContent || "",
-          exchange: exchangeCode,
-        });
-      });
-    } catch(e) { /* skip failed query */ }
-  }));
-  // Filter out news/opinion sources — keep only exchange announcement sources
-  // News outlet names as they appear in GN title suffixes: "headline – Source Name"
-  // Also matched against link URLs for any non-GN sources
-  const NEWS_SOURCE_NAMES = [
-    "the smart investor", "smart investor",
-    "singapore business review",
-    "straits times", "straitstimes",
-    "business times", "businesstimes",
-    "the edge singapore", "edge singapore",
-    "yahoo finance", "yahoo.com",
-    "seeking alpha", "seekingalpha",
-    "motley fool", "fool.com", "fool.com.au",
-    "businessinsider", "business insider",
-    "investopedia", "nerdwallet", "thebalance",
-    "cnbc.com", "cnbc",
-    "msn.com",
-    "investing.com",
-    "marketwatch",
-    "smartkarma",
-    "stockhead",          // stockhead is a news outlet, not an exchange
-    "nikkei",
-    "bloomberg",
-    "reuters",
-    "afr.com", "australian financial review",
-    "the australian",
-    "sydney morning herald", "smh.com",
-    "abc news", "abc.net",
-    "financial post", "financialpost",
-    "bnn bloomberg", "bnnbloomberg",
-    "globe and mail", "theglobeandmail",
-    "handelsblatt",
-    "finanzen.net",
-    "spiegel", "faz.net",
-    "the market herald", "market herald",
-    "rask media", "simply wall st",
-  ];
-  const isNewsSource = (item) => {
-    const titleLower = (item.title || "").toLowerCase();
-    const linkLower  = (item.link || "").toLowerCase();
-    // Extract the source suffix from GN titles: "Headline text – Source Name"
-    const suffixMatch = titleLower.match(/[–—-]\s*([^–—-]+)$/);
-    const sourceSuffix = suffixMatch ? suffixMatch[1].trim() : "";
-    return NEWS_SOURCE_NAMES.some(name => {
-      const n = name.toLowerCase();
-      // Match on full title, source suffix, or link domain
-      return titleLower.includes(n) 
-          || sourceSuffix.includes(n) 
-          || linkLower.includes(n.replace(/ /g, ""));
-    });
-  };
-
-  // Filter to last 48 hours only
-  const cutoff48h = Date.now() - 48 * 60 * 60 * 1000;
-  const filtered = allItems.filter(item => {
-    if (isNewsSource(item)) return false;
-    if (!item.filed) return true; // keep if no date (can't tell)
-    try {
-      const t = new Date(item.filed).getTime();
-      return t > cutoff48h;
-    } catch(e) { return true; }
-  });
-
-  return filtered.sort((a,b)=>(new Date(b.filed||0))-(new Date(a.filed||0))).slice(0,40);
-}
-
-// Fetch all exchanges in parallel, return map of exchange code → filings[]
-async function fetchAllExchangeFilings(secForm) {
-  const results = await Promise.all(
-    FILING_EXCHANGES.map(async ex => ({
-      code: ex.code,
-      filings: ex.code === "US"
-        ? await fetchSecFilings(secForm, 30)
-        : await fetchExchangeFilings(ex.code),
-    }))
-  );
-  return Object.fromEntries(results.map(r => [r.code, r.filings]));
-}
-
-// Generate a single cross-country briefing, structured by country
+// Fetch SGX company announcements from the official SGX JSON API
+// API docs: https://api.sgx.com/announcements/v1.0/?periodstart=YYYYMMDD_160000&periodend=YYYYMMDD_155959
 async function generateGlobalFilingsBrief(filingsByExchange, secForm) {
-  const sections = FILING_EXCHANGES.map(ex => {
-    const filings = (filingsByExchange[ex.code] || []).slice(0, 12); // cap per exchange
-    if (!filings.length) return null;
-    const lines = filings.map((f, i) => {
-      const date = f.filed
-        ? (() => { try { return new Date(f.filed).toLocaleDateString("en-SG",{day:"numeric",month:"short"}); } catch(e){ return ""; } })()
-        : "";
-      return `  ${i+1}. [${f.formType}] ${f.company||f.title}${date?` (${date})`:""}${f.title!==f.company&&f.company?` — ${f.title}`:""}`;
-    }).join("\n");
-    return `${ex.flag} ${ex.label}${ex.code==="US"?` · ${secForm}`:""}:\n${lines}`;
-  }).filter(Boolean).join("\n\n");
+  const usFilings = (filingsByExchange["US"] || []).slice(0, 30);
 
-  // Truncate combined prompt sections to avoid Vercel 60s timeout
-  const sectionsTruncated = sections.slice(0, 6000);
-  const totalCount = FILING_EXCHANGES.reduce((n, ex) => n + (filingsByExchange[ex.code]?.length||0), 0);
+  const lines = usFilings.map((f, i) => {
+    const date = f.filed
+      ? (() => { try { return new Date(f.filed).toLocaleDateString("en-SG",{day:"numeric",month:"short"}); } catch(e){ return ""; } })()
+      : "";
+    return `${i+1}. [${f.formType}] ${f.company||f.title}${date?` (${date})`:""}${f.title!==f.company&&f.company?` — ${f.title}`:""}`;
+  }).join("\n");
+
+  const sectionsTruncated = (`🇺🇸 United States · SEC EDGAR · ${secForm}:\n${lines}`).slice(0, 5000);
+  const totalCount = usFilings.length;
 
   const prompt = `You are a buy-side analyst. Based on the following regulatory filings and company announcements from multiple exchanges over the last 48 hours, write a global filings intelligence briefing.
 
 ${sectionsTruncated}
 
-FORMAT — use exactly this structure:
+FORMAT:
 
-## Global Filings Brief — [date/theme headline]
+## SEC Filings Brief — [headline summarising main themes]
 
-[2-3 sentence executive summary of the most material cross-market developments]
+[2-3 sentence executive summary of the most important filings]
 
-### 🇺🇸 United States (SEC)
-- [most material US filing — company, event type, investment implication]
-- [next most material]
-(cover all significant US filings)
+## Key Corporate Events
+- [most material filing: company name, what happened, investment implication]
+- [next — be specific: earnings beat/miss by how much, M&A deal size, CEO name change, etc.]
+(cover all significant filings)
 
-### 🇸🇬 Singapore (SGX)
-- [most material SG filing]
-(cover all significant SG filings, or "No material filings" if none)
+## Sector Themes
+- [Cross-company patterns: multiple companies in same sector, directional earnings trend, M&A wave]
 
-### 🇭🇰 Hong Kong (HKEX)
-- [most material HK filing]
-
-### 🇦🇺 Australia (ASX)
-- [most material AU filing]
-
-### 🇨🇦 Canada (TSX)
-- [most material CA filing]
-
-### 🇩🇪 Germany
-- [most material DE filing]
-
-### 🇹🇼 Taiwan (TWSE)
-- [most material TW filing]
-
-### Cross-Market Themes
-- [Patterns across countries — e.g. broad earnings beat/miss trend, M&A wave in a sector, dividend cuts across markets]
-- [Any global sector trends visible from these filings]
-
-### Watch List
-- [High-priority items to monitor across any market]
+## Watch List
+- [High priority items to monitor — follow-up catalysts, risk events]
 
 Rules:
-- Name EVERY company
-- Quantify: deal sizes, % changes, beat/miss magnitudes
-- Earnings beats/misses, M&A, dividend changes, CEO changes = highest priority
-- Skip country sections with no material filings (write "No material filings" on one line)
-- Each bullet 1-2 sentences, specific and actionable
-- Cross-Market Themes must identify genuine patterns, not just restate individual items`;
+- Name EVERY company, include ticker where inferable
+- Quantify: deal sizes, EPS beat/miss, % changes
+- Earnings, M&A, dividend changes, CEO changes = highest priority
+- Each bullet 1-2 sentences, specific and actionable`;
 
   try {
     return await callClaude(prompt, 2000);
@@ -1299,62 +1100,46 @@ Rules:
 }
 
 function FilingsTab() {
-  const [secForm,         setSecForm]         = useState("8-K");
-  const [viewExchange,    setViewExchange]     = useState("ALL"); // which exchange list to show
-  const [filingsByEx,     setFilingsByEx]      = useState({});    // code → filings[]
-  const [loading,         setLoading]          = useState(false);
-  const [loadingExchanges,setLoadingExchanges] = useState(new Set());
-  const [brief,           setBrief]            = useState("");
-  const [briefLoading,    setBriefLoading]     = useState(false);
-  const [searchFilter,    setSearchFilter]     = useState("");
+  const [secForm,      setSecForm]      = useState("8-K");
+  const [filings,      setFilings]      = useState([]);
+  const [loading,      setLoading]      = useState(false);
+  const [brief,        setBrief]        = useState("");
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [searchFilter, setSearchFilter] = useState("");
 
-  // Load all exchanges at once
-  const loadAll = async () => {
+  const load = async () => {
     setLoading(true);
-    setFilingsByEx({});
+    setFilings([]);
     setBrief("");
-    // Fetch all in parallel, update state as each completes
-    await Promise.all(
-      FILING_EXCHANGES.map(async ex => {
-        setLoadingExchanges(prev => new Set([...prev, ex.code]));
-        const filings = ex.code === "US"
-          ? await fetchSecFilings(secForm, 30)
-          : await fetchExchangeFilings(ex.code);
-        setFilingsByEx(prev => ({ ...prev, [ex.code]: filings }));
-        setLoadingExchanges(prev => { const s = new Set(prev); s.delete(ex.code); return s; });
-      })
-    );
+    const results = await fetchSecFilings(secForm, 40);
+    setFilings(results);
     setLoading(false);
   };
 
-  useEffect(() => { loadAll(); }, [secForm]);
-
   const generateBrief = async () => {
+    if (!filtered.length) return;
     setBriefLoading(true);
     setBrief("");
-    const text = await generateGlobalFilingsBrief(filingsByEx, secForm);
+    // Build a single-exchange brief using the global function
+    const byEx = { US: filtered };
+    const text = await generateGlobalFilingsBrief(byEx, secForm);
     setBrief(text);
     setBriefLoading(false);
   };
 
-  // All filings flat or filtered by exchange for the list view
-  const allFilings = FILING_EXCHANGES.flatMap(ex => filingsByEx[ex.code] || []);
-  const listedFilings = viewExchange === "ALL"
-    ? allFilings
-    : (filingsByEx[viewExchange] || []);
-  const filtered = listedFilings.filter(f =>
+  useEffect(() => { load(); }, [secForm]);
+
+  const filtered = filings.filter(f =>
     !searchFilter ||
     f.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
-    (f.company||"").toLowerCase().includes(searchFilter.toLowerCase())
+    (f.company || "").toLowerCase().includes(searchFilter.toLowerCase())
   );
 
-  const totalCount = allFilings.length;
   const mono = { fontFamily:"'DM Mono',monospace" };
 
-  // Brief renderer — handles ### (country headers) as well as ## (section headers)
+  // Brief renderer — handles ## section headers and - bullets
   const renderBrief = (text) => {
     if (!text) return null;
-    // Pre-process: strip --- dividers; merge standalone **bold** lines with following paragraph
     const rawLines = text.split("\n");
     const lines = [];
     for (let i = 0; i < rawLines.length; i++) {
@@ -1376,17 +1161,15 @@ function FilingsTab() {
       const trimmed = line.trim();
       if (!trimmed) return <div key={i} style={{height:5}}/>;
       if (trimmed.startsWith("### ")) return (
-        <div key={i} style={{display:"flex",alignItems:"center",gap:8,
-          marginTop:i===0?0:20,marginBottom:6,
-          borderBottom:"1px solid #e8e2d6",paddingBottom:6}}>
-          <span style={{fontFamily:"'DM Mono',monospace",fontSize:12,fontWeight:600,color:"#1a1a1a"}}>
-            {trimmed.replace("### ","")}
-          </span>
+        <div key={i} style={{...mono,fontSize:12,fontWeight:600,color:"#1a1a1a",
+          marginTop:i===0?0:18,marginBottom:5,
+          borderBottom:"1px solid #e8e2d6",paddingBottom:5}}>
+          {trimmed.replace("### ","")}
         </div>
       );
       if (trimmed.startsWith("## ")) return (
-        <div key={i} style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,
-          color:"#1a1a1a",marginTop:i===0?0:22,marginBottom:8}}>
+        <div key={i} style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,
+          color:"#1a1a1a",marginTop:i===0?0:20,marginBottom:7}}>
           {trimmed.replace("## ","")}
         </div>
       );
@@ -1396,17 +1179,12 @@ function FilingsTab() {
           <span>{trimmed.replace("- ","").replace(/\*\*([^*]+)\*\*/g,(_,t)=>t)}</span>
         </div>
       );
-      // Plain paragraph — may be merged bold+body
       const mergedMatch = trimmed.match(/^\*\*([^*]+)\*\*:?\n([\s\S]+)$/);
-      const noMaterial = trimmed.toLowerCase().startsWith("no material");
       return (
-        <p key={i} style={{fontSize:13,lineHeight:1.65,marginBottom:8,
-          fontStyle: noMaterial ? "italic" : "normal",
-          color: noMaterial ? "#999" : "#333",
-          paddingLeft: noMaterial ? 12 : 0}}>
+        <p key={i} style={{fontSize:13,lineHeight:1.65,marginBottom:8,color:"#333"}}>
           {mergedMatch
             ? <><strong>{mergedMatch[1]}</strong>{": "}{mergedMatch[2]}</>
-            : trimmed.replace(/\*\*([^*]+)\*\*/g, (_,t)=>t)
+            : trimmed.replace(/\*\*([^*]+)\*\*/g, (_,t) => t)
           }
         </p>
       );
@@ -1416,14 +1194,13 @@ function FilingsTab() {
   return (
     <div style={{maxWidth:1100,margin:"0 auto"}}>
 
-      {/* Top controls */}
+      {/* Controls */}
       <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",marginBottom:16}}>
-        {/* SEC form type (US only) */}
-        <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
-          <span style={{...mono,fontSize:10,color:"#888"}}>SEC form:</span>
+        <div style={{display:"flex",gap:5,alignItems:"center"}}>
+          <span style={{...mono,fontSize:10,color:"#888"}}>Form type:</span>
           {SEC_FORM_TYPES.map(ft => (
             <button key={ft.id} onClick={()=>setSecForm(ft.id)} title={ft.desc}
-              style={{...mono,fontSize:10,padding:"3px 8px",borderRadius:4,cursor:"pointer",
+              style={{...mono,fontSize:10,padding:"3px 9px",borderRadius:4,cursor:"pointer",
                 border: secForm===ft.id ? "2px solid #1a1a1a" : "1px solid #ddd",
                 background: secForm===ft.id ? "#1a1a1a" : "#fff",
                 color: secForm===ft.id ? "#fff" : "#555"}}>
@@ -1431,150 +1208,119 @@ function FilingsTab() {
             </button>
           ))}
         </div>
-        <div style={{flex:1}}/>
-        <button onClick={loadAll} disabled={loading}
+        <input value={searchFilter} onChange={e=>setSearchFilter(e.target.value)}
+          placeholder="Filter by company or keyword…"
+          style={{...mono,fontSize:11,padding:"4px 10px",border:"1px solid #ccc",
+            borderRadius:4,background:"#fff",flex:1,minWidth:180}} />
+        <button onClick={load} disabled={loading}
           style={{...mono,fontSize:11,padding:"4px 10px",borderRadius:4,
             border:"1px solid #888",background:"#fff",cursor:"pointer",
             opacity:loading?0.5:1}}>
-          ↺ Refresh all
+          ↺ Refresh
         </button>
         <button onClick={generateBrief}
-          disabled={briefLoading||totalCount===0}
+          disabled={briefLoading||loading||filtered.length===0}
           style={{...mono,fontSize:11,padding:"5px 14px",borderRadius:4,cursor:"pointer",
             border:"2px solid #c0392b",
             background: brief ? "#fff5f5" : "#c0392b",
             color: brief ? "#c0392b" : "#fff",
             fontWeight:600,
-            opacity:(briefLoading||totalCount===0)?0.45:1}}>
+            opacity:(briefLoading||loading||filtered.length===0)?0.45:1}}>
           {briefLoading
-            ? "⊕ Generating global briefing…"
+            ? "⊕ Generating briefing…"
             : brief
-              ? "↺ Regenerate global briefing"
-              : `⊕ Generate global briefing (${totalCount} filings)`}
+              ? "↺ Regenerate briefing"
+              : `⊕ Generate briefing (${filtered.length} filings)`}
         </button>
       </div>
 
-      {/* Status bar — loading progress per exchange */}
+      {/* Info bar */}
       <div style={{...mono,fontSize:10,color:"#888",marginBottom:16,padding:"5px 10px",
-        background:"#f9f5ed",borderRadius:4,border:"1px solid #e8e2d6",
-        display:"flex",flexWrap:"wrap",gap:10,alignItems:"center"}}>
-        {FILING_EXCHANGES.map(ex => {
-          const count = (filingsByEx[ex.code]||[]).length;
-          const isLoading = loadingExchanges.has(ex.code);
-          return (
-            <span key={ex.code} style={{display:"flex",alignItems:"center",gap:4}}>
-              <span>{ex.flag}</span>
-              <span style={{color: isLoading ? "#c0392b" : count>0 ? "#2e7d32" : "#bbb"}}>
-                {isLoading ? "…" : count}
-              </span>
-            </span>
-          );
-        })}
-        <span style={{marginLeft:"auto",color:"#aaa"}}>
-          {loading ? "fetching…" : `${totalCount} total filings · last 48h`}
-        </span>
+        background:"#f9f5ed",borderRadius:4,border:"1px solid #e8e2d6"}}>
+        🇺🇸 SEC EDGAR · {SEC_FORM_TYPES.find(f=>f.id===secForm)?.desc}
+        {" · Last 48 hours · "}
+        {loading ? "loading…" : `${filtered.length} filings`}
+        {" · Free public API · No key required"}
       </div>
 
       {/* Briefing panel */}
       {(brief || briefLoading) && (
         <div style={{background:"#fff",border:"2px solid #1a1a1a",borderRadius:6,
-          padding:"22px 26px",marginBottom:28}}>
-          <div style={{...mono,fontSize:9,color:"#888",marginBottom:16,
+          padding:"20px 24px",marginBottom:24}}>
+          <div style={{...mono,fontSize:9,color:"#888",marginBottom:14,
             textTransform:"uppercase",letterSpacing:"0.08em",
-            display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <span>◈ Global Filings Intelligence Brief · All Markets · {secForm} + Announcements</span>
+            display:"flex",justifyContent:"space-between"}}>
+            <span>◈ SEC Filings Intelligence Brief · {secForm}</span>
             <span>{new Date().toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
           </div>
           {briefLoading
-            ? (
-              <div style={{...mono,fontSize:12,color:"#888",padding:"24px 0",textAlign:"center"}}>
-                Analysing {totalCount} filings across {FILING_EXCHANGES.length} exchanges…
+            ? <div style={{...mono,fontSize:12,color:"#888",padding:"16px 0",textAlign:"center"}}>
+                Analysing {filtered.length} filings…
               </div>
-            )
             : <div>{renderBrief(brief)}</div>
           }
         </div>
       )}
 
-      {/* Exchange filter tabs for the filing list */}
-      <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10,alignItems:"center"}}>
-        <button onClick={()=>setViewExchange("ALL")}
-          style={{...mono,fontSize:11,padding:"3px 10px",borderRadius:4,cursor:"pointer",
-            border: viewExchange==="ALL" ? "2px solid #1a1a1a" : "1px solid #ccc",
-            background: viewExchange==="ALL" ? "#1a1a1a" : "#fff",
-            color: viewExchange==="ALL" ? "#fff" : "#333"}}>
-          All ({totalCount})
-        </button>
-        {FILING_EXCHANGES.map(ex => {
-          const count = (filingsByEx[ex.code]||[]).length;
-          return (
-            <button key={ex.code} onClick={()=>setViewExchange(ex.code)}
-              style={{...mono,fontSize:11,padding:"3px 10px",borderRadius:4,cursor:"pointer",
-                border: viewExchange===ex.code ? "2px solid #1a1a1a" : "1px solid #ccc",
-                background: viewExchange===ex.code ? "#1a1a1a" : "#fff",
-                color: viewExchange===ex.code ? "#fff" : "#333",
-                opacity: count===0 ? 0.4 : 1}}>
-              {ex.flag} {ex.code} {count>0?`(${count})`:""}
-            </button>
-          );
-        })}
-        <input value={searchFilter} onChange={e=>setSearchFilter(e.target.value)}
-          placeholder="Filter filings…"
-          style={{...mono,fontSize:11,padding:"3px 10px",border:"1px solid #ccc",
-            borderRadius:4,background:"#fff",flex:1,minWidth:140,marginLeft:4}} />
-      </div>
+      {/* Loading */}
+      {loading && (
+        <div style={{textAlign:"center",padding:40,color:"#888",...mono,fontSize:12}}>
+          Loading SEC EDGAR filings…
+        </div>
+      )}
+
+      {!loading && filtered.length===0 && (
+        <div style={{textAlign:"center",padding:40,color:"#888",...mono,fontSize:12}}>
+          No filings found. Try refreshing.
+        </div>
+      )}
 
       {/* Filing list */}
-      {filtered.length===0 && !loading ? (
-        <div style={{textAlign:"center",padding:40,color:"#888",...mono,fontSize:12}}>
-          {totalCount===0 ? "Loading filings…" : "No filings match the filter."}
-        </div>
-      ) : (
+      {!loading && filtered.length>0 && (
         <div>
-          {filtered.map(filing => {
-            const exObj = FILING_EXCHANGES.find(e=>e.code===filing.exchange);
-            return (
-              <div key={filing.id}
-                style={{display:"flex",gap:10,alignItems:"flex-start",
-                  borderBottom:"1px solid #f0ebe0",padding:"8px 0"}}>
-                {/* Exchange flag */}
-                <span style={{fontSize:13,flexShrink:0,marginTop:1}}>{exObj?.flag||""}</span>
-                {/* Form type badge */}
-                <span style={{...mono,fontSize:9,background:"#1a1a1a",color:"#fff",
-                  padding:"2px 5px",borderRadius:3,flexShrink:0,marginTop:2,
-                  whiteSpace:"nowrap"}}>
-                  {filing.formType}
-                </span>
-                {/* Date */}
-                <span style={{...mono,fontSize:9,color:"#aaa",flexShrink:0,
-                  marginTop:2,minWidth:72,whiteSpace:"nowrap"}}>
-                  {filing.filed
-                    ? (() => { try { return new Date(filing.filed).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); } catch(e){ return filing.filed?.slice(0,10)||""; } })()
-                    : ""}
-                </span>
-                {/* Material badge */}
-                {classifyMicro(filing.title) && (
-                  <span style={{...mono,fontSize:9,background:"#2e7d32",color:"#fff",
-                    padding:"2px 4px",borderRadius:3,flexShrink:0,marginTop:2}}>◈</span>
-                )}
-                {/* Title */}
+          <div style={{...mono,fontSize:10,color:"#888",marginBottom:8,
+            borderBottom:"1px solid #e8e2d6",paddingBottom:6}}>
+            {filtered.length} filings — click to view on SEC EDGAR
+          </div>
+          {filtered.map(filing => (
+            <div key={filing.id}
+              style={{display:"flex",gap:10,alignItems:"flex-start",
+                borderBottom:"1px solid #f0ebe0",padding:"8px 0"}}>
+              <span style={{...mono,fontSize:9,background:"#1a1a1a",color:"#fff",
+                padding:"2px 6px",borderRadius:3,flexShrink:0,marginTop:2,whiteSpace:"nowrap"}}>
+                {filing.formType}
+              </span>
+              <span style={{...mono,fontSize:9,color:"#aaa",flexShrink:0,
+                marginTop:2,minWidth:80,whiteSpace:"nowrap"}}>
+                {filing.filed
+                  ? (() => { try { return new Date(filing.filed).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); } catch(e){ return filing.filed?.slice(0,10)||""; } })()
+                  : ""}
+              </span>
+              {classifyMicro(filing.title) && (
+                <span style={{...mono,fontSize:9,background:"#2e7d32",color:"#fff",
+                  padding:"2px 4px",borderRadius:3,flexShrink:0,marginTop:2}}>◈</span>
+              )}
+              <div style={{flex:1,minWidth:0}}>
                 <a href={filing.link} target="_blank" rel="noopener noreferrer"
-                  style={{fontSize:13,color:"#1a1a1a",textDecoration:"none",
-                    lineHeight:1.4,flex:1}}>
-                  {filing.title}
+                  style={{fontSize:13,color:"#1a1a1a",textDecoration:"none",lineHeight:1.4}}>
+                  {filing.company && filing.company !== filing.title
+                    ? <><strong>{filing.company}</strong> — {filing.title.replace(filing.company,"").replace(/^[\s–-]+/,"")}</>
+                    : filing.title
+                  }
                 </a>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
 
       <div style={{...mono,fontSize:9,color:"#bbb",textAlign:"center",marginTop:20,paddingBottom:8}}>
-        US: SEC EDGAR public API · no key required · Other markets: Google News financial sources
+        Source: SEC EDGAR public Atom feed · sec.gov · Free · No API key required
       </div>
     </div>
   );
 }
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // WATCHLIST TAB
