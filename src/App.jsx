@@ -60,7 +60,7 @@ const SOURCES = [
   {id:"bloom_de",      desc:"Bloomberg Germany — markets and corporate coverage with a Germany/DACH focus.",                                                           country:"DE",name:"Bloomberg Germany",    lang:"en",flag:"🇩🇪",url:GN("site:bloomberg.com Germany economy business"),paywall:true},
   // ── Canada ─────────────────────────────────────────────────────────────────
   // Globe & Mail: paywalled — broader GN query gets more headlines
-  {id:"globe_mail",desc:"Canada's newspaper of record; best source for Bay Street and TSX corporate news.", country:"CA",name:"Globe and Mail",         lang:"en",flag:"🇨🇦",url:"https://www.theglobeandmail.com/arc/outboundfeeds/rss/?outputType=xml&_website=the-globe-and-mail",paywall:true},
+  {id:"globe_mail",desc:"Canada's newspaper of record; best source for Bay Street and TSX corporate news.", country:"CA",name:"Globe and Mail",         lang:"en",flag:"🇨🇦",url:GN("site:theglobeandmail.com business economy markets"),paywall:true},
   {id:"fin_post",desc:"Canada's leading dedicated financial daily; covers TSX, commodities, and energy.",   country:"CA",name:"Financial Post",         lang:"en",flag:"🇨🇦",url:GN("site:financialpost.com"),paywall:true},
   // BNN: not paywalled
   {id:"bnn",desc:"BNN Bloomberg's Canadian TV wire; fast-moving market updates and Bay Street commentary.",        country:"CA",name:"BNN Bloomberg Canada",   lang:"en",flag:"🇨🇦",url:GN("site:bnnbloomberg.ca")},
@@ -136,6 +136,8 @@ const SOURCES = [
   {id:"smh",desc:"Sydney Morning Herald Business — one of Australia's oldest mastheads; good for property and finance.",        country:"AU",name:"Sydney Morning Herald",  lang:"en",flag:"🇦🇺",url:"https://www.smh.com.au/rss/feed.xml"},
   {id:"reuters_au",desc:"Reuters Australia; covers RBA, iron ore, LNG, and major ASX corporates.", country:"AU",name:"Reuters Australia",       lang:"en",flag:"🇦🇺",url:GN("site:reuters.com Australia economy business")},
   {id:"bloom_au",desc:"Bloomberg Australia; strong on RBA rate decisions, mining majors, and AUD moves.",   country:"AU",name:"Bloomberg Australia",     lang:"en",flag:"🇦🇺",url:GN("site:bloomberg.com Australia markets economy"),paywall:true},
+  {id:"stockhead_au", desc:"Stockhead — specialist ASX small/mid-cap company news; earnings, capital raises, resource discoveries, and broker calls.",  country:"AU",name:"Stockhead ASX",        lang:"en",flag:"🇦🇺",url:GN("site:stockhead.com.au")},
+  {id:"market_herald", desc:"The Market Herald — Australia's leading ASX company news wire; covers earnings, placements, and corporate actions across all listed companies.", country:"AU",name:"The Market Herald",    lang:"en",flag:"🇦🇺",url:"https://themarketonline.com.au/feed"},
   // ── China ──────────────────────────────────────────────────────────────────
   {id:"kr36",desc:"36Kr — China's leading tech and startup news site, auto-translated; essential for VC deals and unicorns.",        country:"CN",name:"36Kr 快讯",              lang:"zh",flag:"🇨🇳",url:GN("36氪 融资 科技 独角兽","zh-CN","CN","CN:zh-Hans")},
   {id:"caixin",desc:"Caixin Global — China's most credible independent financial journalism; known for breaking regulatory news.",     country:"CN",name:"Caixin Global",          lang:"en",flag:"🇨🇳",url:GN("site:caixinglobal.com economy finance"),paywall:true},
@@ -1138,20 +1140,48 @@ async function fetchExchangeFilings(exchangeCode) {
     } catch(e) { /* skip failed query */ }
   }));
   // Filter out news/opinion sources — keep only exchange announcement sources
-  const NEWS_DOMAINS = [
-    "thesmartinvestor", "smartinvestor", "straits times", "straitstimes",
-    "businessinsider", "seekingalpha", "motleyfool", "fool.com",
-    "investopedia", "thebalance", "nerdwallet", "cnbc.com",
-    "yahoo.com", "msn.com", "investing.com", "marketwatch",
-    "businesstimes", "edgesingapore", "sbr.com", "smartkarma",
-    "theedge", "nikkei", "bloomberg", "reuters",
-    "afr.com", "theaustralian", "smh.com", "abc.net",
-    "financialpost", "bnnbloomberg", "theglobeandmail",
-    "handelsblatt", "finanzen.net", "spiegel", "faz.net",
+  // News outlet names as they appear in GN title suffixes: "headline – Source Name"
+  // Also matched against link URLs for any non-GN sources
+  const NEWS_SOURCE_NAMES = [
+    "the smart investor", "smart investor",
+    "singapore business review",
+    "straits times", "straitstimes",
+    "business times", "businesstimes",
+    "the edge singapore", "edge singapore",
+    "yahoo finance", "yahoo.com",
+    "seeking alpha", "seekingalpha",
+    "motley fool", "fool.com", "fool.com.au",
+    "businessinsider", "business insider",
+    "investopedia", "nerdwallet", "thebalance",
+    "cnbc.com", "cnbc",
+    "msn.com",
+    "investing.com",
+    "marketwatch",
+    "smartkarma",
+    "stockhead",          // stockhead is a news outlet, not an exchange
+    "nikkei",
+    "bloomberg",
+    "reuters",
+    "afr.com", "australian financial review",
+    "the australian",
+    "sydney morning herald", "smh.com",
+    "abc news", "abc.net",
+    "financial post", "financialpost",
+    "bnn bloomberg", "bnnbloomberg",
+    "globe and mail", "theglobeandmail",
+    "handelsblatt",
+    "finanzen.net",
+    "spiegel", "faz.net",
+    "the market herald", "market herald",
+    "rask media", "simply wall st",
   ];
   const isNewsSource = (item) => {
-    const combined = (item.title + " " + item.link).toLowerCase();
-    return NEWS_DOMAINS.some(d => combined.includes(d));
+    // GN titles end with "– Source Name", check that suffix
+    const titleLower = (item.title || "").toLowerCase();
+    const linkLower  = (item.link || "").toLowerCase();
+    return NEWS_SOURCE_NAMES.some(name => 
+      titleLower.includes(name) || linkLower.includes(name.replace(/ /g, ""))
+    );
   };
 
   // Filter to last 48 hours only
