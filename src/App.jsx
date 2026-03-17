@@ -1025,7 +1025,7 @@ const SEC_FORM_TYPES = [
   { id:"DEF 14A",label:"Proxy", desc:"Shareholder votes, executive compensation" },
 ];
 
-async function fetchSecFilings(formType, count=40) {
+async function fetchSecFilings(formType, count=100) {
   try {
     const edgarUrl = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=${encodeURIComponent(formType)}&dateb=&owner=include&count=${count}&search_text=&output=atom`;
     const res = await fetch(`/api/rss?url=${encodeURIComponent(edgarUrl)}`);
@@ -1034,19 +1034,53 @@ async function fetchSecFilings(formType, count=40) {
     const doc = parser.parseFromString(text, "text/xml");
     if (doc.querySelector("parsererror")) throw new Error("XML parse error");
     return [...doc.querySelectorAll("entry")].map(e => {
-      const g = tag => e.getElementsByTagNameNS("*", tag)[0]?.textContent?.trim() || "";
-      const company = g("company-name") || e.querySelector("title")?.textContent?.split(" - ")?.[0] || "";
-      const ftype   = g("filing-type") || formType;
-      const filed   = g("filing-date") || e.querySelector("updated")?.textContent?.slice(0,10) || "";
-      const link    = g("filing-href") || e.querySelector("link")?.getAttribute("href") || "";
-      const title   = e.querySelector("title")?.textContent?.trim() || company;
-      const accNum  = g("accession-number") || "";
-      return { id: accNum||(company+filed+ftype).replace(/\s/g,""), title, company, formType:ftype, filed, link, exchange:"US" };
+      // EDGAR Atom actual format:
+      // title: "8-K - Company Name (CIK) (Filer)"
+      // summary: "<b>Filed:</b> 2026-03-17 <b>AccNo:</b> 0001234-26-000001 ..."
+      // updated: "2026-03-17T10:54:55-04:00"
+      // link: href to EDGAR filing page
+      const rawTitle   = e.querySelector("title")?.textContent?.trim() || "";
+      const summary    = e.querySelector("summary")?.textContent || "";
+      const updated    = e.querySelector("updated")?.textContent || "";
+      const linkEl     = e.querySelector("link");
+      const link       = linkEl?.getAttribute("href") || linkEl?.textContent?.trim() || "";
+      const idEl       = e.querySelector("id")?.textContent || "";
+
+      // Parse "8-K - Company Name (CIK) (Filer)" → formType, company
+      const titleParts = rawTitle.match(/^([^\-]+)\s*-\s*(.+?)\s*\(\d+\)/);
+      const ftype      = titleParts ? titleParts[1].trim() : formType;
+      const company    = titleParts ? titleParts[2].trim() : rawTitle;
+
+      // Parse filed date from summary: "<b>Filed:</b> 2026-03-17"
+      const filedMatch = summary.match(/Filed:<\/b>\s*([\d-]+)/);
+      const filed      = filedMatch ? filedMatch[1] : updated.slice(0, 10);
+
+      // Parse accession number from id or summary
+      const accMatch   = (idEl + summary).match(/(\d{10}-\d{2}-\d{6})/);
+      const accNum     = accMatch ? accMatch[1] : "";
+
+      const id = accNum || (company + filed + ftype).replace(/\s/g, "").slice(0, 30);
+      return { id, title: rawTitle, company, formType: ftype, filed, link, exchange: "US" };
     }).filter(f => f.company || f.title);
   } catch(e) {
     console.warn("SEC EDGAR fetch error:", e.message);
     return [];
   }
+}
+
+// Fetch ALL SEC form types in parallel for the unified briefing
+async function fetchAllSecFilings() {
+  const results = await Promise.all(
+    SEC_FORM_TYPES.map(ft => fetchSecFilings(ft.id, 40))
+  );
+  // Merge, deduplicate by accession number, sort by date
+  const seen = new Set();
+  const all = results.flat().filter(f => {
+    if (seen.has(f.id)) return false;
+    seen.add(f.id);
+    return true;
+  });
+  return all.sort((a, b) => (new Date(b.filed||0)) - (new Date(a.filed||0)));
 }
 
 // Fetch SGX company announcements from the official SGX JSON API
@@ -1107,27 +1141,28 @@ function FilingsTab() {
   const [briefLoading, setBriefLoading] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
 
-  const load = async () => {
+  const load = async (allTypes = false) => {
     setLoading(true);
     setFilings([]);
     setBrief("");
-    const results = await fetchSecFilings(secForm, 40);
+    const results = allTypes ? await fetchAllSecFilings() : await fetchSecFilings(secForm, 100);
     setFilings(results);
     setLoading(false);
   };
 
   const generateBrief = async () => {
-    if (!filtered.length) return;
     setBriefLoading(true);
     setBrief("");
-    // Build a single-exchange brief using the global function
-    const byEx = { US: filtered };
-    const text = await generateGlobalFilingsBrief(byEx, secForm);
+    // Always fetch all form types for the briefing regardless of current tab view
+    const allFilings = filings.length > 0 ? filings : await fetchAllSecFilings();
+    if (allFilings.length === 0) { setBriefLoading(false); return; }
+    const byEx = { US: allFilings };
+    const text = await generateGlobalFilingsBrief(byEx, "All Forms");
     setBrief(text);
     setBriefLoading(false);
   };
 
-  useEffect(() => { load(); }, [secForm]);
+  useEffect(() => { if (secForm === 'ALL') load(true); else load(false); }, [secForm]);
 
   const filtered = filings.filter(f =>
     !searchFilter ||
@@ -1196,8 +1231,15 @@ function FilingsTab() {
 
       {/* Controls */}
       <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",marginBottom:16}}>
-        <div style={{display:"flex",gap:5,alignItems:"center"}}>
+        <div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
           <span style={{...mono,fontSize:10,color:"#888"}}>Form type:</span>
+          <button onClick={()=>{ setSecForm("ALL"); load(true); }}
+            style={{...mono,fontSize:10,padding:"3px 9px",borderRadius:4,cursor:"pointer",
+              border: secForm==="ALL" ? "2px solid #1a1a1a" : "1px solid #ddd",
+              background: secForm==="ALL" ? "#1a1a1a" : "#fff",
+              color: secForm==="ALL" ? "#fff" : "#555"}}>
+            All
+          </button>
           {SEC_FORM_TYPES.map(ft => (
             <button key={ft.id} onClick={()=>setSecForm(ft.id)} title={ft.desc}
               style={{...mono,fontSize:10,padding:"3px 9px",borderRadius:4,cursor:"pointer",
@@ -1230,15 +1272,15 @@ function FilingsTab() {
             ? "⊕ Generating briefing…"
             : brief
               ? "↺ Regenerate briefing"
-              : `⊕ Generate briefing (${filtered.length} filings)`}
+              : `⊕ Generate briefing (all forms)`}
         </button>
       </div>
 
       {/* Info bar */}
       <div style={{...mono,fontSize:10,color:"#888",marginBottom:16,padding:"5px 10px",
         background:"#f9f5ed",borderRadius:4,border:"1px solid #e8e2d6"}}>
-        🇺🇸 SEC EDGAR · {SEC_FORM_TYPES.find(f=>f.id===secForm)?.desc}
-        {" · Last 48 hours · "}
+        🇺🇸 SEC EDGAR · {secForm === "ALL" ? "All form types (8-K, 10-Q, 10-K, 13D, Proxy)" : SEC_FORM_TYPES.find(f=>f.id===secForm)?.desc}
+        {" · "}
         {loading ? "loading…" : `${filtered.length} filings`}
         {" · Free public API · No key required"}
       </div>
