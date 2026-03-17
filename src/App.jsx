@@ -860,7 +860,28 @@ function findLinksForBullet(bulletText, articles) {
 // Renders brief text with headers (##) and bullets (-) and LINK badges
 function BriefRenderer({text, articles=[]}) {
   if (!text) return null;
-  const lines = text.split("\n");
+  // Pre-process: merge standalone **bold** lines with their following plain paragraph
+  // so Risk & Outlook items don't split across separate boxes
+  const rawLines = text.split("\n");
+  const lines = [];
+  for (let i = 0; i < rawLines.length; i++) {
+    const t = rawLines[i].trim();
+    // Skip horizontal rules — Claude uses --- as separators which we don't need
+    if (t === "---" || t === "***" || t === "___") continue;
+    // If this is a standalone **bold** line (not a bullet), check if next non-empty line is a plain paragraph
+    if (/^\*\*[^*]+\*\*:?$/.test(t) && !t.startsWith("- ") && !t.startsWith("* ")) {
+      let j = i + 1;
+      while (j < rawLines.length && !rawLines[j].trim()) j++; // skip blanks
+      const next = rawLines[j]?.trim() || "";
+      // If next line is a plain paragraph (not a header or bullet), merge them
+      if (next && !next.startsWith("#") && !next.startsWith("- ") && !next.startsWith("* ") && !next.startsWith("**")) {
+        lines.push(t + "\n" + next);
+        i = j; // skip the next line since we merged it
+        continue;
+      }
+    }
+    lines.push(rawLines[i]);
+  }
   return (
     <div style={{borderTop:"1px solid #e0e0e0",paddingTop:14,marginTop:4}}>
       {lines.map((line, i) => {
@@ -929,12 +950,16 @@ function BriefRenderer({text, articles=[]}) {
             </div>
           );
         }
-        // Plain paragraph — executive summary box
+        // Plain paragraph (possibly merged bold title + body)
+        const mergedMatch = trimmed.match(/^\*\*([^*]+)\*\*:?\n([\s\S]+)$/);
         return (
           <p key={i} style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:14,
             color:"#1a1a1a",lineHeight:1.7,margin:"10px 0",
             background:"#f0ece4",padding:"14px 18px",borderRadius:4}}>
-            {trimmed}
+            {mergedMatch
+              ? <><strong>{mergedMatch[1]}</strong>{": "}{mergedMatch[2]}</>
+              : trimmed.replace(/\*\*([^*]+)\*\*/g, (_, t) => t) /* strip remaining ** */
+            }
           </p>
         );
       })}
@@ -1040,11 +1065,12 @@ async function fetchExchangeFilings(exchangeCode) {
     },
     HK: {
       queries: [
+        // Use English-language sources for HK filings to avoid Chinese-only results
         "site:scmp.com results earnings dividend acquisition HKEX Hong Kong listed",
-        "site:aastocks.com earnings results dividend acquisition",
-        "site:hkej.com results 業績 股息 收購",
+        "site:aastocks.com earnings results dividend acquisition Hong Kong",
+        "HKEX "annual results" OR "interim results" OR "acquisition" OR "dividend" Hong Kong listed company",
       ],
-      lang:"zh-HK", gl:"HK", ceid:"HK:zh-Hant",
+      lang:"en-US", gl:"US", ceid:"US:en",
     },
     AU: {
       queries: [
@@ -1064,11 +1090,11 @@ async function fetchExchangeFilings(exchangeCode) {
     },
     DE: {
       queries: [
+        "site:reuters.com Germany earnings results dividend acquisition DAX listed",
         "site:handelsblatt.com Quartalsergebnis Dividende Übernahme Fusion DAX",
         "site:finanzen.net Quartalsbericht Ergebnis Dividende Übernahme",
-        "site:reuters.com Germany earnings results dividend acquisition DAX listed",
       ],
-      lang:"de", gl:"DE", ceid:"DE:de",
+      lang:"en-US", gl:"US", ceid:"US:en",
     },
     TW: {
       queries: [
@@ -1076,7 +1102,7 @@ async function fetchExchangeFilings(exchangeCode) {
         "site:reuters.com Taiwan earnings results dividend acquisition listed",
         "site:focustaiwan.tw earnings results dividend acquisition company",
       ],
-      lang:"zh-TW", gl:"TW", ceid:"TW:zh-Hant",
+      lang:"en-US", gl:"US", ceid:"US:en",
     },
   };
 
@@ -1264,38 +1290,62 @@ function FilingsTab() {
   // Brief renderer — handles ### (country headers) as well as ## (section headers)
   const renderBrief = (text) => {
     if (!text) return null;
-    return text.split("\n").map((line, i) => {
-      if (line.startsWith("### ")) return (
+    // Pre-process: strip --- dividers; merge standalone **bold** lines with following paragraph
+    const rawLines = text.split("\n");
+    const lines = [];
+    for (let i = 0; i < rawLines.length; i++) {
+      const t = rawLines[i].trim();
+      if (t === "---" || t === "***" || t === "___") continue;
+      if (/^\*\*[^*]+\*\*:?$/.test(t) && !t.startsWith("- ")) {
+        let j = i + 1;
+        while (j < rawLines.length && !rawLines[j].trim()) j++;
+        const next = rawLines[j]?.trim() || "";
+        if (next && !next.startsWith("#") && !next.startsWith("- ") && !next.startsWith("**")) {
+          lines.push(t + "\n" + next);
+          i = j;
+          continue;
+        }
+      }
+      lines.push(rawLines[i]);
+    }
+    return lines.map((line, i) => {
+      const trimmed = line.trim();
+      if (!trimmed) return <div key={i} style={{height:5}}/>;
+      if (trimmed.startsWith("### ")) return (
         <div key={i} style={{display:"flex",alignItems:"center",gap:8,
           marginTop:i===0?0:20,marginBottom:6,
           borderBottom:"1px solid #e8e2d6",paddingBottom:6}}>
           <span style={{fontFamily:"'DM Mono',monospace",fontSize:12,fontWeight:600,color:"#1a1a1a"}}>
-            {line.replace("### ","")}
+            {trimmed.replace("### ","")}
           </span>
         </div>
       );
-      if (line.startsWith("## ")) return (
+      if (trimmed.startsWith("## ")) return (
         <div key={i} style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,
           color:"#1a1a1a",marginTop:i===0?0:22,marginBottom:8}}>
-          {line.replace("## ","")}
+          {trimmed.replace("## ","")}
         </div>
       );
-      if (line.startsWith("- ")) return (
-        <div key={i} style={{display:"flex",gap:8,marginBottom:6,fontSize:13,lineHeight:1.6,
-          paddingLeft:4}}>
+      if (trimmed.startsWith("- ")) return (
+        <div key={i} style={{display:"flex",gap:8,marginBottom:6,fontSize:13,lineHeight:1.6,paddingLeft:4}}>
           <span style={{color:"#c0392b",flexShrink:0,marginTop:3}}>•</span>
-          <span>{line.replace("- ","")}</span>
+          <span>{trimmed.replace("- ","").replace(/\*\*([^*]+)\*\*/g,(_,t)=>t)}</span>
         </div>
       );
-      if (line.trim()) return (
-        <p key={i} style={{fontSize:13,lineHeight:1.65,marginBottom:8,color:"#333",
-          fontStyle: line.startsWith("No material") ? "italic" : "normal",
-          paddingLeft: line.startsWith("No material") ? 12 : 0,
-          color: line.startsWith("No material") ? "#999" : "#333"}}>
-          {line}
+      // Plain paragraph — may be merged bold+body
+      const mergedMatch = trimmed.match(/^\*\*([^*]+)\*\*:?\n([\s\S]+)$/);
+      const noMaterial = trimmed.toLowerCase().startsWith("no material");
+      return (
+        <p key={i} style={{fontSize:13,lineHeight:1.65,marginBottom:8,
+          fontStyle: noMaterial ? "italic" : "normal",
+          color: noMaterial ? "#999" : "#333",
+          paddingLeft: noMaterial ? 12 : 0}}>
+          {mergedMatch
+            ? <><strong>{mergedMatch[1]}</strong>{": "}{mergedMatch[2]}</>
+            : trimmed.replace(/\*\*([^*]+)\*\*/g, (_,t)=>t)
+          }
         </p>
       );
-      return null;
     });
   };
 
