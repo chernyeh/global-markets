@@ -46,6 +46,8 @@ const SOURCES = [
   {id:"barrons",    desc:"Barron's — Dow Jones's premier investment weekly; stock-specific analysis, ratings, earnings previews, and buy/sell calls. Highly actionable for fundamental investors.",country:"US",name:"Barron's",              lang:"en",flag:"🇺🇸",url:GN("site:barrons.com stocks earnings analysis"),paywall:true},
   {id:"seekalpha",  desc:"Seeking Alpha Earnings — earnings beats/misses, dividend announcements, and analyst rating changes. Filtered to high-signal corporate events only.",country:"US",name:"Seeking Alpha Earnings",  lang:"en",flag:"🇺🇸",url:GN("site:seekingalpha.com earnings beat miss dividend CEO acquires merger")},
   {id:"prnewswire", desc:"PR Newswire — filtered to primary corporate events: earnings results, M&A, dividend changes, and CEO/CFO appointments only.",country:"US",name:"PR Newswire",            lang:"en",flag:"🇺🇸",url:GN("site:prnewswire.com quarterly results OR earnings per share OR acquires OR merger agreement OR dividend OR appoints CEO OR names CFO")},
+  {id:"semafor",    desc:"Semafor Business — sharp, independently sourced business and finance journalism; well-connected on Wall Street, Washington policy, and global capital flows.",country:"US",name:"Semafor Business",       lang:"en",flag:"🇺🇸",url:GN("site:semafor.com business finance economy markets")},
+  {id:"politico",   desc:"Politico Economy — authoritative on US fiscal policy, Fed regulation, trade, and Washington's influence on markets. Essential for policy-driven investment themes.",country:"US",name:"Politico Economy",       lang:"en",flag:"🇺🇸",url:GN("site:politico.com economy finance tax trade regulation")},
   // ── Germany ────────────────────────────────────────────────────────────────
   {id:"handelsblatt",  desc:"Handelsblatt — Germany's leading financial daily; required reading for DAX, German industry and European monetary policy.",               country:"DE",name:"Handelsblatt",        lang:"de",flag:"🇩🇪",url:"https://www.handelsblatt.com/contentexport/feed/schlagzeilen",paywall:true},
   {id:"handelsblatt_en",desc:"Handelsblatt English — curated English-language coverage of German business and European economic news.",                                 country:"DE",name:"Handelsblatt (EN)",    lang:"en",flag:"🇩🇪",url:GN("site:handelsblatt.com english economy business"),paywall:true},
@@ -77,6 +79,8 @@ const SOURCES = [
   {id:"edge_sg",desc:"In-depth weekly; known for contrarian analysis on SGX stocks and property.",    country:"SG",name:"The Edge Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:theedgesingapore.com"),paywall:true},
   {id:"reuters_sg",desc:"Reuters' Singapore hub; covers regional trade flows and Southeast Asian markets.", country:"SG",name:"Reuters Singapore",       lang:"en",flag:"🇸🇬",url:GN("site:reuters.com Singapore economy business")},
   {id:"bloom_sg",desc:"Bloomberg Singapore; strong on central bank, tech, and broader ASEAN.",   country:"SG",name:"Bloomberg Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:bloomberg.com Singapore markets economy"),paywall:true},
+  {id:"sgx_annc",      desc:"SGX company announcements — earnings, dividends, rights issues, M&A and corporate actions from SGX-listed companies. Most actionable micro feed for SGX investors.",country:"SG",name:"SGX Announcements",    lang:"en",flag:"🇸🇬",url:GN("SGX company earnings dividend rights issue acquisition Singapore announcement")},
+  {id:"sg_biz_review", desc:"Singapore Business Review — company-specific news on SGX listings, deal flow, and corporate actions.",                                      country:"SG",name:"SG Business Review",   lang:"en",flag:"🇸🇬",url:GN("site:sbr.com.sg")},
   // ── Hong Kong ──────────────────────────────────────────────────────────────
   {id:"scmp",desc:"Hong Kong's English paper of record; best English-language lens on China policy and HKEX.",       country:"HK",name:"South China Morning Post",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com business finance"),paywall:true},
   {id:"mingtiandi",desc:"Specialist in China and Asia real estate; essential for REIT and property investors.", country:"HK",name:"Mingtiandi",             lang:"en",flag:"🇭🇰",url:GN("site:mingtiandi.com")},
@@ -542,12 +546,14 @@ Rules:
 - Group related stories under thematic section headers
 - Do not use vague language — be specific about what happened and why it matters
 - COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Then HK, Korea, Taiwan, India, Australia, Israel, Middle East, Iran. Then Singapore and Canada. Ensure at least one bullet for each market with stories.
-- MICRO/COMPANY BALANCE: At least 30% of bullets must be company-specific — name the exact company, what happened (earnings beat/miss, M&A, dividend, CEO change, contract win, downgrade etc.) and the investment implication. Do NOT let macro dominate entirely. If company-specific articles exist, always include them.
-- MICRO PRIORITY: Articles tagged as company-specific news (earnings, dividends, M&A, analyst calls, guidance, appointments) are HIGH PRIORITY — include as many as possible, even at the expense of secondary macro stories.
+- MICRO/COMPANY BALANCE: At least 40% of bullets must be company-specific. For each company story, state: (1) company name and ticker if known, (2) the specific event (earnings beat/miss by how much, M&A size, dividend change %, CEO name change, rating change with new target), (3) the investment implication or peer read-across. NEVER let macro crowd out company news entirely.
+- MICRO PRIORITY: Earnings results, M&A, dividend changes, CEO appointments, analyst upgrades/downgrades, and guidance changes are HIGHEST PRIORITY — always include these even if it means dropping a secondary macro story.
+- INDUSTRY TRENDS: When multiple company stories exist in the same sector or region, explicitly call out the industry-level pattern (e.g. "Three Hong Kong developers reported margin compression this quarter, suggesting sector-wide cost pressure"). Use company news to surface cross-company trends.
+- MARKET WEIGHTS: Prioritise company-specific news from US, Hong Kong, Taiwan, Canada, Singapore, Germany/Europe, and Australia. These markets have the most investment-relevant micro coverage in these sources.
 
 Articles (cite using [REF:N] at end of each bullet, N = article number, can cite multiple e.g. [REF:0,3]):
 ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n")}`;
-    const text = await callClaude(prompt, 4096);
+    const text = await callClaude(prompt, 6000);
     return {text, articles: sourceArticles};
   }
 
@@ -592,7 +598,7 @@ ${articleIndex}
 
 Summaries to synthesise:
 ${summaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, 4096);
+  const text = await callClaude(synthPrompt, 6000);
   return {text, articles: sourceArticles};
 }
 
@@ -976,6 +982,303 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
   );
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REGULATORY FILINGS TAB
+// ═══════════════════════════════════════════════════════════════════════════════
+const FILING_EXCHANGES = [
+  { code:"US",  label:"🇺🇸 SEC (US)",       flag:"🇺🇸" },
+  { code:"SG",  label:"🇸🇬 SGX",            flag:"🇸🇬" },
+  { code:"HK",  label:"🇭🇰 HKEX",           flag:"🇭🇰" },
+  { code:"AU",  label:"🇦🇺 ASX",            flag:"🇦🇺" },
+  { code:"CA",  label:"🇨🇦 SEDAR+ (CA)",    flag:"🇨🇦" },
+  { code:"DE",  label:"🇩🇪 BaFin / EUR",    flag:"🇩🇪" },
+  { code:"TW",  label:"🇹🇼 TWSE",           flag:"🇹🇼" },
+];
+
+const SEC_FORM_TYPES = [
+  { id:"8-K",  label:"8-K  Material Events",  desc:"Earnings, M&A, leadership changes, guidance" },
+  { id:"10-Q", label:"10-Q Quarterly Results", desc:"Full quarterly financial statements" },
+  { id:"10-K", label:"10-K Annual Report",     desc:"Full annual financial statements" },
+  { id:"SC 13D",label:"13D  Large Stake",      desc:">5% ownership disclosures" },
+  { id:"DEF 14A",label:"Proxy",               desc:"Shareholder votes, executive comp" },
+];
+
+// Fetch recent SEC EDGAR filings via public Atom feed — no API key required
+// EDGAR Atom feed: each <entry> contains company-name, filing-type, filing-date, filing-href
+async function fetchSecFilings(formType, count=30) {
+  try {
+    const edgarUrl = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=${encodeURIComponent(formType)}&dateb=&owner=include&count=${count}&search_text=&output=atom`;
+    const res = await fetch(`/api/rss?url=${encodeURIComponent(edgarUrl)}`);
+    const text = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "text/xml");
+    if (doc.querySelector("parsererror")) throw new Error("XML parse error");
+    const entries = [...doc.querySelectorAll("entry")];
+    return entries.map(e => {
+      const getText = tag => e.getElementsByTagNameNS("*", tag)[0]?.textContent?.trim() || "";
+      const company = getText("company-name") || e.querySelector("title")?.textContent?.split(" - ")?.[0] || "";
+      const ftype   = getText("filing-type") || formType;
+      const filed   = getText("filing-date") || e.querySelector("updated")?.textContent?.slice(0,10) || "";
+      const href    = getText("filing-href") || e.querySelector("link")?.getAttribute("href") || "";
+      const title   = e.querySelector("title")?.textContent?.trim() || company;
+      const accNum  = getText("accession-number") || "";
+      return {
+        id: accNum || (company + filed + ftype).replace(/\s/g,""),
+        title, company, formType: ftype, filed, link: href,
+        accNum, summary: null, summaryLoading: false,
+      };
+    }).filter(f => f.company || f.title);
+  } catch(e) {
+    console.warn("SEC EDGAR fetch error:", e.message);
+    return [];
+  }
+}
+
+// For non-US exchanges use Google News queries targeting official announcement language
+async function fetchExchangeFilings(exchangeCode) {
+  const queries = {
+    SG: "SGX company earnings results dividend rights issue acquisition announcement site:sgx.com OR site:sginvestors.io",
+    HK: "HKEX announcement earnings results dividend acquisition listing site:hkexnews.hk OR site:hkex.com.hk",
+    AU: "ASX announcement earnings results dividend acquisition site:asx.com.au OR site:marketindex.com.au",
+    CA: "SEDAR TSX company earnings results dividend acquisition announcement",
+    DE: "BaFin DAX announcement earnings results dividend acquisition Bundesanzeiger",
+    TW: "TWSE TPEX earnings announcement dividend acquisition Taiwan listed company",
+  };
+  const q = queries[exchangeCode];
+  if (!q) return [];
+  try {
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
+    const r = await fetch(`/api/rss?url=${encodeURIComponent(url)}`);
+    const text = await r.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "text/xml");
+    const items = [...doc.querySelectorAll("item")];
+    return items.slice(0, 30).map(item => ({
+      id: item.querySelector("guid")?.textContent || Math.random().toString(36),
+      title: item.querySelector("title")?.textContent || "",
+      company: item.querySelector("title")?.textContent?.split(":")?.[0] || "",
+      formType: "Announcement",
+      filed: item.querySelector("pubDate")?.textContent?.slice(0,16) || "",
+      link: item.querySelector("link")?.textContent || "",
+      summary: null,
+      summaryLoading: false,
+    }));
+  } catch(e) {
+    return [];
+  }
+}
+
+function FilingsTab() {
+  const [exchange,      setExchange]      = useState("US");
+  const [secForm,       setSecForm]       = useState("8-K");
+  const [filings,       setFilings]       = useState([]);
+  const [loading,       setLoading]       = useState(false);
+  const [summaries,     setSummaries]     = useState({}); // id -> {text, loading}
+  const [searchFilter,  setSearchFilter]  = useState("");
+  const [batchLoading,  setBatchLoading]  = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    setFilings([]);
+    setSummaries({});
+    // Tag exchange onto each filing for the summarise prompt
+    const results = (exchange === "US"
+      ? await fetchSecFilings(secForm, 30)
+      : await fetchExchangeFilings(exchange)
+    ).map(f => ({ ...f, exchange }));
+    setFilings(results);
+    setLoading(false);
+  };
+
+  // Summarise all visible filings sequentially (rate-limit friendly)
+  const summariseAll = async () => {
+    setBatchLoading(true);
+    for (const f of filtered) {
+      if (!summaries[f.id]?.text) {
+        await summariseFiling(f);
+        await new Promise(r => setTimeout(r, 300)); // small delay between calls
+      }
+    }
+    setBatchLoading(false);
+  };
+
+  useEffect(() => { load(); }, [exchange, secForm]);
+
+  const summariseFiling = async (filing) => {
+    setSummaries(p => ({ ...p, [filing.id]: { text: null, loading: true } }));
+    try {
+      // Try to fetch the filing index page for more context
+    let filingContext = "";
+    if (filing.link) {
+      try {
+        const r = await fetch(`/api/rss?url=${encodeURIComponent(filing.link)}`);
+        const txt = await r.text();
+        // Extract plain text: strip HTML, truncate to ~800 chars for context
+        filingContext = txt.replace(/<[^>]+>/g," ").replace(/\s+/g," ").slice(0,800);
+      } catch(e) { /* ignore — use title only */ }
+    }
+    const prompt = `You are a buy-side analyst reviewing a regulatory filing. Provide a concise investment-focused summary.
+
+Exchange: ${filing.exchange || "SEC"}
+Form type: ${filing.formType}
+Company: ${filing.company || "(unknown)"}
+Filed: ${filing.filed}
+Filing title: ${filing.title}
+${filingContext ? `\nAdditional context (from filing index):\n${filingContext}` : ""}
+
+Provide 3-5 bullet points covering:
+• The material fact — what specifically happened
+• Financial impact or key numbers (quantify if possible — beat/miss by how much, deal size, % change)
+• Investment implication — is this positive/negative/neutral for the stock? Any sector read-across?
+• Peer/industry trend signal if applicable
+• Key risk or watch item
+
+If you only have the title and no context, make reasonable inferences based on the form type and company name, but flag uncertainty. Be direct and specific — no hedging language.`;
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 400,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || "Summary unavailable.";
+      setSummaries(p => ({ ...p, [filing.id]: { text, loading: false } }));
+    } catch(e) {
+      setSummaries(p => ({ ...p, [filing.id]: { text: "Error generating summary.", loading: false } }));
+    }
+  };
+
+  const filtered = filings.filter(f =>
+    !searchFilter || f.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
+    f.company.toLowerCase().includes(searchFilter.toLowerCase())
+  );
+
+  const mono = { fontFamily:"'DM Mono',monospace" };
+
+  return (
+    <div style={{maxWidth:1100,margin:"0 auto"}}>
+      {/* Header controls */}
+      <div style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"center",marginBottom:20}}>
+        <div style={{display:"flex",gap:6}}>
+          {FILING_EXCHANGES.map(ex => (
+            <button key={ex.code} onClick={()=>setExchange(ex.code)}
+              style={{...mono,fontSize:11,padding:"4px 10px",borderRadius:4,cursor:"pointer",
+                border: exchange===ex.code ? "2px solid #1a1a1a" : "1px solid #ccc",
+                background: exchange===ex.code ? "#1a1a1a" : "#fff",
+                color: exchange===ex.code ? "#fff" : "#333"}}>
+              {ex.flag} {ex.code}
+            </button>
+          ))}
+        </div>
+        {exchange==="US" && (
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {SEC_FORM_TYPES.map(ft => (
+              <button key={ft.id} onClick={()=>setSecForm(ft.id)}
+                title={ft.desc}
+                style={{...mono,fontSize:10,padding:"3px 8px",borderRadius:4,cursor:"pointer",
+                  border: secForm===ft.id ? "2px solid #c0392b" : "1px solid #ccc",
+                  background: secForm===ft.id ? "#c0392b" : "#fff",
+                  color: secForm===ft.id ? "#fff" : "#555"}}>
+                {ft.id}
+              </button>
+            ))}
+          </div>
+        )}
+        <input value={searchFilter} onChange={e=>setSearchFilter(e.target.value)}
+          placeholder="Filter by company or keyword…"
+          style={{...mono,fontSize:11,padding:"4px 10px",border:"1px solid #ccc",borderRadius:4,
+            background:"#fff",flex:1,minWidth:180}} />
+        <button onClick={load} style={{...mono,fontSize:11,padding:"4px 10px",borderRadius:4,
+          border:"1px solid #888",background:"#fff",cursor:"pointer"}}>
+          ↺ Refresh
+        </button>
+        <button onClick={summariseAll} disabled={batchLoading||loading||filtered.length===0}
+          style={{...mono,fontSize:11,padding:"4px 10px",borderRadius:4,cursor:"pointer",
+            border:"1px solid #c0392b",background:"#fff5f5",color:"#c0392b",
+            opacity:(batchLoading||loading||filtered.length===0)?0.4:1}}>
+          {batchLoading ? "⊕ Summarising…" : `⊕ Summarise All (${filtered.length})`}
+        </button>
+      </div>
+
+      {/* Description bar */}
+      <div style={{...mono,fontSize:10,color:"#888",marginBottom:16,padding:"6px 10px",
+        background:"#f9f5ed",borderRadius:4,border:"1px solid #e8e2d6"}}>
+        {exchange==="US"
+          ? `SEC EDGAR — ${SEC_FORM_TYPES.find(f=>f.id===secForm)?.label}: ${SEC_FORM_TYPES.find(f=>f.id===secForm)?.desc}. Filed in the last 48 hours. Click "Summarise" for AI analysis.`
+          : `${FILING_EXCHANGES.find(e=>e.code===exchange)?.label} — Company announcements and regulatory disclosures. Click "Summarise" for AI analysis.`
+        }
+      </div>
+
+      {loading && (
+        <div style={{textAlign:"center",padding:40,color:"#888",...mono,fontSize:12}}>
+          Loading filings…
+        </div>
+      )}
+
+      {!loading && filtered.length===0 && (
+        <div style={{textAlign:"center",padding:40,color:"#888",...mono,fontSize:12}}>
+          No filings found. Try refreshing or changing the filter.
+        </div>
+      )}
+
+      {/* Filing cards */}
+      {filtered.map(filing => {
+        const sum = summaries[filing.id];
+        return (
+          <div key={filing.id} style={{borderBottom:"1px solid #e8e2d6",padding:"14px 0"}}>
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4,flexWrap:"wrap"}}>
+                  <span style={{...mono,fontSize:9,background:"#1a1a1a",color:"#fff",
+                    padding:"2px 6px",borderRadius:3}}>
+                    {filing.formType}
+                  </span>
+                  <span style={{...mono,fontSize:9,color:"#888"}}>
+                    {filing.filed ? new Date(filing.filed).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : ""}
+                  </span>
+                  {classifyMicro(filing.title) && (
+                    <span style={{...mono,fontSize:9,background:"#2e7d32",color:"#fff",
+                      padding:"2px 6px",borderRadius:3}}>◈ MATERIAL</span>
+                  )}
+                </div>
+                <a href={filing.link} target="_blank" rel="noopener noreferrer"
+                  style={{fontSize:14,fontWeight:500,color:"#1a1a1a",textDecoration:"none",
+                    lineHeight:1.4,display:"block",marginBottom:4}}>
+                  {filing.title}
+                </a>
+              </div>
+              <button onClick={()=>summariseFiling(filing)}
+                disabled={sum?.loading}
+                style={{...mono,fontSize:10,padding:"4px 10px",borderRadius:4,cursor:"pointer",
+                  border:"1px solid #c0392b",background: sum?.text ? "#fff5f5" : "#fff",
+                  color:"#c0392b",whiteSpace:"nowrap",flexShrink:0,
+                  opacity: sum?.loading ? 0.5 : 1}}>
+                {sum?.loading ? "…" : sum?.text ? "✓ Summarised" : "⊕ Summarise"}
+              </button>
+            </div>
+            {sum?.text && (
+              <div style={{marginTop:10,padding:"10px 14px",background:"#fdf6e3",
+                borderRadius:4,border:"1px solid #e8d9a0",fontSize:12,lineHeight:1.65,
+                whiteSpace:"pre-wrap"}}>
+                {sum.text}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div style={{...mono,fontSize:9,color:"#aaa",textAlign:"center",marginTop:24,paddingBottom:8}}>
+        {exchange==="US" ? "Source: SEC EDGAR public API · Free · No API key required" : "Source: Google News · Exchange announcement feeds"}
+        {" · "}{filtered.length} filings shown
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // WATCHLIST TAB
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1257,7 +1560,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Source ranking by influence/circulation per country
 const SOURCE_RANK = {
-  US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","ft","wapo","nyt","barrons","marketwatch","axios_biz","seekalpha","prnewswire"],
+  US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","ft","wapo","nyt","barrons","marketwatch","axios_biz","semafor","politico","seekalpha","prnewswire"],
   DE: ["reuters_de","bloom_de","handelsblatt","handelsblatt_en","faz","faz_finance","spiegel_de","sz_de","dw_de"],
   CA: ["reuters_ca","bloom_ca","globe_mail","globemail_rob","fin_post","fp_companies","bnn"],
   SG: ["reuters_sg","bloom_sg","bt_sg","edge_sg","cna_sg","sgx_annc","sg_biz_review"],
@@ -1598,9 +1901,9 @@ export default function App() {
   countryArts.forEach(a=>{if(a.sector)sectorCountsForCountry[a.sector]=(sectorCountsForCountry[a.sector]||0)+1;});
   const watchlistHits=canonical.filter(a=>a.watchMatches?.length>0).length;
 
-  const SIX_HOURS_MS = 9 * 60 * 60 * 1000;
+  const SIX_HOURS_MS = 12 * 60 * 60 * 1000;
   const breakingArts = (() => {
-    // Filter to last 9 hours
+    // Filter to last 12 hours
     const raw = canonical.filter(a => {
       const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
       return t > 0 && (Date.now() - t) < SIX_HOURS_MS;
@@ -1614,8 +1917,8 @@ export default function App() {
     const countPerSource = {};
     // Cap 2: max 12 articles per country (balance across markets)
     const countPerCountry = {};
-    const MAX_PER_SOURCE = 3;
-    const MAX_PER_COUNTRY = 12;
+    const MAX_PER_SOURCE = 4;
+    const MAX_PER_COUNTRY = 18;
     return raw.filter(a => {
       const ns = (countPerSource[a.sourceId] || 0);
       const nc = (countPerCountry[a.country] || 0);
@@ -1632,6 +1935,7 @@ export default function App() {
     {id:"sector",  label:"▦ Sectors"},
     {id:"sources", label:"◫ Sources"},
     {id:"watchlist", label:`◎ Watchlist${watchlistHits>0?` (${watchlistHits})`:""}` },
+    {id:"filings", label:"📋 Filings"},
   ];
 
   return (
@@ -1790,6 +2094,11 @@ export default function App() {
           <WatchlistTab allArticles={allArticles} setAllArticles={setAllArticles}/>
         )}
 
+        {/* FILINGS */}
+        {mainTab==="filings"&&(
+          <FilingsTab />
+        )}
+
         {/* REGION */}
         {mainTab==="region"&&(
           <>
@@ -1857,7 +2166,7 @@ export default function App() {
             { label:"Last 2 hours",  arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); return (Date.now()-t)<TWO_HOURS_MS; }) },
             { label:"2 – 4 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=TWO_HOURS_MS&&age<FOUR_HOURS_MS; }) },
             { label:"4 – 6 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=FOUR_HOURS_MS&&age<SIX_H_MS; }) },
-            { label:"6 – 9 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=SIX_H_MS; }) },
+            { label:"6 – 12 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=SIX_H_MS; }) },
           ].filter(b=>b.arts.length>0);
           return (
             <div>
@@ -1900,7 +2209,7 @@ export default function App() {
 
               {/* Time-bucketed articles */}
               {buckets.length===0?(
-                <div style={{textAlign:"center",color:"#888",fontFamily:"'DM Mono',monospace",fontSize:11,padding:40}}>no articles in the last 9 hours — try refreshing</div>
+                <div style={{textAlign:"center",color:"#888",fontFamily:"'DM Mono',monospace",fontSize:11,padding:40}}>no articles in the last 12 hours — try refreshing</div>
               ):buckets.map(bucket=>(
                 <div key={bucket.label} style={{marginBottom:24}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
