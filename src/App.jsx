@@ -126,7 +126,7 @@ const SOURCES = [
   {id:"bloom_in",desc:"Bloomberg India; covers Sensex, rupee, and major conglomerates like Reliance and Adani.",   country:"IN",name:"Bloomberg India",         lang:"en",flag:"🇮🇳",url:GN("site:bloomberg.com India markets economy"),paywall:true},
   // ── Australia ──────────────────────────────────────────────────────────────
   // AFR: heavily paywalled — broader query without site: filter
-  {id:"afr",desc:"Australia's Financial Review — the AFR; essential for ASX, RBA policy, and mining.",        country:"AU",name:"Australian Fin. Review", lang:"en",flag:"🇦🇺",url:GN("Australian Financial Review markets economy business"),paywall:true},
+  {id:"afr",desc:"Australia's Financial Review — the AFR; essential for ASX, RBA policy, and mining.",        country:"AU",name:"Australian Fin. Review", lang:"en",flag:"🇦🇺",url:GN("site:afr.com markets economy business"),paywall:true},
   // The Australian: paywalled — broader query
   {id:"guardian_au",desc:"The Guardian Australia Business — quality long-form; good for ESG, regulation, and macro critique.",country:"AU",name:"Guardian Australia Business",lang:"en",flag:"🇦🇺",url:"https://www.theguardian.com/australia-news/rss"},
   {id:"the_aus",desc:"The Australian Business — Murdoch flagship; strong on resources, infrastructure, and government.",    country:"AU",name:"The Australian Business",lang:"en",flag:"🇦🇺",url:GN("The Australian newspaper business economy finance"),paywall:true},
@@ -1057,9 +1057,9 @@ async function fetchExchangeFilings(exchangeCode) {
   const configs = {
     SG: {
       queries: [
-        "site:sginvestors.io company announcement financial statements dividend rights acquisition",
-        "site:sgx.com company announcement financial results dividend acquisition",
-        'SGX listed company "financial statements" OR "dividend" OR "acquisition" OR "rights issue" OR "placement" Singapore',
+        "site:sginvestors.io company announcement financial statements dividend rights issue acquisition placement",
+        "site:sgx.com research-education market-updates",
+        "site:investingnote.com SGX announcement financial results dividend acquisition rights placement",
       ],
       lang:"en-SG", gl:"SG", ceid:"SG:en",
     },
@@ -1074,9 +1074,12 @@ async function fetchExchangeFilings(exchangeCode) {
     },
     AU: {
       queries: [
-        "site:themarketonline.com.au earnings results dividend acquisition ASX",
-        "site:stockhead.com.au earnings results acquisition ASX announcement",
-        "site:afr.com earnings results dividend acquisition ASX listed",
+        // The Market Herald covers ASX company announcements directly
+        "site:themarketonline.com.au earnings results dividend acquisition ASX announcement",
+        // Stockhead covers ASX company-level filings and announcements
+        "site:stockhead.com.au earnings results acquisition ASX announcement company",
+        // marketindex.com.au aggregates ASX announcements  
+        "site:marketindex.com.au ASX announcement results dividend acquisition",
       ],
       lang:"en-AU", gl:"AU", ceid:"AU:en",
     },
@@ -1134,7 +1137,35 @@ async function fetchExchangeFilings(exchangeCode) {
       });
     } catch(e) { /* skip failed query */ }
   }));
-  return allItems.sort((a,b)=>(new Date(b.filed||0))-(new Date(a.filed||0))).slice(0,40);
+  // Filter out news/opinion sources — keep only exchange announcement sources
+  const NEWS_DOMAINS = [
+    "thesmartinvestor", "smartinvestor", "straits times", "straitstimes",
+    "businessinsider", "seekingalpha", "motleyfool", "fool.com",
+    "investopedia", "thebalance", "nerdwallet", "cnbc.com",
+    "yahoo.com", "msn.com", "investing.com", "marketwatch",
+    "businesstimes", "edgesingapore", "sbr.com", "smartkarma",
+    "theedge", "nikkei", "bloomberg", "reuters",
+    "afr.com", "theaustralian", "smh.com", "abc.net",
+    "financialpost", "bnnbloomberg", "theglobeandmail",
+    "handelsblatt", "finanzen.net", "spiegel", "faz.net",
+  ];
+  const isNewsSource = (item) => {
+    const combined = (item.title + " " + item.link).toLowerCase();
+    return NEWS_DOMAINS.some(d => combined.includes(d));
+  };
+
+  // Filter to last 48 hours only
+  const cutoff48h = Date.now() - 48 * 60 * 60 * 1000;
+  const filtered = allItems.filter(item => {
+    if (isNewsSource(item)) return false;
+    if (!item.filed) return true; // keep if no date (can't tell)
+    try {
+      const t = new Date(item.filed).getTime();
+      return t > cutoff48h;
+    } catch(e) { return true; }
+  });
+
+  return filtered.sort((a,b)=>(new Date(b.filed||0))-(new Date(a.filed||0))).slice(0,40);
 }
 
 // Fetch all exchanges in parallel, return map of exchange code → filings[]
@@ -1216,18 +1247,7 @@ Rules:
 - Cross-Market Themes must identify genuine patterns, not just restate individual items`;
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 2000,
-        messages: [{ role: "user", content: prompt }]
-      })
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    return data.content?.[0]?.text || "";
+    return await callClaude(prompt, 2000);
   } catch(e) {
     console.warn("Global filing brief error:", e.message);
     return `Error generating briefing: ${e.message}`;
