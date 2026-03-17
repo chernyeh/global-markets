@@ -72,7 +72,7 @@ const SOURCES = [
   {id:"nikkei_asia",   desc:"Nikkei Asia — premier English-language source for Asian corporate news; essential for Japan, Korea, SEA company-level coverage.",          country:"JP",name:"Nikkei Asia",          lang:"en",flag:"🇯🇵",url:"https://asia.nikkei.com/rss/feed/nar",paywall:true},
   // ── Singapore ──────────────────────────────────────────────────────────────
   // Business Times SG: paywalled — broader query
-  {id:"bt_sg",desc:"SGX's go-to daily; essential for listed companies, REITs, and MAS policy.",      country:"SG",name:"Business Times SG",      lang:"en",flag:"🇸🇬",url:GN("Business Times Singapore markets economy"),paywall:true},
+  {id:"bt_sg",desc:"SGX's go-to daily; essential for listed companies, REITs, and MAS policy.",      country:"SG",name:"Business Times SG",      lang:"en",flag:"🇸🇬",url:GN("site:businesstimes.com.sg"),paywall:true},
   // Straits Times: paywalled — broader query
   // CNA: free — GN fine
   {id:"cna_sg",desc:"Singapore's public broadcaster; reliable on government policy and Southeast Asian macro.",     country:"SG",name:"CNA Business",           lang:"en",flag:"🇸🇬",url:GN("site:channelnewsasia.com business")},
@@ -987,7 +987,7 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
 // REGULATORY FILINGS TAB
 // ═══════════════════════════════════════════════════════════════════════════════
 const FILING_EXCHANGES = [
-  { code:"US",  label:"SEC (US)",      flag:"🇺🇸", desc:"8-K / 10-Q / 10-K filings from SEC EDGAR" },
+  { code:"US",  label:"SEC (US)",      flag:"🇺🇸", desc:"8-K / 10-Q / 10-K from SEC EDGAR" },
   { code:"SG",  label:"SGX",           flag:"🇸🇬", desc:"SGX-listed company announcements" },
   { code:"HK",  label:"HKEX",          flag:"🇭🇰", desc:"Hong Kong listed company disclosures" },
   { code:"AU",  label:"ASX",           flag:"🇦🇺", desc:"ASX-listed company announcements" },
@@ -997,14 +997,13 @@ const FILING_EXCHANGES = [
 ];
 
 const SEC_FORM_TYPES = [
-  { id:"8-K",    label:"8-K",    desc:"Material events — earnings, M&A, CEO changes, guidance" },
-  { id:"10-Q",   label:"10-Q",   desc:"Quarterly financial statements" },
-  { id:"10-K",   label:"10-K",   desc:"Annual reports" },
-  { id:"SC 13D", label:"13D",    desc:">5% ownership stake disclosures" },
-  { id:"DEF 14A",label:"Proxy",  desc:"Shareholder votes, executive compensation" },
+  { id:"8-K",    label:"8-K",   desc:"Material events — earnings, M&A, CEO changes, guidance" },
+  { id:"10-Q",   label:"10-Q",  desc:"Quarterly financial statements" },
+  { id:"10-K",   label:"10-K",  desc:"Annual reports" },
+  { id:"SC 13D", label:"13D",   desc:">5% ownership stake disclosures" },
+  { id:"DEF 14A",label:"Proxy", desc:"Shareholder votes, executive compensation" },
 ];
 
-// Fetch SEC EDGAR filings via public Atom feed — no API key required
 async function fetchSecFilings(formType, count=40) {
   try {
     const edgarUrl = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=${encodeURIComponent(formType)}&dateb=&owner=include&count=${count}&search_text=&output=atom`;
@@ -1013,19 +1012,15 @@ async function fetchSecFilings(formType, count=40) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(text, "text/xml");
     if (doc.querySelector("parsererror")) throw new Error("XML parse error");
-    const entries = [...doc.querySelectorAll("entry")];
-    return entries.map(e => {
+    return [...doc.querySelectorAll("entry")].map(e => {
       const g = tag => e.getElementsByTagNameNS("*", tag)[0]?.textContent?.trim() || "";
-      const company  = g("company-name") || e.querySelector("title")?.textContent?.split(" - ")?.[0] || "";
-      const ftype    = g("filing-type") || formType;
-      const filed    = g("filing-date") || e.querySelector("updated")?.textContent?.slice(0,10) || "";
-      const link     = g("filing-href") || e.querySelector("link")?.getAttribute("href") || "";
-      const title    = e.querySelector("title")?.textContent?.trim() || company;
-      const accNum   = g("accession-number") || "";
-      return {
-        id: accNum || (company + filed + ftype).replace(/\s/g,""),
-        title, company, formType: ftype, filed, link, exchange: "US",
-      };
+      const company = g("company-name") || e.querySelector("title")?.textContent?.split(" - ")?.[0] || "";
+      const ftype   = g("filing-type") || formType;
+      const filed   = g("filing-date") || e.querySelector("updated")?.textContent?.slice(0,10) || "";
+      const link    = g("filing-href") || e.querySelector("link")?.getAttribute("href") || "";
+      const title   = e.querySelector("title")?.textContent?.trim() || company;
+      const accNum  = g("accession-number") || "";
+      return { id: accNum||(company+filed+ftype).replace(/\s/g,""), title, company, formType:ftype, filed, link, exchange:"US" };
     }).filter(f => f.company || f.title);
   } catch(e) {
     console.warn("SEC EDGAR fetch error:", e.message);
@@ -1033,17 +1028,13 @@ async function fetchSecFilings(formType, count=40) {
   }
 }
 
-// For non-US exchanges: use well-targeted GN queries on news sources that cover
-// company-level announcements (NOT the exchange's own rule/documentation pages)
 async function fetchExchangeFilings(exchangeCode) {
-  // Key insight: query financial news outlets that *report on* exchange filings
-  // rather than the exchange sites themselves (which return rule docs via GN)
   const configs = {
     SG: {
       queries: [
-        "site:businesstimes.com.sg earnings dividend acquisition rights issue SGX",
-        "site:sginvestors.io earnings dividend rights acquisition announcement",
-        "site:theedgesingapore.com results dividend acquisition corporate action",
+        "site:sginvestors.io company announcement financial statements dividend rights acquisition",
+        "site:sgx.com company announcement financial results dividend acquisition",
+        'SGX listed company "financial statements" OR "dividend" OR "acquisition" OR "rights issue" OR "placement" Singapore',
       ],
       lang:"en-SG", gl:"SG", ceid:"SG:en",
     },
@@ -1091,28 +1082,22 @@ async function fetchExchangeFilings(exchangeCode) {
 
   const cfg = configs[exchangeCode];
   if (!cfg) return [];
-
-  // Run all queries in parallel and merge results
   const allItems = [];
   const seenTitles = new Set();
-
   await Promise.all(cfg.queries.map(async q => {
     try {
       const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=${cfg.lang}&gl=${cfg.gl}&ceid=${cfg.ceid}`;
       const r = await fetch(`/api/rss?url=${encodeURIComponent(url)}`);
       const text = await r.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(text, "text/xml");
-      const items = [...doc.querySelectorAll("item")];
-      items.slice(0, 15).forEach(item => {
+      const doc = new DOMParser().parseFromString(text, "text/xml");
+      [...doc.querySelectorAll("item")].slice(0,15).forEach(item => {
         const title = item.querySelector("title")?.textContent || "";
         const key = title.toLowerCase().slice(0,40);
         if (seenTitles.has(key)) return;
         seenTitles.add(key);
-        // Filter junk — skip titles that look like rule docs, indices, or market summaries
         if (/appendix|rulebook|links\.sgx|listing rules|guidance note|practice note|SGX RuleBook/i.test(title)) return;
         allItems.push({
-          id: item.querySelector("guid")?.textContent || (title + q).replace(/\s/g,"").slice(0,30),
+          id: item.querySelector("guid")?.textContent || (title+q).replace(/\s/g,"").slice(0,30),
           title,
           company: title.split(/[:–-]/)?.[0]?.trim() || "",
           formType: "Announcement",
@@ -1123,51 +1108,86 @@ async function fetchExchangeFilings(exchangeCode) {
       });
     } catch(e) { /* skip failed query */ }
   }));
-
-  // Sort by date, newest first
-  return allItems.sort((a, b) => {
-    const ta = a.filed ? new Date(a.filed).getTime() : 0;
-    const tb = b.filed ? new Date(b.filed).getTime() : 0;
-    return tb - ta;
-  }).slice(0, 40);
+  return allItems.sort((a,b)=>(new Date(b.filed||0))-(new Date(a.filed||0))).slice(0,40);
 }
 
-// Generate a single briefing across all filings using Claude
-async function generateFilingsBrief(filings, exchangeLabel) {
-  if (!filings.length) return "";
-  const lines = filings.slice(0, 50).map((f, i) => {
-    const date = f.filed ? new Date(f.filed).toLocaleDateString("en-SG",{day:"numeric",month:"short"}) : "";
-    return `${i+1}. [${f.formType}] ${f.company || f.title}${date ? ` (${date})` : ""}${f.title !== f.company ? ` — ${f.title}` : ""}`;
-  }).join("\n");
+// Fetch all exchanges in parallel, return map of exchange code → filings[]
+async function fetchAllExchangeFilings(secForm) {
+  const results = await Promise.all(
+    FILING_EXCHANGES.map(async ex => ({
+      code: ex.code,
+      filings: ex.code === "US"
+        ? await fetchSecFilings(secForm, 30)
+        : await fetchExchangeFilings(ex.code),
+    }))
+  );
+  return Object.fromEntries(results.map(r => [r.code, r.filings]));
+}
 
-  const prompt = `You are a buy-side analyst. Based on the following list of regulatory filings and company announcements from ${exchangeLabel} in the last 48 hours, write an investment briefing.
+// Generate a single cross-country briefing, structured by country
+async function generateGlobalFilingsBrief(filingsByExchange, secForm) {
+  const sections = FILING_EXCHANGES.map(ex => {
+    const filings = (filingsByExchange[ex.code] || []).slice(0, 20);
+    if (!filings.length) return null;
+    const lines = filings.map((f, i) => {
+      const date = f.filed
+        ? (() => { try { return new Date(f.filed).toLocaleDateString("en-SG",{day:"numeric",month:"short"}); } catch(e){ return ""; } })()
+        : "";
+      return `  ${i+1}. [${f.formType}] ${f.company||f.title}${date?` (${date})`:""}${f.title!==f.company&&f.company?` — ${f.title}`:""}`;
+    }).join("\n");
+    return `${ex.flag} ${ex.label}${ex.code==="US"?` · ${secForm}`:""}:\n${lines}`;
+  }).filter(Boolean).join("\n\n");
 
-FILINGS:
-${lines}
+  const totalCount = FILING_EXCHANGES.reduce((n, ex) => n + (filingsByExchange[ex.code]?.length||0), 0);
 
-FORMAT:
-## [Title summarising the main themes across these filings]
+  const prompt = `You are a buy-side analyst. Based on the following regulatory filings and company announcements from multiple exchanges over the last 48 hours, write a global filings intelligence briefing.
 
-[2-3 sentence executive summary of the most important developments]
+${sections}
 
-## Key Corporate Events
-- [Most material filing: company, what happened, investment implication]
-- [Next most material — be specific about earnings beats/misses, deal sizes, management changes]
-(include all significant events)
+FORMAT — use exactly this structure:
 
-## Industry Trends
-- [Cross-company patterns: if multiple companies in same sector reported, what does it signal?]
-- [Any themes in M&A activity, dividend policy, earnings direction?]
+## Global Filings Brief — [date/theme headline]
 
-## Watch List
-- [Items to monitor closely — follow-up catalysts, risk events]
+[2-3 sentence executive summary of the most material cross-market developments]
+
+### 🇺🇸 United States (SEC)
+- [most material US filing — company, event type, investment implication]
+- [next most material]
+(cover all significant US filings)
+
+### 🇸🇬 Singapore (SGX)
+- [most material SG filing]
+(cover all significant SG filings, or "No material filings" if none)
+
+### 🇭🇰 Hong Kong (HKEX)
+- [most material HK filing]
+
+### 🇦🇺 Australia (ASX)
+- [most material AU filing]
+
+### 🇨🇦 Canada (TSX)
+- [most material CA filing]
+
+### 🇩🇪 Germany
+- [most material DE filing]
+
+### 🇹🇼 Taiwan (TWSE)
+- [most material TW filing]
+
+### Cross-Market Themes
+- [Patterns across countries — e.g. broad earnings beat/miss trend, M&A wave in a sector, dividend cuts across markets]
+- [Any global sector trends visible from these filings]
+
+### Watch List
+- [High-priority items to monitor across any market]
 
 Rules:
-- Name EVERY company mentioned
-- Quantify where possible (deal size, % change, beat/miss magnitude)
-- Flag earnings beats/misses, M&A, dividend changes, CEO changes as highest priority
-- Note any sector-level read-across from individual company news
-- Keep each bullet to 1-2 sentences, specific and actionable`;
+- Name EVERY company
+- Quantify: deal sizes, % changes, beat/miss magnitudes
+- Earnings beats/misses, M&A, dividend changes, CEO changes = highest priority
+- Skip country sections with no material filings (write "No material filings" on one line)
+- Each bullet 1-2 sentences, specific and actionable
+- Cross-Market Themes must identify genuine patterns, not just restate individual items`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1175,7 +1195,7 @@ Rules:
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 1200,
+        max_tokens: 2000,
         messages: [{ role: "user", content: prompt }]
       })
     });
@@ -1183,70 +1203,97 @@ Rules:
     if (data.error) throw new Error(data.error.message);
     return data.content?.[0]?.text || "";
   } catch(e) {
-    console.warn("Filing brief error:", e.message);
+    console.warn("Global filing brief error:", e.message);
     return `Error generating briefing: ${e.message}`;
   }
 }
 
 function FilingsTab() {
-  const [exchange,     setExchange]     = useState("US");
-  const [secForm,      setSecForm]      = useState("8-K");
-  const [filings,      setFilings]      = useState([]);
-  const [loading,      setLoading]      = useState(false);
-  const [brief,        setBrief]        = useState("");
-  const [briefLoading, setBriefLoading] = useState(false);
-  const [searchFilter, setSearchFilter] = useState("");
+  const [secForm,         setSecForm]         = useState("8-K");
+  const [viewExchange,    setViewExchange]     = useState("ALL"); // which exchange list to show
+  const [filingsByEx,     setFilingsByEx]      = useState({});    // code → filings[]
+  const [loading,         setLoading]          = useState(false);
+  const [loadingExchanges,setLoadingExchanges] = useState(new Set());
+  const [brief,           setBrief]            = useState("");
+  const [briefLoading,    setBriefLoading]     = useState(false);
+  const [searchFilter,    setSearchFilter]     = useState("");
 
-  const load = async () => {
+  // Load all exchanges at once
+  const loadAll = async () => {
     setLoading(true);
-    setFilings([]);
+    setFilingsByEx({});
     setBrief("");
-    const results = exchange === "US"
-      ? await fetchSecFilings(secForm, 40)
-      : await fetchExchangeFilings(exchange);
-    setFilings(results);
+    // Fetch all in parallel, update state as each completes
+    await Promise.all(
+      FILING_EXCHANGES.map(async ex => {
+        setLoadingExchanges(prev => new Set([...prev, ex.code]));
+        const filings = ex.code === "US"
+          ? await fetchSecFilings(secForm, 30)
+          : await fetchExchangeFilings(ex.code);
+        setFilingsByEx(prev => ({ ...prev, [ex.code]: filings }));
+        setLoadingExchanges(prev => { const s = new Set(prev); s.delete(ex.code); return s; });
+      })
+    );
     setLoading(false);
   };
 
+  useEffect(() => { loadAll(); }, [secForm]);
+
   const generateBrief = async () => {
-    if (!filtered.length) return;
     setBriefLoading(true);
     setBrief("");
-    const exObj = FILING_EXCHANGES.find(e => e.code === exchange);
-    const label = `${exObj?.flag} ${exObj?.label}${exchange === "US" ? ` (${secForm})` : ""}`;
-    const text = await generateFilingsBrief(filtered, label);
+    const text = await generateGlobalFilingsBrief(filingsByEx, secForm);
     setBrief(text);
     setBriefLoading(false);
   };
 
-  useEffect(() => { load(); }, [exchange, secForm]);
-
-  const filtered = filings.filter(f =>
+  // All filings flat or filtered by exchange for the list view
+  const allFilings = FILING_EXCHANGES.flatMap(ex => filingsByEx[ex.code] || []);
+  const listedFilings = viewExchange === "ALL"
+    ? allFilings
+    : (filingsByEx[viewExchange] || []);
+  const filtered = listedFilings.filter(f =>
     !searchFilter ||
     f.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
     (f.company||"").toLowerCase().includes(searchFilter.toLowerCase())
   );
 
+  const totalCount = allFilings.length;
   const mono = { fontFamily:"'DM Mono',monospace" };
 
-  // Render brief markdown — same renderer as BriefBox
+  // Brief renderer — handles ### (country headers) as well as ## (section headers)
   const renderBrief = (text) => {
     if (!text) return null;
     return text.split("\n").map((line, i) => {
+      if (line.startsWith("### ")) return (
+        <div key={i} style={{display:"flex",alignItems:"center",gap:8,
+          marginTop:i===0?0:20,marginBottom:6,
+          borderBottom:"1px solid #e8e2d6",paddingBottom:6}}>
+          <span style={{fontFamily:"'DM Mono',monospace",fontSize:12,fontWeight:600,color:"#1a1a1a"}}>
+            {line.replace("### ","")}
+          </span>
+        </div>
+      );
       if (line.startsWith("## ")) return (
-        <div key={i} style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,
-          color:"#1a1a1a",marginTop:i===0?0:18,marginBottom:6}}>
+        <div key={i} style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,
+          color:"#1a1a1a",marginTop:i===0?0:22,marginBottom:8}}>
           {line.replace("## ","")}
         </div>
       );
       if (line.startsWith("- ")) return (
-        <div key={i} style={{display:"flex",gap:8,marginBottom:7,fontSize:13,lineHeight:1.6}}>
-          <span style={{color:"#c0392b",flexShrink:0,marginTop:2}}>•</span>
+        <div key={i} style={{display:"flex",gap:8,marginBottom:6,fontSize:13,lineHeight:1.6,
+          paddingLeft:4}}>
+          <span style={{color:"#c0392b",flexShrink:0,marginTop:3}}>•</span>
           <span>{line.replace("- ","")}</span>
         </div>
       );
       if (line.trim()) return (
-        <p key={i} style={{fontSize:13,lineHeight:1.65,marginBottom:8,color:"#333"}}>{line}</p>
+        <p key={i} style={{fontSize:13,lineHeight:1.65,marginBottom:8,color:"#333",
+          fontStyle: line.startsWith("No material") ? "italic" : "normal",
+          paddingLeft: line.startsWith("No material") ? 12 : 0,
+          color: line.startsWith("No material") ? "#999" : "#333"}}>
+          {line}
+        </p>
       );
       return null;
     });
@@ -1255,130 +1302,161 @@ function FilingsTab() {
   return (
     <div style={{maxWidth:1100,margin:"0 auto"}}>
 
-      {/* Controls */}
+      {/* Top controls */}
       <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",marginBottom:16}}>
-        {/* Exchange tabs */}
-        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-          {FILING_EXCHANGES.map(ex => (
-            <button key={ex.code} onClick={()=>{ setExchange(ex.code); setBrief(""); }}
-              style={{...mono,fontSize:11,padding:"4px 10px",borderRadius:4,cursor:"pointer",
-                border: exchange===ex.code ? "2px solid #1a1a1a" : "1px solid #ccc",
-                background: exchange===ex.code ? "#1a1a1a" : "#fff",
-                color: exchange===ex.code ? "#fff" : "#333"}}>
-              {ex.flag} {ex.code}
+        {/* SEC form type (US only) */}
+        <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
+          <span style={{...mono,fontSize:10,color:"#888"}}>SEC form:</span>
+          {SEC_FORM_TYPES.map(ft => (
+            <button key={ft.id} onClick={()=>setSecForm(ft.id)} title={ft.desc}
+              style={{...mono,fontSize:10,padding:"3px 8px",borderRadius:4,cursor:"pointer",
+                border: secForm===ft.id ? "2px solid #1a1a1a" : "1px solid #ddd",
+                background: secForm===ft.id ? "#1a1a1a" : "#fff",
+                color: secForm===ft.id ? "#fff" : "#555"}}>
+              {ft.id}
             </button>
           ))}
         </div>
-        {/* SEC form types */}
-        {exchange==="US" && (
-          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-            {SEC_FORM_TYPES.map(ft => (
-              <button key={ft.id} onClick={()=>setSecForm(ft.id)} title={ft.desc}
-                style={{...mono,fontSize:10,padding:"3px 8px",borderRadius:4,cursor:"pointer",
-                  border: secForm===ft.id ? "2px solid #c0392b" : "1px solid #ddd",
-                  background: secForm===ft.id ? "#c0392b" : "#fff",
-                  color: secForm===ft.id ? "#fff" : "#555"}}>
-                {ft.id}
-              </button>
-            ))}
-          </div>
-        )}
-        <input value={searchFilter} onChange={e=>setSearchFilter(e.target.value)}
-          placeholder="Filter filings…"
-          style={{...mono,fontSize:11,padding:"4px 10px",border:"1px solid #ccc",
-            borderRadius:4,background:"#fff",flex:1,minWidth:160}} />
-        <button onClick={load}
+        <div style={{flex:1}}/>
+        <button onClick={loadAll} disabled={loading}
           style={{...mono,fontSize:11,padding:"4px 10px",borderRadius:4,
-            border:"1px solid #888",background:"#fff",cursor:"pointer"}}>
-          ↺ Refresh
+            border:"1px solid #888",background:"#fff",cursor:"pointer",
+            opacity:loading?0.5:1}}>
+          ↺ Refresh all
         </button>
         <button onClick={generateBrief}
-          disabled={briefLoading||loading||filtered.length===0}
-          style={{...mono,fontSize:11,padding:"4px 12px",borderRadius:4,cursor:"pointer",
-            border:"2px solid #c0392b",background: brief ? "#fff5f5" : "#c0392b",
-            color: brief ? "#c0392b" : "#fff",fontWeight:600,
-            opacity:(briefLoading||loading||filtered.length===0)?0.45:1}}>
-          {briefLoading ? "⊕ Generating briefing…" : brief ? "↺ Regenerate briefing" : `⊕ Generate briefing (${filtered.length} filings)`}
+          disabled={briefLoading||totalCount===0}
+          style={{...mono,fontSize:11,padding:"5px 14px",borderRadius:4,cursor:"pointer",
+            border:"2px solid #c0392b",
+            background: brief ? "#fff5f5" : "#c0392b",
+            color: brief ? "#c0392b" : "#fff",
+            fontWeight:600,
+            opacity:(briefLoading||totalCount===0)?0.45:1}}>
+          {briefLoading
+            ? "⊕ Generating global briefing…"
+            : brief
+              ? "↺ Regenerate global briefing"
+              : `⊕ Generate global briefing (${totalCount} filings)`}
         </button>
       </div>
 
-      {/* Info bar */}
+      {/* Status bar — loading progress per exchange */}
       <div style={{...mono,fontSize:10,color:"#888",marginBottom:16,padding:"5px 10px",
-        background:"#f9f5ed",borderRadius:4,border:"1px solid #e8e2d6"}}>
-        {FILING_EXCHANGES.find(e=>e.code===exchange)?.desc}
-        {exchange==="US" && ` · ${SEC_FORM_TYPES.find(f=>f.id===secForm)?.desc}`}
-        {" · Last 48 hours · "}
-        {loading ? "loading…" : `${filtered.length} filings`}
+        background:"#f9f5ed",borderRadius:4,border:"1px solid #e8e2d6",
+        display:"flex",flexWrap:"wrap",gap:10,alignItems:"center"}}>
+        {FILING_EXCHANGES.map(ex => {
+          const count = (filingsByEx[ex.code]||[]).length;
+          const isLoading = loadingExchanges.has(ex.code);
+          return (
+            <span key={ex.code} style={{display:"flex",alignItems:"center",gap:4}}>
+              <span>{ex.flag}</span>
+              <span style={{color: isLoading ? "#c0392b" : count>0 ? "#2e7d32" : "#bbb"}}>
+                {isLoading ? "…" : count}
+              </span>
+            </span>
+          );
+        })}
+        <span style={{marginLeft:"auto",color:"#aaa"}}>
+          {loading ? "fetching…" : `${totalCount} total filings · last 48h`}
+        </span>
       </div>
 
       {/* Briefing panel */}
       {(brief || briefLoading) && (
         <div style={{background:"#fff",border:"2px solid #1a1a1a",borderRadius:6,
-          padding:"20px 24px",marginBottom:24,position:"relative"}}>
-          <div style={{...mono,fontSize:9,color:"#888",marginBottom:14,textTransform:"uppercase",
-            letterSpacing:"0.08em"}}>
-            ◈ Filings Intelligence Brief · {FILING_EXCHANGES.find(e=>e.code===exchange)?.flag} {FILING_EXCHANGES.find(e=>e.code===exchange)?.label}
-            {exchange==="US" && ` · ${secForm}`}
-            {" · "}{new Date().toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}
+          padding:"22px 26px",marginBottom:28}}>
+          <div style={{...mono,fontSize:9,color:"#888",marginBottom:16,
+            textTransform:"uppercase",letterSpacing:"0.08em",
+            display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span>◈ Global Filings Intelligence Brief · All Markets · {secForm} + Announcements</span>
+            <span>{new Date().toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
           </div>
           {briefLoading
-            ? <div style={{...mono,fontSize:12,color:"#888",padding:"20px 0"}}>Analysing {filtered.length} filings…</div>
+            ? (
+              <div style={{...mono,fontSize:12,color:"#888",padding:"24px 0",textAlign:"center"}}>
+                Analysing {totalCount} filings across {FILING_EXCHANGES.length} exchanges…
+              </div>
+            )
             : <div>{renderBrief(brief)}</div>
           }
         </div>
       )}
 
-      {/* Loading state */}
-      {loading && (
-        <div style={{textAlign:"center",padding:40,color:"#888",...mono,fontSize:12}}>
-          Loading filings…
-        </div>
-      )}
-
-      {!loading && filtered.length===0 && (
-        <div style={{textAlign:"center",padding:40,color:"#888",...mono,fontSize:12}}>
-          No filings found. Try refreshing.
-        </div>
-      )}
+      {/* Exchange filter tabs for the filing list */}
+      <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10,alignItems:"center"}}>
+        <button onClick={()=>setViewExchange("ALL")}
+          style={{...mono,fontSize:11,padding:"3px 10px",borderRadius:4,cursor:"pointer",
+            border: viewExchange==="ALL" ? "2px solid #1a1a1a" : "1px solid #ccc",
+            background: viewExchange==="ALL" ? "#1a1a1a" : "#fff",
+            color: viewExchange==="ALL" ? "#fff" : "#333"}}>
+          All ({totalCount})
+        </button>
+        {FILING_EXCHANGES.map(ex => {
+          const count = (filingsByEx[ex.code]||[]).length;
+          return (
+            <button key={ex.code} onClick={()=>setViewExchange(ex.code)}
+              style={{...mono,fontSize:11,padding:"3px 10px",borderRadius:4,cursor:"pointer",
+                border: viewExchange===ex.code ? "2px solid #1a1a1a" : "1px solid #ccc",
+                background: viewExchange===ex.code ? "#1a1a1a" : "#fff",
+                color: viewExchange===ex.code ? "#fff" : "#333",
+                opacity: count===0 ? 0.4 : 1}}>
+              {ex.flag} {ex.code} {count>0?`(${count})`:""}
+            </button>
+          );
+        })}
+        <input value={searchFilter} onChange={e=>setSearchFilter(e.target.value)}
+          placeholder="Filter filings…"
+          style={{...mono,fontSize:11,padding:"3px 10px",border:"1px solid #ccc",
+            borderRadius:4,background:"#fff",flex:1,minWidth:140,marginLeft:4}} />
+      </div>
 
       {/* Filing list */}
-      {!loading && filtered.length>0 && (
+      {filtered.length===0 && !loading ? (
+        <div style={{textAlign:"center",padding:40,color:"#888",...mono,fontSize:12}}>
+          {totalCount===0 ? "Loading filings…" : "No filings match the filter."}
+        </div>
+      ) : (
         <div>
-          <div style={{...mono,fontSize:10,color:"#888",marginBottom:10,
-            borderBottom:"1px solid #e8e2d6",paddingBottom:8}}>
-            {filtered.length} filings — click any title to view source
-          </div>
-          {filtered.map(filing => (
-            <div key={filing.id}
-              style={{display:"flex",gap:12,alignItems:"flex-start",
-                borderBottom:"1px solid #f0ebe0",padding:"9px 0"}}>
-              <span style={{...mono,fontSize:9,background:"#1a1a1a",color:"#fff",
-                padding:"2px 6px",borderRadius:3,flexShrink:0,marginTop:2}}>
-                {filing.formType}
-              </span>
-              <span style={{...mono,fontSize:9,color:"#aaa",flexShrink:0,marginTop:2,minWidth:80}}>
-                {filing.filed
-                  ? (() => { try { return new Date(filing.filed).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); } catch(e){ return filing.filed?.slice(0,10)||""; } })()
-                  : ""}
-              </span>
-              {classifyMicro(filing.title) && (
-                <span style={{...mono,fontSize:9,background:"#2e7d32",color:"#fff",
-                  padding:"2px 5px",borderRadius:3,flexShrink:0,marginTop:2}}>
-                  ◈
+          {filtered.map(filing => {
+            const exObj = FILING_EXCHANGES.find(e=>e.code===filing.exchange);
+            return (
+              <div key={filing.id}
+                style={{display:"flex",gap:10,alignItems:"flex-start",
+                  borderBottom:"1px solid #f0ebe0",padding:"8px 0"}}>
+                {/* Exchange flag */}
+                <span style={{fontSize:13,flexShrink:0,marginTop:1}}>{exObj?.flag||""}</span>
+                {/* Form type badge */}
+                <span style={{...mono,fontSize:9,background:"#1a1a1a",color:"#fff",
+                  padding:"2px 5px",borderRadius:3,flexShrink:0,marginTop:2,
+                  whiteSpace:"nowrap"}}>
+                  {filing.formType}
                 </span>
-              )}
-              <a href={filing.link} target="_blank" rel="noopener noreferrer"
-                style={{fontSize:13,color:"#1a1a1a",textDecoration:"none",lineHeight:1.4,
-                  flex:1}}>
-                {filing.title}
-              </a>
-            </div>
-          ))}
+                {/* Date */}
+                <span style={{...mono,fontSize:9,color:"#aaa",flexShrink:0,
+                  marginTop:2,minWidth:72,whiteSpace:"nowrap"}}>
+                  {filing.filed
+                    ? (() => { try { return new Date(filing.filed).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); } catch(e){ return filing.filed?.slice(0,10)||""; } })()
+                    : ""}
+                </span>
+                {/* Material badge */}
+                {classifyMicro(filing.title) && (
+                  <span style={{...mono,fontSize:9,background:"#2e7d32",color:"#fff",
+                    padding:"2px 4px",borderRadius:3,flexShrink:0,marginTop:2}}>◈</span>
+                )}
+                {/* Title */}
+                <a href={filing.link} target="_blank" rel="noopener noreferrer"
+                  style={{fontSize:13,color:"#1a1a1a",textDecoration:"none",
+                    lineHeight:1.4,flex:1}}>
+                  {filing.title}
+                </a>
+              </div>
+            );
+          })}
         </div>
       )}
 
       <div style={{...mono,fontSize:9,color:"#bbb",textAlign:"center",marginTop:20,paddingBottom:8}}>
-        {exchange==="US" ? "SEC EDGAR · free public API · no key required" : "Google News · financial news sources covering exchange announcements"}
+        US: SEC EDGAR public API · no key required · Other markets: Google News financial sources
       </div>
     </div>
   );
