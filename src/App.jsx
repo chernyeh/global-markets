@@ -64,8 +64,8 @@ const SOURCES = [
   {id:"fin_post",desc:"Canada's leading dedicated financial daily; covers TSX, commodities, and energy.",   country:"CA",name:"Financial Post",         lang:"en",flag:"🇨🇦",url:GN("site:financialpost.com"),paywall:true},
   // BNN: not paywalled
   {id:"bnn",desc:"BNN Bloomberg's Canadian TV wire; fast-moving market updates and Bay Street commentary.",        country:"CA",name:"BNN Bloomberg Canada",   lang:"en",flag:"🇨🇦",url:GN("site:bnnbloomberg.ca")},
-  {id:"globemail_rob",  desc:"Globe and Mail Report on Business — Canada's most read business section; TSX company earnings, Bay Street M&A, and corporate actions.",   country:"CA",name:"Globe: Report on Business",lang:"en",flag:"🇨🇦",url:"https://www.theglobeandmail.com/arc/outboundfeeds/rss/section/report-on-business/?outputType=xml",paywall:true},
-  {id:"fp_companies",   desc:"Financial Post Companies — company-specific feed; TSX earnings, executive moves, and resource sector corporate actions.",                  country:"CA",name:"FP Companies",         lang:"en",flag:"🇨🇦",url:GN("site:financialpost.com company earnings acquisition TSX"),paywall:true},
+
+
   {id:"reuters_ca",desc:"Reuters' Canada-focused feed; strong on energy, mining, and macro.", country:"CA",name:"Reuters Canada",         lang:"en",flag:"🇨🇦",url:GN("site:reuters.com Canada economy business")},
   {id:"bloom_ca",desc:"Bloomberg's Canada feed; authoritative on oil sands, housing, and BoC policy.",   country:"CA",name:"Bloomberg Canada",       lang:"en",flag:"🇨🇦",url:GN("site:bloomberg.com Canada economy markets"),paywall:true},
   // ── Nikkei Asia (pan-Asian; covers JP, KR, TW, IN, SG, SE Asia corporate news) ──────
@@ -1059,9 +1059,12 @@ async function fetchExchangeFilings(exchangeCode) {
   const configs = {
     SG: {
       queries: [
-        "site:sginvestors.io company announcement financial statements dividend rights issue acquisition placement",
-        "site:sgx.com research-education market-updates",
-        "site:investingnote.com SGX announcement financial results dividend acquisition rights placement",
+        // sginvestors.io directly mirrors SGXNET filings — most reliable SGX source
+        "site:sginvestors.io announcement financial statements dividend rights issue acquisition placement",
+        // SGX's own market updates and company news releases
+        "site:sgx.com announcement results dividend acquisition placement rights",
+        // listedcompany.com aggregates SGXNET filings for SGX-listed firms
+        "site:listedcompany.com SGX financial statements dividend acquisition",
       ],
       lang:"en-SG", gl:"SG", ceid:"SG:en",
     },
@@ -1076,20 +1079,23 @@ async function fetchExchangeFilings(exchangeCode) {
     },
     AU: {
       queries: [
-        // The Market Herald covers ASX company announcements directly
-        "site:themarketonline.com.au earnings results dividend acquisition ASX announcement",
-        // Stockhead covers ASX company-level filings and announcements
-        "site:stockhead.com.au earnings results acquisition ASX announcement company",
-        // marketindex.com.au aggregates ASX announcements  
-        "site:marketindex.com.au ASX announcement results dividend acquisition",
+        // marketindex.com.au is a pure ASX data aggregator — mirrors actual ASX announcements
+        "site:marketindex.com.au announcement results dividend acquisition placement",
+        // asx.com.au news releases (company announcements published by ASX itself)
+        "site:asx.com.au announcement results dividend acquisition",
+        // listcorp.com aggregates ASX company announcements directly from filings
+        "site:listcorp.com ASX announcement results dividend acquisition placement",
       ],
       lang:"en-AU", gl:"AU", ceid:"AU:en",
     },
     CA: {
       queries: [
-        "site:financialpost.com earnings results dividend acquisition TSX listed",
-        "site:bnnbloomberg.ca earnings results dividend acquisition TSX",
-        "site:theglobeandmail.com earnings results dividend acquisition TSX",
+        // sedar.com / sedarplus.ca — Canada's official filing system (SEDAR+)
+        "site:sedarplus.ca company filing earnings dividend acquisition",
+        // newswire.ca — CNW Group press releases from TSX-listed companies
+        "site:newswire.ca earnings results dividend acquisition TSX listed company",
+        // stockwatch.com — Canadian company filing aggregator
+        "site:stockwatch.com earnings results dividend acquisition TSX listed",
       ],
       lang:"en-CA", gl:"CA", ceid:"CA:en",
     },
@@ -1176,12 +1182,18 @@ async function fetchExchangeFilings(exchangeCode) {
     "rask media", "simply wall st",
   ];
   const isNewsSource = (item) => {
-    // GN titles end with "– Source Name", check that suffix
     const titleLower = (item.title || "").toLowerCase();
     const linkLower  = (item.link || "").toLowerCase();
-    return NEWS_SOURCE_NAMES.some(name => 
-      titleLower.includes(name) || linkLower.includes(name.replace(/ /g, ""))
-    );
+    // Extract the source suffix from GN titles: "Headline text – Source Name"
+    const suffixMatch = titleLower.match(/[–—-]\s*([^–—-]+)$/);
+    const sourceSuffix = suffixMatch ? suffixMatch[1].trim() : "";
+    return NEWS_SOURCE_NAMES.some(name => {
+      const n = name.toLowerCase();
+      // Match on full title, source suffix, or link domain
+      return titleLower.includes(n) 
+          || sourceSuffix.includes(n) 
+          || linkLower.includes(n.replace(/ /g, ""));
+    });
   };
 
   // Filter to last 48 hours only
@@ -1214,7 +1226,7 @@ async function fetchAllExchangeFilings(secForm) {
 // Generate a single cross-country briefing, structured by country
 async function generateGlobalFilingsBrief(filingsByExchange, secForm) {
   const sections = FILING_EXCHANGES.map(ex => {
-    const filings = (filingsByExchange[ex.code] || []).slice(0, 20);
+    const filings = (filingsByExchange[ex.code] || []).slice(0, 12); // cap per exchange
     if (!filings.length) return null;
     const lines = filings.map((f, i) => {
       const date = f.filed
@@ -1225,11 +1237,13 @@ async function generateGlobalFilingsBrief(filingsByExchange, secForm) {
     return `${ex.flag} ${ex.label}${ex.code==="US"?` · ${secForm}`:""}:\n${lines}`;
   }).filter(Boolean).join("\n\n");
 
+  // Truncate combined prompt sections to avoid Vercel 60s timeout
+  const sectionsTruncated = sections.slice(0, 6000);
   const totalCount = FILING_EXCHANGES.reduce((n, ex) => n + (filingsByExchange[ex.code]?.length||0), 0);
 
   const prompt = `You are a buy-side analyst. Based on the following regulatory filings and company announcements from multiple exchanges over the last 48 hours, write a global filings intelligence briefing.
 
-${sections}
+${sectionsTruncated}
 
 FORMAT — use exactly this structure:
 
@@ -1845,7 +1859,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
 const SOURCE_RANK = {
   US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","ft","wapo","nyt","barrons","marketwatch","axios_biz","semafor","politico","seekalpha","prnewswire"],
   DE: ["reuters_de","bloom_de","handelsblatt","handelsblatt_en","faz","faz_finance","spiegel_de","sz_de","dw_de"],
-  CA: ["reuters_ca","bloom_ca","globe_mail","globemail_rob","fin_post","fp_companies","bnn"],
+  CA: ["reuters_ca","bloom_ca","globe_mail","fin_post","bnn"],
   SG: ["reuters_sg","bloom_sg","bt_sg","edge_sg","cna_sg","sgx_annc","sg_biz_review"],
   HK: ["reuters_hk","bloom_hk","scmp","hkex_news","mingtiandi","aastocks_hk","etnet_hk","hket","mingpao"],
   KR: ["reuters_kr","bloom_kr","kr_herald","yonhap","yonhap2","ktimes","ked","pulse_kr","thebell_kr","businesskorea","hankyung","maeil","chosunbiz"],
