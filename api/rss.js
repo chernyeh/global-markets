@@ -8,7 +8,6 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Get URL from query string (most reliable on Vercel)
   const url = req.query.url;
 
   if (!url) {
@@ -18,12 +17,21 @@ export default async function handler(req, res) {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
+    // SEC EDGAR requires a declared User-Agent per their fair-access policy:
+    // https://www.sec.gov/os/accessing-edgar-data
+    // Format must identify the tool and provide contact info
+    const isSEC = url.includes("sec.gov");
+    const userAgent = isSEC
+      ? "GlobalMarketsWire/1.0 (investment-research-aggregator; contact@globalmarketswire.com)"
+      : "Mozilla/5.0 (compatible; NewsAggregator/1.0)";
 
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1)",
-        "Accept": "*/*",
+        "User-Agent": userAgent,
+        "Accept": "application/atom+xml, application/xml, text/xml, */*",
+        "Accept-Encoding": "gzip, deflate",
       },
       signal: controller.signal,
     });
