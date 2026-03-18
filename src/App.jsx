@@ -523,37 +523,45 @@ async function generateBriefUnlimited(articles, label) {
 
 Use this exact format:
 
-## [Descriptive title summarising the main theme, e.g. "Korea Markets: Tech Sell-off Amid Fed Uncertainty"]
+## [Descriptive title capturing the dominant macro theme and key risk, e.g. "Global Markets: Iran Escalation Pressures Oil; Fed Uncertainty Weighs on Tech"]
 
-[2-3 sentence executive summary of the most important developments and overall market tone]
+[3-4 sentence BIG PICTURE executive summary: What is the dominant macro force driving markets right now? What geopolitical or policy development is most significant? What is the overall risk-on/risk-off tone? Only after setting this context, note 1-2 of the most market-moving company developments.]
 
-## [Section heading for first major theme, e.g. "Energy & Commodities"]
-- [Specific development with context and investor implication. Be precise — name companies, figures, percentages where available. Explain WHY it matters to investors.]
-- [Next bullet — same level of detail]
+## Macro & Geopolitical Environment
+- [The single most important macro/geopolitical development and its broad market implications — e.g. central bank moves, trade policy shifts, war/conflict escalation, commodity supply disruptions. Explain the transmission mechanism to markets and portfolios.]
+- [Second key macro development — e.g. currency moves, interest rate expectations, inflation data, energy policy. What sectors/assets does this affect and how?]
+- [Add more macro bullets as warranted — always explain WHY it matters to an investor]
 
-## [Section heading for second major theme]
-- [Detailed bullet with company names and implications]
-- [Next bullet]
+## [Regional/Sector theme — e.g. "US Technology & AI", "Energy & Commodities", "Asian Markets", "European Policy"]
+- [Specific development: name companies, figures, percentages. Explain WHY it matters.]
+- [Next bullet — same detail. Mix macro policy impacts with company-level reactions.]
+[REF citations after each bullet]
 
-(Add as many sections and bullets as needed to cover all significant stories)
+## [Next thematic section]
+- [Bullets with REF citations]
+
+(Add as many thematic sections as needed)
+
+## Company-Specific Actions
+- [Earnings beat/miss: company, amount, implication. [REF:N]]
+- [M&A, dividend change, CEO appointment, analyst upgrade/downgrade: company, details, implication. [REF:N]]
+- [Keep going — cover ALL notable company-specific filings/announcements]
 
 ## Risks & Outlook
-- [Specific risk with context]
-- [Opportunity or thing to watch]
+- [Specific risk with context and what to watch for]
+- [Opportunity emerging from current conditions]
 
 Rules:
+- ALWAYS start with big-picture macro/geopolitical context before zooming into companies
 - Each bullet must be 1-2 sentences with real detail and investor perspective
 - Name EVERY company mentioned in the headlines
-- End each bullet with [REF:N] citing the article number(s) that support it (e.g. [REF:2] or [REF:0,4])
-- Group related stories under thematic section headers
+- End each bullet with [REF:N] citing the article number(s) (e.g. [REF:2] or [REF:0,4])
 - Do not use vague language — be specific about what happened and why it matters
-- COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Then HK, Korea, Taiwan, India, Australia, Israel, Middle East, Iran. Then Singapore and Canada. Ensure at least one bullet for each market with stories.
-- MICRO/COMPANY BALANCE: At least 40% of bullets must be company-specific. For each company story, state: (1) company name and ticker if known, (2) the specific event (earnings beat/miss by how much, M&A size, dividend change %, CEO name change, rating change with new target), (3) the investment implication or peer read-across. NEVER let macro crowd out company news entirely.
-- MICRO PRIORITY: Earnings results, M&A, dividend changes, CEO appointments, analyst upgrades/downgrades, and guidance changes are HIGHEST PRIORITY — always include these even if it means dropping a secondary macro story.
-- INDUSTRY TRENDS: When multiple company stories exist in the same sector or region, explicitly call out the industry-level pattern (e.g. "Three Hong Kong developers reported margin compression this quarter, suggesting sector-wide cost pressure"). Use company news to surface cross-company trends.
-- MARKET WEIGHTS: Prioritise company-specific news from US, Hong Kong, Taiwan, Canada, Singapore, Germany/Europe, and Australia. These markets have the most investment-relevant micro coverage in these sources.
+- COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Then HK, Korea, Taiwan, India, Australia, Israel, Middle East, Iran. Then Singapore and Canada.
+- COMPANY BALANCE: At least one full section dedicated to company-specific events (earnings, M&A, dividends, executive changes). Name every company with ticker where known.
+- INDUSTRY TRENDS: When multiple companies in the same sector report similar themes, call out the sector-level pattern explicitly.
 
-Articles (cite using [REF:N] at end of each bullet, N = article number, can cite multiple e.g. [REF:0,3]):
+Articles (cite using [REF:N] at end of each bullet, N = article number):
 ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n")}`;
     const text = await callClaude(prompt, 6000);
     return {text, articles: sourceArticles};
@@ -573,27 +581,30 @@ ${chunk.map((a,i)=>`${offset+i}. ${a.translatedTitle||a.title} [${a.source}]`).j
   const synthPrompt = `You are a senior financial analyst. Synthesise these summaries into a detailed investment briefing for ${label}.
 
 Format:
-## [Descriptive title capturing the main theme]
+## [Title capturing dominant macro theme AND key risk]
 
-[2-3 sentence executive summary of the key developments]
+[3-4 sentence BIG PICTURE summary: Lead with the dominant macro/geopolitical force. What is driving overall market tone? Only after setting this context, mention 1-2 key company developments.]
 
-## [Thematic section heading]
-- [Detailed bullet: company name + what happened + investor implication, 1-2 sentences. End with [REF:N] citing the article number.]
-- [Next bullet — same detail and citation]
+## Macro & Geopolitical Environment
+- [Most important macro/geopolitical development and its market transmission mechanism. [REF:N]]
+- [Second key macro development. [REF:N]]
 
-## [Next thematic section]
-- [Detailed bullet with [REF:N] citation]
+## [Regional/Sector theme]
+- [Development with figures and investor implication. [REF:N]]
+
+## Company-Specific Actions
+- [Earnings/M&A/dividend/executive change with company name, details, implication. [REF:N]]
 
 ## Risks & Outlook
-- [Specific risk or opportunity with [REF:N] citation]
+- [Specific risk or opportunity. [REF:N]]
 
 Rules:
-- Name every company, be specific with figures/percentages, explain investor implications, group by theme.
-- EVERY bullet must end with [REF:N] or [REF:N,M] citing the article number(s) from the index below that support it.
-- Use the article index to find the correct N for each claim.
-- The summaries include "(article N)" references — convert these to [REF:N] in the format above.
-- COVERAGE PRIORITY: When this is a Breaking News brief, lead with US and China stories, then HK/Korea/Taiwan/India/Australia/Israel/Middle East/Iran, then Singapore/Canada. Ensure every market with articles gets at least one bullet.
-- MICRO/COMPANY BALANCE: Dedicate at least one full section to company-specific developments (earnings, M&A, analyst rating changes, dividends, executive changes). Name every company explicitly.
+- ALWAYS open with macro/geopolitical big picture BEFORE company detail
+- Name every company, be specific with figures/percentages
+- EVERY bullet must end with [REF:N] or [REF:N,M]
+- Use the article index to find the correct N for each claim
+- The summaries include "(article N)" — convert to [REF:N]
+- COVERAGE PRIORITY: US and China first, then HK/Korea/Taiwan/India/Australia/Israel/ME/Iran, then Singapore/Canada
 
 Article index (use N in [REF:N]):
 ${articleIndex}
@@ -2287,7 +2298,14 @@ export default function App() {
                 </div>
                 {briefs[briefKey]&&(
                   <div style={{borderTop:"1px solid #e8e2d6",paddingTop:12}}>
-                    <BriefRenderer text={typeof briefs[briefKey]==="string"?briefs[briefKey]:briefs[briefKey]?.text} articles={typeof briefs[briefKey]==="string"?breakingArts:briefs[briefKey]?.articles||breakingArts}/>
+                    <BriefRenderer 
+  text={typeof briefs[briefKey]==="string"?briefs[briefKey]:briefs[briefKey]?.text} 
+  articles={(() => {
+    // Try stored articles first, fall back to current breakingArts
+    const stored = typeof briefs[briefKey]==="string" ? null : briefs[briefKey]?.articles;
+    return (stored && stored.length > 0) ? stored : breakingArts;
+  })()}
+/>
                   </div>
                 )}
               </div>
