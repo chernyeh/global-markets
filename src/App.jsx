@@ -29,182 +29,182 @@ const GN = (q,hl="en-US",gl="US",ceid="US:en") =>
 const SOURCES = [
   // ── United States ──────────────────────────────────────────────────────────
   // Reuters: not paywalled, Google News works well
-  {id:"reuters",    country:"US",name:"Reuters Business",       lang:"en",flag:"🇺🇸",url:GN("site:reuters.com business finance")},
+  {id:"reuters",tier:1,    country:"US",name:"Reuters Business",       lang:"en",flag:"🇺🇸",url:GN("site:reuters.com business finance")},
   // MarketWatch: not paywalled, GN fine
-  {id:"marketwatch",desc:"Dow Jones-owned; strong on US equities, earnings, and retail investor flow.",country:"US",name:"MarketWatch",            lang:"en",flag:"🇺🇸",url:GN("site:marketwatch.com markets stocks")},
+  {id:"marketwatch",tier:2,desc:"Dow Jones-owned; strong on US equities, earnings, and retail investor flow.",country:"US",name:"MarketWatch",            lang:"en",flag:"🇺🇸",url:GN("site:marketwatch.com markets stocks")},
   // WSJ: paywalled — direct Dow Jones RSS feed
-  {id:"wsj",        country:"US",name:"WSJ Markets",            lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",paywall:true},
-  {id:"wsj2",       country:"US",name:"WSJ Business",           lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/WSJcomUSBusiness",paywall:true},
+  {id:"wsj",tier:2,        country:"US",name:"WSJ Markets",            lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",paywall:true},
+  {id:"wsj2",tier:2,       country:"US",name:"WSJ Business",           lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/WSJcomUSBusiness",paywall:true},
   // Bloomberg: direct RSS — headlines are public even if articles paywalled
-  {id:"bloomberg",  country:"US",name:"Bloomberg Markets",      lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/markets/news.rss",paywall:true},
-  {id:"bloomberg2", country:"US",name:"Bloomberg Business",     lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/business/news.rss",paywall:true},
+  {id:"bloomberg",tier:1,  country:"US",name:"Bloomberg Markets",      lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/markets/news.rss",paywall:true},
+  {id:"bloomberg2",tier:1, country:"US",name:"Bloomberg Business",     lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/business/news.rss",paywall:true},
   // FT: direct RSS (already switched)
-  {id:"ft",         country:"US",name:"Financial Times",        lang:"en",flag:"🇺🇸",url:GN("site:ft.com markets economy business"),paywall:true},
-  {id:"nyt",        country:"US",name:"NY Times Business",      lang:"en",flag:"🇺🇸",url:"https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",paywall:true},
-  {id:"axios_biz",  desc:"Axios — smart brevity format; fast, context-rich on tech, policy, and market-moving Washington news.",country:"US",name:"Axios Business",         lang:"en",flag:"🇺🇸",url:GN("site:axios.com business economy markets finance")},
-  {id:"wapo",       desc:"Washington Post — authoritative on US politics, policy, and national security; essential for Washington-driven market moves.",country:"US",name:"Washington Post",        lang:"en",flag:"🇺🇸",url:GN("site:washingtonpost.com business economy policy"),paywall:true},
-  {id:"barrons",    desc:"Barron's — Dow Jones's premier investment weekly; stock-specific analysis, ratings, earnings previews, and buy/sell calls. Highly actionable for fundamental investors.",country:"US",name:"Barron's",              lang:"en",flag:"🇺🇸",url:GN("site:barrons.com stocks earnings analysis"),paywall:true},
-  {id:"seekalpha",  desc:"Seeking Alpha Earnings — earnings beats/misses, dividend announcements, and analyst rating changes. Filtered to high-signal corporate events only.",country:"US",name:"Seeking Alpha Earnings",  lang:"en",flag:"🇺🇸",url:GN("site:seekingalpha.com earnings beat miss dividend CEO acquires merger")},
-  {id:"prnewswire", desc:"PR Newswire — filtered to primary corporate events: earnings results, M&A, dividend changes, and CEO/CFO appointments only.",country:"US",name:"PR Newswire",            lang:"en",flag:"🇺🇸",url:GN("site:prnewswire.com quarterly results OR earnings per share OR acquires OR merger agreement OR dividend OR appoints CEO OR names CFO")},
-  {id:"semafor",    desc:"Semafor Business — sharp, independently sourced business and finance journalism; well-connected on Wall Street, Washington policy, and global capital flows.",country:"US",name:"Semafor Business",       lang:"en",flag:"🇺🇸",url:GN("site:semafor.com business finance economy markets")},
-  {id:"politico",   desc:"Politico Economy — authoritative on US fiscal policy, Fed regulation, trade, and Washington's influence on markets. Essential for policy-driven investment themes.",country:"US",name:"Politico Economy",       lang:"en",flag:"🇺🇸",url:GN("site:politico.com economy finance tax trade regulation")},
+  {id:"ft",tier:2,         country:"US",name:"Financial Times",        lang:"en",flag:"🇺🇸",url:GN("site:ft.com markets economy business"),paywall:true},
+  {id:"nyt",tier:2,        country:"US",name:"NY Times Business",      lang:"en",flag:"🇺🇸",url:"https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",paywall:true},
+  {id:"axios_biz",tier:2,  desc:"Axios — smart brevity format; fast, context-rich on tech, policy, and market-moving Washington news.",country:"US",name:"Axios Business",         lang:"en",flag:"🇺🇸",url:GN("site:axios.com business economy markets finance")},
+  {id:"wapo",tier:2,       desc:"Washington Post — authoritative on US politics, policy, and national security; essential for Washington-driven market moves.",country:"US",name:"Washington Post",        lang:"en",flag:"🇺🇸",url:GN("site:washingtonpost.com business economy policy"),paywall:true},
+  {id:"barrons",tier:2,    desc:"Barron's — Dow Jones's premier investment weekly; stock-specific analysis, ratings, earnings previews, and buy/sell calls. Highly actionable for fundamental investors.",country:"US",name:"Barron's",              lang:"en",flag:"🇺🇸",url:GN("site:barrons.com stocks earnings analysis"),paywall:true},
+  {id:"seekalpha",tier:3,  desc:"Seeking Alpha Earnings — earnings beats/misses, dividend announcements, and analyst rating changes. Filtered to high-signal corporate events only.",country:"US",name:"Seeking Alpha Earnings",  lang:"en",flag:"🇺🇸",url:GN("site:seekingalpha.com earnings beat miss dividend CEO acquires merger")},
+  {id:"prnewswire",tier:3, desc:"PR Newswire — filtered to primary corporate events: earnings results, M&A, dividend changes, and CEO/CFO appointments only.",country:"US",name:"PR Newswire",            lang:"en",flag:"🇺🇸",url:GN("site:prnewswire.com quarterly results OR earnings per share OR acquires OR merger agreement OR dividend OR appoints CEO OR names CFO")},
+  {id:"semafor",tier:2,    desc:"Semafor Business — sharp, independently sourced business and finance journalism; well-connected on Wall Street, Washington policy, and global capital flows.",country:"US",name:"Semafor Business",       lang:"en",flag:"🇺🇸",url:GN("site:semafor.com business finance economy markets")},
+  {id:"politico",tier:2,   desc:"Politico Economy — authoritative on US fiscal policy, Fed regulation, trade, and Washington's influence on markets. Essential for policy-driven investment themes.",country:"US",name:"Politico Economy",       lang:"en",flag:"🇺🇸",url:GN("site:politico.com economy finance tax trade regulation")},
   // ── Germany ────────────────────────────────────────────────────────────────
-  {id:"handelsblatt",  desc:"Handelsblatt — Germany's leading financial daily; required reading for DAX, German industry and European monetary policy.",               country:"DE",name:"Handelsblatt",        lang:"de",flag:"🇩🇪",url:"https://www.handelsblatt.com/contentexport/feed/schlagzeilen",paywall:true},
-  {id:"handelsblatt_en",desc:"Handelsblatt English — curated English-language coverage of German business and European economic news.",                                 country:"DE",name:"Handelsblatt (EN)",    lang:"en",flag:"🇩🇪",url:GN("site:handelsblatt.com english economy business"),paywall:true},
-  {id:"faz",           desc:"FAZ (Frankfurter Allgemeine) — Germany's newspaper of record; authoritative on politics, economics and ECB.",                             country:"DE",name:"FAZ",                  lang:"de",flag:"🇩🇪",url:"https://www.faz.net/rss/aktuell",paywall:true},
-  {id:"faz_finance",   desc:"FAZ Finance — financial markets, banking and investment coverage from Germany's most authoritative broadsheet.",                          country:"DE",name:"FAZ Finance",          lang:"de",flag:"🇩🇪",url:GN("site:faz.net Wirtschaft Finanzen","de","DE","DE:de")},
-  {id:"spiegel_de",    desc:"Der Spiegel (International) — Germany's top news magazine; investigative, with strong European and geopolitical depth in English.",        country:"DE",name:"Der Spiegel",          lang:"en",flag:"🇩🇪",url:"https://www.spiegel.de/international/index.rss"},
-  {id:"sz_de",         desc:"Süddeutsche Zeitung — centrist German broadsheet; strong on investigative journalism and European affairs.",                               country:"DE",name:"Süddeutsche Zeitung",  lang:"de",flag:"🇩🇪",url:GN("site:sueddeutsche.de Wirtschaft Finanzen","de","DE","DE:de")},
-  {id:"dw_de",         desc:"Deutsche Welle Business — Germany's international broadcaster; English-language coverage of German and European economic news.",           country:"DE",name:"Deutsche Welle",       lang:"en",flag:"🇩🇪",url:"https://rss.dw.com/xml/rss-en-bus"},
-  {id:"reuters_de",    desc:"Reuters Germany — wire coverage of German markets, DAX companies and European economic policy.",                                          country:"DE",name:"Reuters Germany",      lang:"en",flag:"🇩🇪",url:GN("site:reuters.com Germany economy business finance DAX")},
-  {id:"bloom_de",      desc:"Bloomberg Germany — markets and corporate coverage with a Germany/DACH focus.",                                                           country:"DE",name:"Bloomberg Germany",    lang:"en",flag:"🇩🇪",url:GN("site:bloomberg.com Germany economy business"),paywall:true},
+  {id:"handelsblatt",tier:2,  desc:"Handelsblatt — Germany's leading financial daily; required reading for DAX, German industry and European monetary policy.",               country:"DE",name:"Handelsblatt",        lang:"de",flag:"🇩🇪",url:"https://www.handelsblatt.com/contentexport/feed/schlagzeilen",paywall:true},
+  {id:"handelsblatt_en",tier:2,desc:"Handelsblatt English — curated English-language coverage of German business and European economic news.",                                 country:"DE",name:"Handelsblatt (EN)",    lang:"en",flag:"🇩🇪",url:GN("site:handelsblatt.com english economy business"),paywall:true},
+  {id:"faz",tier:2,           desc:"FAZ (Frankfurter Allgemeine) — Germany's newspaper of record; authoritative on politics, economics and ECB.",                             country:"DE",name:"FAZ",                  lang:"de",flag:"🇩🇪",url:"https://www.faz.net/rss/aktuell",paywall:true},
+  {id:"faz_finance",tier:2,   desc:"FAZ Finance — financial markets, banking and investment coverage from Germany's most authoritative broadsheet.",                          country:"DE",name:"FAZ Finance",          lang:"de",flag:"🇩🇪",url:GN("site:faz.net Wirtschaft Finanzen","de","DE","DE:de")},
+  {id:"spiegel_de",tier:2,    desc:"Der Spiegel (International) — Germany's top news magazine; investigative, with strong European and geopolitical depth in English.",        country:"DE",name:"Der Spiegel",          lang:"en",flag:"🇩🇪",url:"https://www.spiegel.de/international/index.rss"},
+  {id:"sz_de",tier:2,         desc:"Süddeutsche Zeitung — centrist German broadsheet; strong on investigative journalism and European affairs.",                               country:"DE",name:"Süddeutsche Zeitung",  lang:"de",flag:"🇩🇪",url:GN("site:sueddeutsche.de Wirtschaft Finanzen","de","DE","DE:de")},
+  {id:"dw_de",tier:1,         desc:"Deutsche Welle Business — Germany's international broadcaster; English-language coverage of German and European economic news.",           country:"DE",name:"Deutsche Welle",       lang:"en",flag:"🇩🇪",url:"https://rss.dw.com/xml/rss-en-bus"},
+  {id:"reuters_de",tier:1,    desc:"Reuters Germany — wire coverage of German markets, DAX companies and European economic policy.",                                          country:"DE",name:"Reuters Germany",      lang:"en",flag:"🇩🇪",url:GN("site:reuters.com Germany economy business finance DAX")},
+  {id:"bloom_de",tier:1,      desc:"Bloomberg Germany — markets and corporate coverage with a Germany/DACH focus.",                                                           country:"DE",name:"Bloomberg Germany",    lang:"en",flag:"🇩🇪",url:GN("site:bloomberg.com Germany economy business"),paywall:true},
   // ── Canada ─────────────────────────────────────────────────────────────────
   // Globe & Mail: paywalled — broader GN query gets more headlines
-  {id:"globe_mail",desc:"Canada's newspaper of record; best source for Bay Street and TSX corporate news.", country:"CA",name:"Globe and Mail",         lang:"en",flag:"🇨🇦",url:GN("site:theglobeandmail.com business economy markets"),paywall:true},
-  {id:"fin_post",desc:"Canada's leading dedicated financial daily; covers TSX, commodities, and energy.",   country:"CA",name:"Financial Post",         lang:"en",flag:"🇨🇦",url:GN("site:financialpost.com"),paywall:true},
+  {id:"globe_mail",tier:2,desc:"Canada's newspaper of record; best source for Bay Street and TSX corporate news.", country:"CA",name:"Globe and Mail",         lang:"en",flag:"🇨🇦",url:GN("site:theglobeandmail.com business economy markets"),paywall:true},
+  {id:"fin_post",tier:2,desc:"Canada's leading dedicated financial daily; covers TSX, commodities, and energy.",   country:"CA",name:"Financial Post",         lang:"en",flag:"🇨🇦",url:GN("site:financialpost.com"),paywall:true},
   // BNN: not paywalled
-  {id:"bnn",desc:"BNN Bloomberg's Canadian TV wire; fast-moving market updates and Bay Street commentary.",        country:"CA",name:"BNN Bloomberg Canada",   lang:"en",flag:"🇨🇦",url:GN("site:bnnbloomberg.ca")},
+  {id:"bnn",tier:2,desc:"BNN Bloomberg's Canadian TV wire; fast-moving market updates and Bay Street commentary.",        country:"CA",name:"BNN Bloomberg Canada",   lang:"en",flag:"🇨🇦",url:GN("site:bnnbloomberg.ca")},
 
 
-  {id:"reuters_ca",desc:"Reuters' Canada-focused feed; strong on energy, mining, and macro.", country:"CA",name:"Reuters Canada",         lang:"en",flag:"🇨🇦",url:GN("site:reuters.com Canada economy business")},
-  {id:"bloom_ca",desc:"Bloomberg's Canada feed; authoritative on oil sands, housing, and BoC policy.",   country:"CA",name:"Bloomberg Canada",       lang:"en",flag:"🇨🇦",url:GN("site:bloomberg.com Canada economy markets"),paywall:true},
+  {id:"reuters_ca",tier:1,desc:"Reuters' Canada-focused feed; strong on energy, mining, and macro.", country:"CA",name:"Reuters Canada",         lang:"en",flag:"🇨🇦",url:GN("site:reuters.com Canada economy business")},
+  {id:"bloom_ca",tier:1,desc:"Bloomberg's Canada feed; authoritative on oil sands, housing, and BoC policy.",   country:"CA",name:"Bloomberg Canada",       lang:"en",flag:"🇨🇦",url:GN("site:bloomberg.com Canada economy markets"),paywall:true},
   // ── Nikkei Asia (pan-Asian; covers JP, KR, TW, IN, SG, SE Asia corporate news) ──────
-  {id:"nikkei_asia",   desc:"Nikkei Asia — premier English-language source for Asian corporate news; essential for Japan, Korea, SEA company-level coverage.",          country:"JP",name:"Nikkei Asia",          lang:"en",flag:"🇯🇵",url:"https://asia.nikkei.com/rss/feed/nar",paywall:true},
+  {id:"nikkei_asia",tier:2,   desc:"Nikkei Asia — premier English-language source for Asian corporate news; essential for Japan, Korea, SEA company-level coverage.",          country:"JP",name:"Nikkei Asia",          lang:"en",flag:"🇯🇵",url:"https://asia.nikkei.com/rss/feed/nar",paywall:true},
   // ── Singapore ──────────────────────────────────────────────────────────────
   // Business Times SG: paywalled — broader query
-  {id:"bt_sg",desc:"SGX's go-to daily; essential for listed companies, REITs, and MAS policy.",      country:"SG",name:"Business Times SG",      lang:"en",flag:"🇸🇬",url:GN("site:businesstimes.com.sg"),paywall:true},
+  {id:"bt_sg",tier:2,desc:"SGX's go-to daily; essential for listed companies, REITs, and MAS policy.",      country:"SG",name:"Business Times SG",      lang:"en",flag:"🇸🇬",url:GN("site:businesstimes.com.sg"),paywall:true},
   // Straits Times: paywalled — broader query
   // CNA: free — GN fine
-  {id:"cna_sg",desc:"Singapore's public broadcaster; reliable on government policy and Southeast Asian macro.",     country:"SG",name:"CNA Business",           lang:"en",flag:"🇸🇬",url:GN("site:channelnewsasia.com business")},
-  {id:"edge_sg",desc:"In-depth weekly; known for contrarian analysis on SGX stocks and property.",    country:"SG",name:"The Edge Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:theedgesingapore.com"),paywall:true},
-  {id:"reuters_sg",desc:"Reuters' Singapore hub; covers regional trade flows and Southeast Asian markets.", country:"SG",name:"Reuters Singapore",       lang:"en",flag:"🇸🇬",url:GN("site:reuters.com Singapore economy business")},
-  {id:"bloom_sg",desc:"Bloomberg Singapore; strong on central bank, tech, and broader ASEAN.",   country:"SG",name:"Bloomberg Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:bloomberg.com Singapore markets economy"),paywall:true},
-  {id:"sgx_annc",      desc:"SGX company announcements — earnings, dividends, rights issues, M&A and corporate actions from SGX-listed companies. Most actionable micro feed for SGX investors.",country:"SG",name:"SGX Announcements",    lang:"en",flag:"🇸🇬",url:GN("SGX company earnings dividend rights issue acquisition Singapore announcement")},
-  {id:"sg_biz_review", desc:"Singapore Business Review — company-specific news on SGX listings, deal flow, and corporate actions.",                                      country:"SG",name:"SG Business Review",   lang:"en",flag:"🇸🇬",url:GN("site:sbr.com.sg")},
+  {id:"cna_sg",tier:2,desc:"Singapore's public broadcaster; reliable on government policy and Southeast Asian macro.",     country:"SG",name:"CNA Business",           lang:"en",flag:"🇸🇬",url:GN("site:channelnewsasia.com business")},
+  {id:"edge_sg",tier:3,desc:"In-depth weekly; known for contrarian analysis on SGX stocks and property.",    country:"SG",name:"The Edge Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:theedgesingapore.com"),paywall:true},
+  {id:"reuters_sg",tier:1,desc:"Reuters' Singapore hub; covers regional trade flows and Southeast Asian markets.", country:"SG",name:"Reuters Singapore",       lang:"en",flag:"🇸🇬",url:GN("site:reuters.com Singapore economy business")},
+  {id:"bloom_sg",tier:1,desc:"Bloomberg Singapore; strong on central bank, tech, and broader ASEAN.",   country:"SG",name:"Bloomberg Singapore",     lang:"en",flag:"🇸🇬",url:GN("site:bloomberg.com Singapore markets economy"),paywall:true},
+  {id:"sgx_annc",tier:3,      desc:"SGX company announcements — earnings, dividends, rights issues, M&A and corporate actions from SGX-listed companies. Most actionable micro feed for SGX investors.",country:"SG",name:"SGX Announcements",    lang:"en",flag:"🇸🇬",url:GN("SGX company earnings dividend rights issue acquisition Singapore announcement")},
+  {id:"sg_biz_review",tier:3, desc:"Singapore Business Review — company-specific news on SGX listings, deal flow, and corporate actions.",                                      country:"SG",name:"SG Business Review",   lang:"en",flag:"🇸🇬",url:GN("site:sbr.com.sg")},
   // ── Hong Kong ──────────────────────────────────────────────────────────────
-  {id:"scmp",desc:"Hong Kong's English paper of record; best English-language lens on China policy and HKEX.",       country:"HK",name:"South China Morning Post",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com business finance"),paywall:true},
-  {id:"mingtiandi",desc:"Specialist in China and Asia real estate; essential for REIT and property investors.", country:"HK",name:"Mingtiandi",             lang:"en",flag:"🇭🇰",url:GN("site:mingtiandi.com")},
-  {id:"hket",desc:"Hong Kong Economic Times — HK's top Chinese financial daily, auto-translated.",       country:"HK",name:"香港經濟日報 HKET",        lang:"zh",flag:"🇭🇰",url:GN("site:hket.com 財經","zh-HK","HK","HK:zh-Hant")},
-  {id:"mingpao",desc:"Ming Pao Finance — respected HK Chinese daily; strong on local markets and Mainland flows.",    country:"HK",name:"明報財經 Ming Pao",       lang:"zh",flag:"🇭🇰",url:GN("site:mingpao.com 財經","zh-HK","HK","HK:zh-Hant")},
-  {id:"reuters_hk",desc:"Reuters' Hong Kong desk; key for Hang Seng, IPOs, and China-HK market mechanics.", country:"HK",name:"Reuters Hong Kong",       lang:"en",flag:"🇭🇰",url:GN("site:reuters.com \"Hong Kong\" economy business finance")},
-  {id:"bloom_hk",desc:"Bloomberg HK; covers Hang Seng constituents, H-shares, and property sector.",   country:"HK",name:"Bloomberg Hong Kong",     lang:"en",flag:"🇭🇰",url:GN("site:bloomberg.com \"Hong Kong\" markets economy"),paywall:true},
+  {id:"scmp",tier:2,desc:"Hong Kong's English paper of record; best English-language lens on China policy and HKEX.",       country:"HK",name:"South China Morning Post",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com business finance"),paywall:true},
+  {id:"mingtiandi",tier:3,desc:"Specialist in China and Asia real estate; essential for REIT and property investors.", country:"HK",name:"Mingtiandi",             lang:"en",flag:"🇭🇰",url:GN("site:mingtiandi.com")},
+  {id:"hket",tier:2,desc:"Hong Kong Economic Times — HK's top Chinese financial daily, auto-translated.",       country:"HK",name:"香港經濟日報 HKET",        lang:"zh",flag:"🇭🇰",url:GN("site:hket.com 財經","zh-HK","HK","HK:zh-Hant")},
+  {id:"mingpao",tier:2,desc:"Ming Pao Finance — respected HK Chinese daily; strong on local markets and Mainland flows.",    country:"HK",name:"明報財經 Ming Pao",       lang:"zh",flag:"🇭🇰",url:GN("site:mingpao.com 財經","zh-HK","HK","HK:zh-Hant")},
+  {id:"reuters_hk",tier:1,desc:"Reuters' Hong Kong desk; key for Hang Seng, IPOs, and China-HK market mechanics.", country:"HK",name:"Reuters Hong Kong",       lang:"en",flag:"🇭🇰",url:GN("site:reuters.com \"Hong Kong\" economy business finance")},
+  {id:"bloom_hk",tier:1,desc:"Bloomberg HK; covers Hang Seng constituents, H-shares, and property sector.",   country:"HK",name:"Bloomberg Hong Kong",     lang:"en",flag:"🇭🇰",url:GN("site:bloomberg.com \"Hong Kong\" markets economy"),paywall:true},
   // ── Korea ──────────────────────────────────────────────────────────────────
-  {id:"ked",desc:"Korea Economic Daily's English arm; first-mover on Samsung, SK, and Korean chaebol.",        country:"KR",name:"KED Global",             lang:"en",flag:"🇰🇷",url:GN("site:kedglobal.com"),paywall:true},
-  {id:"ktimes",desc:"Korea Times Business — broad English coverage of Korean economy and trade policy.",      country:"KR",name:"Korea Times Business",    lang:"en",flag:"🇰🇷",url:"https://feed.koreatimes.co.kr/k/business.xml",paywall:true},
-  {id:"kr_herald",desc:"Korea Herald Economy — accessible English daily; good for foreign investor context.",  country:"KR",name:"Korea Herald Business",  lang:"en",flag:"🇰🇷",url:"https://www.koreaherald.com/rss/kh_Business",paywall:true},
-  {id:"yonhap",desc:"Korea's official wire agency; authoritative on government policy, trade, and North Korea risk.",     country:"KR",name:"Yonhap Economy",         lang:"en",flag:"🇰🇷",url:"https://en.yna.co.kr/RSS/economy.xml"},
-  {id:"yonhap2",desc:"Yonhap financial sub-feed; focused on markets, earnings, and corporate actions.",     country:"KR",name:"Yonhap Finance",          lang:"en",flag:"🇰🇷",url:"https://en.yna.co.kr/RSS/industry.xml"},
-  {id:"hankyung",desc:"Hankyung (Korean Economic Daily) — the Bloomberg of Korea, auto-translated; most read by fund managers.",   country:"KR",name:"한국경제 Hankyung",        lang:"ko",flag:"🇰🇷",url:"https://www.hankyung.com/feed/economy"},
-  {id:"maeil",desc:"Maeil Business Newspaper — Korea's oldest financial daily, auto-translated; strong on industry.",      country:"KR",name:"매일경제 Maeil",           lang:"ko",flag:"🇰🇷",url:"https://www.mk.co.kr/rss/30100041/"},
-  {id:"chosunbiz",desc:"Chosun's business arm — widely read by Korean executives; covers strategy and M&A.",  country:"KR",name:"조선비즈 Chosunbiz",      lang:"ko",flag:"🇰🇷",url:"https://biz.chosun.com/arc/outboundfeeds/rss/"},
-  {id:"reuters_kr",desc:"Reuters Korea; covers Samsung, semiconductors, and BoK monetary policy in English.", country:"KR",name:"Reuters Korea",           lang:"en",flag:"🇰🇷",url:GN("site:reuters.com \"South Korea\" economy business")},
-  {id:"bloom_kr",desc:"Bloomberg Korea; strong on Korean equities, currency, and export data.",   country:"KR",name:"Bloomberg Korea",         lang:"en",flag:"🇰🇷",url:GN("site:bloomberg.com \"South Korea\" markets economy"),paywall:true},
+  {id:"ked",tier:2,desc:"Korea Economic Daily's English arm; first-mover on Samsung, SK, and Korean chaebol.",        country:"KR",name:"KED Global",             lang:"en",flag:"🇰🇷",url:GN("site:kedglobal.com"),paywall:true},
+  {id:"ktimes",tier:2,desc:"Korea Times Business — broad English coverage of Korean economy and trade policy.",      country:"KR",name:"Korea Times Business",    lang:"en",flag:"🇰🇷",url:"https://feed.koreatimes.co.kr/k/business.xml",paywall:true},
+  {id:"kr_herald",tier:2,desc:"Korea Herald Economy — accessible English daily; good for foreign investor context.",  country:"KR",name:"Korea Herald Business",  lang:"en",flag:"🇰🇷",url:"https://www.koreaherald.com/rss/kh_Business",paywall:true},
+  {id:"yonhap",tier:1,desc:"Korea's official wire agency; authoritative on government policy, trade, and North Korea risk.",     country:"KR",name:"Yonhap Economy",         lang:"en",flag:"🇰🇷",url:"https://en.yna.co.kr/RSS/economy.xml"},
+  {id:"yonhap2",tier:1,desc:"Yonhap financial sub-feed; focused on markets, earnings, and corporate actions.",     country:"KR",name:"Yonhap Finance",          lang:"en",flag:"🇰🇷",url:"https://en.yna.co.kr/RSS/industry.xml"},
+  {id:"hankyung",tier:2,desc:"Hankyung (Korean Economic Daily) — the Bloomberg of Korea, auto-translated; most read by fund managers.",   country:"KR",name:"한국경제 Hankyung",        lang:"ko",flag:"🇰🇷",url:"https://www.hankyung.com/feed/economy"},
+  {id:"maeil",tier:2,desc:"Maeil Business Newspaper — Korea's oldest financial daily, auto-translated; strong on industry.",      country:"KR",name:"매일경제 Maeil",           lang:"ko",flag:"🇰🇷",url:"https://www.mk.co.kr/rss/30100041/"},
+  {id:"chosunbiz",tier:2,desc:"Chosun's business arm — widely read by Korean executives; covers strategy and M&A.",  country:"KR",name:"조선비즈 Chosunbiz",      lang:"ko",flag:"🇰🇷",url:"https://biz.chosun.com/arc/outboundfeeds/rss/"},
+  {id:"reuters_kr",tier:1,desc:"Reuters Korea; covers Samsung, semiconductors, and BoK monetary policy in English.", country:"KR",name:"Reuters Korea",           lang:"en",flag:"🇰🇷",url:GN("site:reuters.com \"South Korea\" economy business")},
+  {id:"bloom_kr",tier:1,desc:"Bloomberg Korea; strong on Korean equities, currency, and export data.",   country:"KR",name:"Bloomberg Korea",         lang:"en",flag:"🇰🇷",url:GN("site:bloomberg.com \"South Korea\" markets economy"),paywall:true},
   // ── Taiwan ─────────────────────────────────────────────────────────────────
-  {id:"taipei_t",desc:"Taiwan's main English daily; useful for government policy, cross-strait tension, and macro.",   country:"TW",name:"Taipei Times Business",  lang:"en",flag:"🇹🇼",url:GN("site:taipeitimes.com business"),paywall:true},
-  {id:"focus_tw",desc:"CNA's English Taiwan feed; official wire — fast on policy announcements and corporate filings.",   country:"TW",name:"Focus Taiwan CNA",       lang:"en",flag:"🇹🇼",url:GN("site:focustaiwan.tw business"),paywall:true},
-  {id:"udn_money",desc:"UDN Money — Taiwan's major Mandarin financial portal, auto-translated; strong on TSMC and tech supply chain.",  country:"TW",name:"經濟日報 UDN Money",       lang:"zh",flag:"🇹🇼",url:GN("site:money.udn.com","zh-TW","TW","TW:zh-Hant")},
-  {id:"ctee",desc:"China Times Economy — influential Mandarin business paper, auto-translated; covers Taiwan equities and property.",       country:"TW",name:"工商時報 CTEE",            lang:"zh",flag:"🇹🇼",url:GN("site:ctee.com.tw","zh-TW","TW","TW:zh-Hant")},
-  {id:"digitimes",desc:"The definitive English source for Taiwan semiconductor, electronics, and supply chain intelligence.",  country:"TW",name:"DigiTimes",              lang:"en",flag:"🇹🇼",url:GN("site:digitimes.com Taiwan semiconductor technology supply chain"),paywall:true},
-  {id:"reuters_tw",desc:"Reuters Taiwan; essential for TSMC, semiconductors, and US-China tech trade.", country:"TW",name:"Reuters Taiwan",          lang:"en",flag:"🇹🇼",url:GN("site:reuters.com Taiwan economy business")},
-  {id:"bloom_tw",desc:"Bloomberg Taiwan; covers TWD, TAIEX, and chip sector in depth.",   country:"TW",name:"Bloomberg Taiwan",        lang:"en",flag:"🇹🇼",url:GN("site:bloomberg.com Taiwan markets economy"),paywall:true},
+  {id:"taipei_t",tier:2,desc:"Taiwan's main English daily; useful for government policy, cross-strait tension, and macro.",   country:"TW",name:"Taipei Times Business",  lang:"en",flag:"🇹🇼",url:GN("site:taipeitimes.com business"),paywall:true},
+  {id:"focus_tw",tier:2,desc:"CNA's English Taiwan feed; official wire — fast on policy announcements and corporate filings.",   country:"TW",name:"Focus Taiwan CNA",       lang:"en",flag:"🇹🇼",url:GN("site:focustaiwan.tw business"),paywall:true},
+  {id:"udn_money",tier:2,desc:"UDN Money — Taiwan's major Mandarin financial portal, auto-translated; strong on TSMC and tech supply chain.",  country:"TW",name:"經濟日報 UDN Money",       lang:"zh",flag:"🇹🇼",url:GN("site:money.udn.com","zh-TW","TW","TW:zh-Hant")},
+  {id:"ctee",tier:2,desc:"China Times Economy — influential Mandarin business paper, auto-translated; covers Taiwan equities and property.",       country:"TW",name:"工商時報 CTEE",            lang:"zh",flag:"🇹🇼",url:GN("site:ctee.com.tw","zh-TW","TW","TW:zh-Hant")},
+  {id:"digitimes",tier:2,desc:"The definitive English source for Taiwan semiconductor, electronics, and supply chain intelligence.",  country:"TW",name:"DigiTimes",              lang:"en",flag:"🇹🇼",url:GN("site:digitimes.com Taiwan semiconductor technology supply chain"),paywall:true},
+  {id:"reuters_tw",tier:1,desc:"Reuters Taiwan; essential for TSMC, semiconductors, and US-China tech trade.", country:"TW",name:"Reuters Taiwan",          lang:"en",flag:"🇹🇼",url:GN("site:reuters.com Taiwan economy business")},
+  {id:"bloom_tw",tier:1,desc:"Bloomberg Taiwan; covers TWD, TAIEX, and chip sector in depth.",   country:"TW",name:"Bloomberg Taiwan",        lang:"en",flag:"🇹🇼",url:GN("site:bloomberg.com Taiwan markets economy"),paywall:true},
   // ── India ──────────────────────────────────────────────────────────────────
   // Economic Times: direct RSS (free publication)
-  {id:"econ_times",desc:"India's most-read financial daily; essential for NSE/BSE, RBI policy, and conglomerates.", country:"IN",name:"Economic Times",         lang:"en",flag:"🇮🇳",url:"https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",paywall:true},
+  {id:"econ_times",tier:2,desc:"India's most-read financial daily; essential for NSE/BSE, RBI policy, and conglomerates.", country:"IN",name:"Economic Times",         lang:"en",flag:"🇮🇳",url:"https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",paywall:true},
   // Business Standard: direct RSS
-  {id:"biz_std",desc:"Business Standard — analyst-favourite for macroeconomic depth and policy commentary.",    country:"IN",name:"Business Standard",      lang:"en",flag:"🇮🇳",url:"https://www.business-standard.com/rss/markets-106.rss",paywall:true},
+  {id:"biz_std",tier:2,desc:"Business Standard — analyst-favourite for macroeconomic depth and policy commentary.",    country:"IN",name:"Business Standard",      lang:"en",flag:"🇮🇳",url:"https://www.business-standard.com/rss/markets-106.rss",paywall:true},
   // Mint: direct RSS
-  {id:"mint",desc:"Mint/Livemint — HT-owned; strong on startups, fintech, and technology investments.",       country:"IN",name:"Mint Markets",           lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/markets",paywall:true},
-  {id:"mint2",desc:"Mint markets sub-feed; focused on Sensex, Nifty, and equity-specific news.",      country:"IN",name:"Mint Companies",         lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/companies",paywall:true},
-  {id:"mint3",desc:"Mint companies sub-feed; earnings, M&A, and corporate strategy.",      country:"IN",name:"Mint Economy",            lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/economy",paywall:true},
-  {id:"hindubiz",desc:"The Hindu BusinessLine — rigorous, less breathless than peers; good for agriculture and rural economy.",   country:"IN",name:"Hindu BusinessLine",     lang:"en",flag:"🇮🇳",url:"https://www.thehindubusinessline.com/?service=rss",paywall:true},
-  {id:"fin_exp",desc:"Financial Express — Indian Express Group's financial arm; strong on banking and government schemes.",    country:"IN",name:"Financial Express",       lang:"en",flag:"🇮🇳",url:"https://www.financialexpress.com/feed/",paywall:true},
+  {id:"mint",tier:2,desc:"Mint/Livemint — HT-owned; strong on startups, fintech, and technology investments.",       country:"IN",name:"Mint Markets",           lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/markets",paywall:true},
+  {id:"mint2",tier:2,desc:"Mint markets sub-feed; focused on Sensex, Nifty, and equity-specific news.",      country:"IN",name:"Mint Companies",         lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/companies",paywall:true},
+  {id:"mint3",tier:2,desc:"Mint companies sub-feed; earnings, M&A, and corporate strategy.",      country:"IN",name:"Mint Economy",            lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/economy",paywall:true},
+  {id:"hindubiz",tier:2,desc:"The Hindu BusinessLine — rigorous, less breathless than peers; good for agriculture and rural economy.",   country:"IN",name:"Hindu BusinessLine",     lang:"en",flag:"🇮🇳",url:"https://www.thehindubusinessline.com/?service=rss",paywall:true},
+  {id:"fin_exp",tier:2,desc:"Financial Express — Indian Express Group's financial arm; strong on banking and government schemes.",    country:"IN",name:"Financial Express",       lang:"en",flag:"🇮🇳",url:"https://www.financialexpress.com/feed/",paywall:true},
   // Moneycontrol: direct RSS
-  {id:"moneyctrl",desc:"Moneycontrol — India's highest-traffic financial site; fastest on markets and breaking corporate news.",  country:"IN",name:"Moneycontrol Markets",   lang:"en",flag:"🇮🇳",url:"https://www.moneycontrol.com/rss/business.xml",paywall:true},
-  {id:"cnbctv18",desc:"CNBC TV18 — real-time Indian market television wire; good for intraday flow and broker commentary.",   country:"IN",name:"CNBC-TV18 Markets",      lang:"en",flag:"🇮🇳",url:"https://www.cnbctv18.com/commonfeeds/v1/eng/rss/market.xml"},
-  {id:"forbes_in",desc:"Forbes India — features-driven; valuable for billionaire moves, startup funding, and deals.",  country:"IN",name:"Forbes India",           lang:"en",flag:"🇮🇳",url:GN("site:forbesindia.com economy business markets"),paywall:true},
-  {id:"reuters_in",desc:"Reuters India; authoritative on RBI, macro data, and large-cap corporates in English.", country:"IN",name:"Reuters India",           lang:"en",flag:"🇮🇳",url:GN("site:reuters.com India economy business markets")},
-  {id:"bloom_in",desc:"Bloomberg India; covers Sensex, rupee, and major conglomerates like Reliance and Adani.",   country:"IN",name:"Bloomberg India",         lang:"en",flag:"🇮🇳",url:GN("site:bloomberg.com India markets economy"),paywall:true},
+  {id:"moneyctrl",tier:2,desc:"Moneycontrol — India's highest-traffic financial site; fastest on markets and breaking corporate news.",  country:"IN",name:"Moneycontrol Markets",   lang:"en",flag:"🇮🇳",url:"https://www.moneycontrol.com/rss/business.xml",paywall:true},
+  {id:"cnbctv18",tier:2,desc:"CNBC TV18 — real-time Indian market television wire; good for intraday flow and broker commentary.",   country:"IN",name:"CNBC-TV18 Markets",      lang:"en",flag:"🇮🇳",url:"https://www.cnbctv18.com/commonfeeds/v1/eng/rss/market.xml"},
+  {id:"forbes_in",tier:2,desc:"Forbes India — features-driven; valuable for billionaire moves, startup funding, and deals.",  country:"IN",name:"Forbes India",           lang:"en",flag:"🇮🇳",url:GN("site:forbesindia.com economy business markets"),paywall:true},
+  {id:"reuters_in",tier:1,desc:"Reuters India; authoritative on RBI, macro data, and large-cap corporates in English.", country:"IN",name:"Reuters India",           lang:"en",flag:"🇮🇳",url:GN("site:reuters.com India economy business markets")},
+  {id:"bloom_in",tier:1,desc:"Bloomberg India; covers Sensex, rupee, and major conglomerates like Reliance and Adani.",   country:"IN",name:"Bloomberg India",         lang:"en",flag:"🇮🇳",url:GN("site:bloomberg.com India markets economy"),paywall:true},
   // ── Australia ──────────────────────────────────────────────────────────────
   // AFR: heavily paywalled — broader query without site: filter
-  {id:"afr",desc:"Australia's Financial Review — the AFR; essential for ASX, RBA policy, and mining.",        country:"AU",name:"Australian Fin. Review", lang:"en",flag:"🇦🇺",url:GN("site:afr.com markets economy business"),paywall:true},
+  {id:"afr",tier:2,desc:"Australia's Financial Review — the AFR; essential for ASX, RBA policy, and mining.",        country:"AU",name:"Australian Fin. Review", lang:"en",flag:"🇦🇺",url:GN("site:afr.com markets economy business"),paywall:true},
   // The Australian: paywalled — broader query
-  {id:"guardian_au",desc:"The Guardian Australia Business — quality long-form; good for ESG, regulation, and macro critique.",country:"AU",name:"Guardian Australia Business",lang:"en",flag:"🇦🇺",url:"https://www.theguardian.com/australia-news/rss"},
-  {id:"the_aus",desc:"The Australian Business — Murdoch flagship; strong on resources, infrastructure, and government.",    country:"AU",name:"The Australian Business",lang:"en",flag:"🇦🇺",url:GN("The Australian newspaper business economy finance"),paywall:true},
+  {id:"guardian_au",tier:2,desc:"The Guardian Australia Business — quality long-form; good for ESG, regulation, and macro critique.",country:"AU",name:"Guardian Australia Business",lang:"en",flag:"🇦🇺",url:"https://www.theguardian.com/australia-news/rss"},
+  {id:"the_aus",tier:2,desc:"The Australian Business — Murdoch flagship; strong on resources, infrastructure, and government.",    country:"AU",name:"The Australian Business",lang:"en",flag:"🇦🇺",url:GN("The Australian newspaper business economy finance"),paywall:true},
   // ABC: free public broadcaster — GN fine
-  {id:"abc_au",desc:"ABC News Australia Business — public broadcaster; balanced and strong on commodities and rural economy.",     country:"AU",name:"ABC Business",           lang:"en",flag:"🇦🇺",url:"https://www.abc.net.au/news/feed/51120/rss.xml"},
+  {id:"abc_au",tier:2,desc:"ABC News Australia Business — public broadcaster; balanced and strong on commodities and rural economy.",     country:"AU",name:"ABC Business",           lang:"en",flag:"🇦🇺",url:"https://www.abc.net.au/news/feed/51120/rss.xml"},
   // SMH: soft paywall — direct RSS
-  {id:"smh",desc:"Sydney Morning Herald Business — one of Australia's oldest mastheads; good for property and finance.",        country:"AU",name:"Sydney Morning Herald",  lang:"en",flag:"🇦🇺",url:"https://www.smh.com.au/rss/feed.xml"},
-  {id:"reuters_au",desc:"Reuters Australia; covers RBA, iron ore, LNG, and major ASX corporates.", country:"AU",name:"Reuters Australia",       lang:"en",flag:"🇦🇺",url:GN("site:reuters.com Australia economy business")},
-  {id:"bloom_au",desc:"Bloomberg Australia; strong on RBA rate decisions, mining majors, and AUD moves.",   country:"AU",name:"Bloomberg Australia",     lang:"en",flag:"🇦🇺",url:GN("site:bloomberg.com Australia markets economy"),paywall:true},
-  {id:"stockhead_au", desc:"Stockhead — specialist ASX small/mid-cap company news; earnings, capital raises, resource discoveries, and broker calls.",  country:"AU",name:"Stockhead ASX",        lang:"en",flag:"🇦🇺",url:GN("site:stockhead.com.au")},
-  {id:"market_herald", desc:"The Market Herald — Australia's leading ASX company news wire; covers earnings, placements, and corporate actions across all listed companies.", country:"AU",name:"The Market Herald",    lang:"en",flag:"🇦🇺",url:"https://themarketonline.com.au/feed"},
+  {id:"smh",tier:2,desc:"Sydney Morning Herald Business — one of Australia's oldest mastheads; good for property and finance.",        country:"AU",name:"Sydney Morning Herald",  lang:"en",flag:"🇦🇺",url:"https://www.smh.com.au/rss/feed.xml"},
+  {id:"reuters_au",tier:1,desc:"Reuters Australia; covers RBA, iron ore, LNG, and major ASX corporates.", country:"AU",name:"Reuters Australia",       lang:"en",flag:"🇦🇺",url:GN("site:reuters.com Australia economy business")},
+  {id:"bloom_au",tier:1,desc:"Bloomberg Australia; strong on RBA rate decisions, mining majors, and AUD moves.",   country:"AU",name:"Bloomberg Australia",     lang:"en",flag:"🇦🇺",url:GN("site:bloomberg.com Australia markets economy"),paywall:true},
+  {id:"stockhead_au",tier:3, desc:"Stockhead — specialist ASX small/mid-cap company news; earnings, capital raises, resource discoveries, and broker calls.",  country:"AU",name:"Stockhead ASX",        lang:"en",flag:"🇦🇺",url:GN("site:stockhead.com.au")},
+  {id:"market_herald",tier:3, desc:"The Market Herald — Australia's leading ASX company news wire; covers earnings, placements, and corporate actions across all listed companies.", country:"AU",name:"The Market Herald",    lang:"en",flag:"🇦🇺",url:"https://themarketonline.com.au/feed"},
   // ── China ──────────────────────────────────────────────────────────────────
-  {id:"kr36",desc:"36Kr — China's leading tech and startup news site, auto-translated; essential for VC deals and unicorns.",        country:"CN",name:"36Kr 快讯",              lang:"zh",flag:"🇨🇳",url:GN("36氪 融资 科技 独角兽","zh-CN","CN","CN:zh-Hans")},
-  {id:"caixin",desc:"Caixin Global — China's most credible independent financial journalism; known for breaking regulatory news.",     country:"CN",name:"Caixin Global",          lang:"en",flag:"🇨🇳",url:GN("site:caixinglobal.com economy finance"),paywall:true},
-  {id:"xinhua",desc:"Xinhua — China's state wire; first with official announcements, policy signals, and economic data releases.",      country:"CN",name:"Xinhua Finance",           lang:"en",flag:"🇨🇳",url:GN("site:english.news.cn OR site:xinhuanet.com economy finance")},
-  {id:"cgtn",desc:"CGTN Business — state broadcaster's English arm; reflects official Chinese economic narrative.",        country:"CN",name:"CGTN Business",             lang:"en",flag:"🇨🇳",url:"https://www.cgtn.com/subscribe/rss/section/business.xml"},
-  {id:"chinadaily",desc:"China Daily Business — state-owned English daily; useful for understanding Beijing's policy framing.",  country:"CN",name:"China Daily Business",     lang:"en",flag:"🇨🇳",url:GN("site:chinadaily.com.cn business economy")},
-  {id:"yicai",desc:"Yicai Global — respected Shanghai-based financial outlet; strong on Chinese equities and corporate moves.",       country:"CN",name:"Yicai Global",            lang:"en",flag:"🇨🇳",url:GN("site:yicaiglobal.com")},
-  {id:"globaltimes",desc:"Global Times Economy — nationalistic state tabloid; tracks how Beijing wants economic news framed.", country:"CN",name:"Global Times Economy",     lang:"en",flag:"🇨🇳",url:GN("site:globaltimes.cn economy")},
-  {id:"peoples_d",desc:"People's Daily Economy — the CCP organ; essential for reading between the lines on official policy.",   country:"CN",name:"People's Daily",          lang:"en",flag:"🇨🇳",url:"https://en.people.cn/rss/economy.xml"},
-  {id:"reuters_cn",desc:"Reuters China; independent and fast on PBOC moves, trade data, and major corporate events.", country:"CN",name:"Reuters China",            lang:"en",flag:"🇨🇳",url:GN("site:reuters.com China economy business finance")},
-  {id:"bloom_cn",desc:"Bloomberg China; authoritative on yuan, PBOC policy, and major index constituents.",   country:"CN",name:"Bloomberg China",          lang:"en",flag:"🇨🇳",url:GN("site:bloomberg.com China markets economy"),paywall:true},
+  {id:"kr36",tier:3,desc:"36Kr — China's leading tech and startup news site, auto-translated; essential for VC deals and unicorns.",        country:"CN",name:"36Kr 快讯",              lang:"zh",flag:"🇨🇳",url:GN("36氪 融资 科技 独角兽","zh-CN","CN","CN:zh-Hans")},
+  {id:"caixin",tier:2,desc:"Caixin Global — China's most credible independent financial journalism; known for breaking regulatory news.",     country:"CN",name:"Caixin Global",          lang:"en",flag:"🇨🇳",url:GN("site:caixinglobal.com economy finance"),paywall:true},
+  {id:"xinhua",tier:1,desc:"Xinhua — China's state wire; first with official announcements, policy signals, and economic data releases.",      country:"CN",name:"Xinhua Finance",           lang:"en",flag:"🇨🇳",url:GN("site:english.news.cn OR site:xinhuanet.com economy finance")},
+  {id:"cgtn",tier:1,desc:"CGTN Business — state broadcaster's English arm; reflects official Chinese economic narrative.",        country:"CN",name:"CGTN Business",             lang:"en",flag:"🇨🇳",url:"https://www.cgtn.com/subscribe/rss/section/business.xml"},
+  {id:"chinadaily",tier:2,desc:"China Daily Business — state-owned English daily; useful for understanding Beijing's policy framing.",  country:"CN",name:"China Daily Business",     lang:"en",flag:"🇨🇳",url:GN("site:chinadaily.com.cn business economy")},
+  {id:"yicai",tier:2,desc:"Yicai Global — respected Shanghai-based financial outlet; strong on Chinese equities and corporate moves.",       country:"CN",name:"Yicai Global",            lang:"en",flag:"🇨🇳",url:GN("site:yicaiglobal.com")},
+  {id:"globaltimes",tier:2,desc:"Global Times Economy — nationalistic state tabloid; tracks how Beijing wants economic news framed.", country:"CN",name:"Global Times Economy",     lang:"en",flag:"🇨🇳",url:GN("site:globaltimes.cn economy")},
+  {id:"peoples_d",tier:2,desc:"People's Daily Economy — the CCP organ; essential for reading between the lines on official policy.",   country:"CN",name:"People's Daily",          lang:"en",flag:"🇨🇳",url:"https://en.people.cn/rss/economy.xml"},
+  {id:"reuters_cn",tier:1,desc:"Reuters China; independent and fast on PBOC moves, trade data, and major corporate events.", country:"CN",name:"Reuters China",            lang:"en",flag:"🇨🇳",url:GN("site:reuters.com China economy business finance")},
+  {id:"bloom_cn",tier:1,desc:"Bloomberg China; authoritative on yuan, PBOC policy, and major index constituents.",   country:"CN",name:"Bloomberg China",          lang:"en",flag:"🇨🇳",url:GN("site:bloomberg.com China markets economy"),paywall:true},
   // ── Israel ─────────────────────────────────────────────────────────────────
-  {id:"globes_il",desc:"Globes — Israel's financial daily of record; essential for TASE, Israeli tech IPOs, and shekel.",  country:"IL",name:"Globes Israel",            lang:"en",flag:"🇮🇱",url:GN("site:en.globes.co.il")},
-  {id:"jpost_il",desc:"Jerusalem Post Business — Israel's most-read English paper; covers Israeli economy, startups, and US-Israel trade.",   country:"IL",name:"Jerusalem Post Business",  lang:"en",flag:"🇮🇱",url:GN("site:jpost.com business innovation technology")},
-  {id:"toi_il",desc:"Times of Israel — well-sourced English outlet; strong on Israeli politics, tech sector, and regional conflict impact.",     country:"IL",name:"Times of Israel",          lang:"en",flag:"🇮🇱",url:GN("site:timesofisrael.com")},
-  {id:"haaretz_il",desc:"Haaretz — Israel's liberal paper of record; strong investigative coverage of business, policy, and governance.", country:"IL",name:"Haaretz Israel",           lang:"en",flag:"🇮🇱",url:GN("site:haaretz.com Israel economy business technology"),paywall:true},
-  {id:"ctech_il",desc:"CTech (Calcalist) — Israel's top English-language tech and VC publication; best for Israeli startup ecosystem.",   country:"IL",name:"Calcalist CTech",          lang:"en",flag:"🇮🇱",url:GN("site:calcalistech.com")},
-  {id:"calcalist",desc:"כלכליסט — Israel's dedicated Hebrew financial daily, auto-translated; first-mover on TASE and corporate news.",  country:"IL",name:"כלכליסט Calcalist",        lang:"he",flag:"🇮🇱",url:GN("site:calcalist.co.il","iw","IL","IL:he")},
-  {id:"reuters_il",desc:"Reuters Israel; covers Israeli equities, defence sector, and economic fallout from regional conflict.", country:"IL",name:"Reuters Israel",           lang:"en",flag:"🇮🇱",url:GN("site:reuters.com Israel")},
-  {id:"bloom_il",desc:"Bloomberg Israel; strong on shekel, TASE index, and Israeli tech M&A.",   country:"IL",name:"Bloomberg Israel",         lang:"en",flag:"🇮🇱",url:GN("site:bloomberg.com Israel economy markets shekel"),paywall:true},
+  {id:"globes_il",tier:2,desc:"Globes — Israel's financial daily of record; essential for TASE, Israeli tech IPOs, and shekel.",  country:"IL",name:"Globes Israel",            lang:"en",flag:"🇮🇱",url:GN("site:en.globes.co.il")},
+  {id:"jpost_il",tier:2,desc:"Jerusalem Post Business — Israel's most-read English paper; covers Israeli economy, startups, and US-Israel trade.",   country:"IL",name:"Jerusalem Post Business",  lang:"en",flag:"🇮🇱",url:GN("site:jpost.com business innovation technology")},
+  {id:"toi_il",tier:2,desc:"Times of Israel — well-sourced English outlet; strong on Israeli politics, tech sector, and regional conflict impact.",     country:"IL",name:"Times of Israel",          lang:"en",flag:"🇮🇱",url:GN("site:timesofisrael.com")},
+  {id:"haaretz_il",tier:2,desc:"Haaretz — Israel's liberal paper of record; strong investigative coverage of business, policy, and governance.", country:"IL",name:"Haaretz Israel",           lang:"en",flag:"🇮🇱",url:GN("site:haaretz.com Israel economy business technology"),paywall:true},
+  {id:"ctech_il",tier:3,desc:"CTech (Calcalist) — Israel's top English-language tech and VC publication; best for Israeli startup ecosystem.",   country:"IL",name:"Calcalist CTech",          lang:"en",flag:"🇮🇱",url:GN("site:calcalistech.com")},
+  {id:"calcalist",tier:3,desc:"כלכליסט — Israel's dedicated Hebrew financial daily, auto-translated; first-mover on TASE and corporate news.",  country:"IL",name:"כלכליסט Calcalist",        lang:"he",flag:"🇮🇱",url:GN("site:calcalist.co.il","iw","IL","IL:he")},
+  {id:"reuters_il",tier:1,desc:"Reuters Israel; covers Israeli equities, defence sector, and economic fallout from regional conflict.", country:"IL",name:"Reuters Israel",           lang:"en",flag:"🇮🇱",url:GN("site:reuters.com Israel")},
+  {id:"bloom_il",tier:1,desc:"Bloomberg Israel; strong on shekel, TASE index, and Israeli tech M&A.",   country:"IL",name:"Bloomberg Israel",         lang:"en",flag:"🇮🇱",url:GN("site:bloomberg.com Israel economy markets shekel"),paywall:true},
   // ── Middle East / Gulf ─────────────────────────────────────────────────────
-  {id:"arabnews",desc:"Arab News — Saudi Arabia's flagship English daily; first on Vision 2030 projects and Saudi policy.",    country:"ME",name:"Arab News",               lang:"en",flag:"🌍",url:GN("site:arabnews.com")},
-  {id:"arabnews_biz",desc:"Arab News Economy — dedicated business feed; covers Gulf M&A, energy deals, and giga-projects.",country:"ME",name:"Arab News Economy",       lang:"en",flag:"🌍",url:GN("site:arabnews.com economy energy")},
-  {id:"national_ae",desc:"The National — Abu Dhabi's quality English broadsheet; best for UAE sovereign wealth and ADNOC news.", country:"ME",name:"The National UAE",        lang:"en",flag:"🌍",url:GN("site:thenationalnews.com business economy energy")},
-  {id:"gulfnews",desc:"Gulf News — Dubai-based; wide regional coverage of UAE, Saudi, and Gulf corporate news.",    country:"ME",name:"Gulf News Business",      lang:"en",flag:"🌍",url:GN("site:gulfnews.com business economy")},
-  {id:"arabianbiz",desc:"Arabian Business — pan-Gulf English magazine; strong on real estate, construction, and billionaire profiles.",  country:"ME",name:"Arabian Business",        lang:"en",flag:"🌍",url:"https://www.arabianbusiness.com/feed"},
-  {id:"agbi",desc:"AGBI — Gulf Business Intelligence; specialist in GCC investment, trade, and financial regulation.",        country:"ME",name:"AGBI Gulf Business",      lang:"en",flag:"🌍",url:"https://www.agbi.com/feed"},
-  {id:"tradearabia",desc:"Asharq Al-Awsat Business — pan-Arab broadsheet's business arm; credible on Gulf macro and oil.", country:"ME",name:"Asharq Al-Awsat Business",             lang:"en",flag:"🌍",url:GN("site:english.aawsat.com business economy Gulf")},
-  {id:"gulftimes",desc:"Gulf Times — Qatar's main English daily; essential for QIA, LNG, and Qatari economic developments.",   country:"ME",name:"Gulf Times Qatar",        lang:"en",flag:"🌍",url:GN("site:gulf-times.com business economy")},
-  {id:"khaleej",desc:"Khaleej Times — UAE's oldest English daily; broad business coverage of Dubai and wider UAE economy.",     country:"ME",name:"Khaleej Times UAE",       lang:"en",flag:"🌍",url:GN("site:khaleejtimes.com business economy")},
-  {id:"alarabiya",desc:"Al Arabiya Business — MBC-owned; fast English news on Gulf markets and geopolitical risk.",   country:"ME",name:"Al Arabiya Business",     lang:"en",flag:"🌍",url:GN("site:english.alarabiya.net business economy")},
-  {id:"saudigazette",desc:"Saudi Gazette — English daily in Riyadh; covers Saudi government, Aramco, and Vision 2030 projects.",country:"ME",name:"Saudi Gazette",           lang:"en",flag:"🌍",url:"https://www.saudigazette.com.sa/feed"},
-  {id:"zawya",desc:"Zawya — LSEG-owned MENA business intelligence platform; strong on GCC corporate filings and deals.",       country:"ME",name:"Zawya MENA",              lang:"en",flag:"🌍",url:"https://www.zawya.com/sitemaps/en/rss"},
-  {id:"gulfbiz",desc:"Gulf Business — Dubai-based English magazine; covers C-suite news, rankings, and Gulf conglomerates.",     country:"ME",name:"Gulf Business",           lang:"en",flag:"🌍",url:"https://gulfbusiness.com/feed/"},
+  {id:"arabnews",tier:2,desc:"Arab News — Saudi Arabia's flagship English daily; first on Vision 2030 projects and Saudi policy.",    country:"ME",name:"Arab News",               lang:"en",flag:"🌍",url:GN("site:arabnews.com")},
+  {id:"arabnews_biz",tier:2,desc:"Arab News Economy — dedicated business feed; covers Gulf M&A, energy deals, and giga-projects.",country:"ME",name:"Arab News Economy",       lang:"en",flag:"🌍",url:GN("site:arabnews.com economy energy")},
+  {id:"national_ae",tier:2,desc:"The National — Abu Dhabi's quality English broadsheet; best for UAE sovereign wealth and ADNOC news.", country:"ME",name:"The National UAE",        lang:"en",flag:"🌍",url:GN("site:thenationalnews.com business economy energy")},
+  {id:"gulfnews",tier:2,desc:"Gulf News — Dubai-based; wide regional coverage of UAE, Saudi, and Gulf corporate news.",    country:"ME",name:"Gulf News Business",      lang:"en",flag:"🌍",url:GN("site:gulfnews.com business economy")},
+  {id:"arabianbiz",tier:3,desc:"Arabian Business — pan-Gulf English magazine; strong on real estate, construction, and billionaire profiles.",  country:"ME",name:"Arabian Business",        lang:"en",flag:"🌍",url:"https://www.arabianbusiness.com/feed"},
+  {id:"agbi",tier:3,desc:"AGBI — Gulf Business Intelligence; specialist in GCC investment, trade, and financial regulation.",        country:"ME",name:"AGBI Gulf Business",      lang:"en",flag:"🌍",url:"https://www.agbi.com/feed"},
+  {id:"tradearabia",tier:3,desc:"Asharq Al-Awsat Business — pan-Arab broadsheet's business arm; credible on Gulf macro and oil.", country:"ME",name:"Asharq Al-Awsat Business",             lang:"en",flag:"🌍",url:GN("site:english.aawsat.com business economy Gulf")},
+  {id:"gulftimes",tier:3,desc:"Gulf Times — Qatar's main English daily; essential for QIA, LNG, and Qatari economic developments.",   country:"ME",name:"Gulf Times Qatar",        lang:"en",flag:"🌍",url:GN("site:gulf-times.com business economy")},
+  {id:"khaleej",tier:3,desc:"Khaleej Times — UAE's oldest English daily; broad business coverage of Dubai and wider UAE economy.",     country:"ME",name:"Khaleej Times UAE",       lang:"en",flag:"🌍",url:GN("site:khaleejtimes.com business economy")},
+  {id:"alarabiya",tier:2,desc:"Al Arabiya Business — MBC-owned; fast English news on Gulf markets and geopolitical risk.",   country:"ME",name:"Al Arabiya Business",     lang:"en",flag:"🌍",url:GN("site:english.alarabiya.net business economy")},
+  {id:"saudigazette",tier:3,desc:"Saudi Gazette — English daily in Riyadh; covers Saudi government, Aramco, and Vision 2030 projects.",country:"ME",name:"Saudi Gazette",           lang:"en",flag:"🌍",url:"https://www.saudigazette.com.sa/feed"},
+  {id:"zawya",tier:2,desc:"Zawya — LSEG-owned MENA business intelligence platform; strong on GCC corporate filings and deals.",       country:"ME",name:"Zawya MENA",              lang:"en",flag:"🌍",url:"https://www.zawya.com/sitemaps/en/rss"},
+  {id:"gulfbiz",tier:3,desc:"Gulf Business — Dubai-based English magazine; covers C-suite news, rankings, and Gulf conglomerates.",     country:"ME",name:"Gulf Business",           lang:"en",flag:"🌍",url:"https://gulfbusiness.com/feed/"},
   // MENAFN: regional financial wire with per-GCC-country RSS
-  {id:"menafn_sa",desc:"MENAFN Saudi — press release wire for Saudi corporates; useful for earnings and regulatory filings.",   country:"ME",name:"MENAFN Saudi",            lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=SaudiArabia"},
-  {id:"menafn_uae",desc:"MENAFN UAE — press release wire for UAE corporates; useful for earnings and regulatory filings.",  country:"ME",name:"MENAFN UAE",              lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=UAE"},
-  {id:"menafn_qa",desc:"MENAFN Qatar — press release wire for Qatari corporates; useful for QIA-linked announcements.",   country:"ME",name:"MENAFN Qatar",            lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Qatar"},
-  {id:"menafn_kw",desc:"MENAFN Kuwait — press release wire covering KSE-listed companies and Kuwaiti government initiatives.",   country:"ME",name:"MENAFN Kuwait",           lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Kuwait"},
-  {id:"menafn_bh",desc:"MENAFN Bahrain — covers Bahrain Bourse and the island's financial services and fintech sector.",   country:"ME",name:"MENAFN Bahrain",          lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Bahrain"},
-  {id:"menafn_om",desc:"MENAFN Oman — covers MSM (Muscat Stock Exchange) and Omani energy and logistics projects.",   country:"ME",name:"MENAFN Oman",             lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Oman"},
-  {id:"reuters_me",desc:"Reuters Gulf; covers oil prices, OPEC+ decisions, and major Gulf sovereign moves in English.",  country:"ME",name:"Reuters Gulf",            lang:"en",flag:"🌍",url:GN("site:reuters.com Saudi Arabia UAE Qatar Kuwait Oman Bahrain economy")},
-  {id:"bloom_me",desc:"Bloomberg Gulf; strong on Saudi Aramco, UAE banks, and Gulf currency pegs.",    country:"ME",name:"Bloomberg Gulf",          lang:"en",flag:"🌍",url:GN("site:bloomberg.com Saudi Arabia UAE Qatar Kuwait Gulf economy"),paywall:true},
-  {id:"alarabiya_ar",desc:"العربية — leading pan-Arab TV network's business feed, auto-translated; fast on Gulf market sentiment.",country:"ME",name:"العربية أعمال",           lang:"ar",flag:"🌍",url:GN("site:alarabiya.net اقتصاد أعمال","ar","SA","SA:ar")},
+  {id:"menafn_sa",tier:3,desc:"MENAFN Saudi — press release wire for Saudi corporates; useful for earnings and regulatory filings.",   country:"ME",name:"MENAFN Saudi",            lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=SaudiArabia"},
+  {id:"menafn_uae",tier:3,desc:"MENAFN UAE — press release wire for UAE corporates; useful for earnings and regulatory filings.",  country:"ME",name:"MENAFN UAE",              lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=UAE"},
+  {id:"menafn_qa",tier:3,desc:"MENAFN Qatar — press release wire for Qatari corporates; useful for QIA-linked announcements.",   country:"ME",name:"MENAFN Qatar",            lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Qatar"},
+  {id:"menafn_kw",tier:3,desc:"MENAFN Kuwait — press release wire covering KSE-listed companies and Kuwaiti government initiatives.",   country:"ME",name:"MENAFN Kuwait",           lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Kuwait"},
+  {id:"menafn_bh",tier:3,desc:"MENAFN Bahrain — covers Bahrain Bourse and the island's financial services and fintech sector.",   country:"ME",name:"MENAFN Bahrain",          lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Bahrain"},
+  {id:"menafn_om",tier:3,desc:"MENAFN Oman — covers MSM (Muscat Stock Exchange) and Omani energy and logistics projects.",   country:"ME",name:"MENAFN Oman",             lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Oman"},
+  {id:"reuters_me",tier:1,desc:"Reuters Gulf; covers oil prices, OPEC+ decisions, and major Gulf sovereign moves in English.",  country:"ME",name:"Reuters Gulf",            lang:"en",flag:"🌍",url:GN("site:reuters.com Saudi Arabia UAE Qatar Kuwait Oman Bahrain economy")},
+  {id:"bloom_me",tier:1,desc:"Bloomberg Gulf; strong on Saudi Aramco, UAE banks, and Gulf currency pegs.",    country:"ME",name:"Bloomberg Gulf",          lang:"en",flag:"🌍",url:GN("site:bloomberg.com Saudi Arabia UAE Qatar Kuwait Gulf economy"),paywall:true},
+  {id:"alarabiya_ar",tier:3,desc:"العربية — leading pan-Arab TV network's business feed, auto-translated; fast on Gulf market sentiment.",country:"ME",name:"العربية أعمال",           lang:"ar",flag:"🌍",url:GN("site:alarabiya.net اقتصاد أعمال","ar","SA","SA:ar")},
 
   // ── Iran ──────────────────────────────────────────────────────────────────
   // Iran International: London-based, critical of regime, English + Farsi; best external coverage
-  {id:"iranintl",desc:"Iran International — London-based, independent; most trusted external source on Iran's economy and crisis.",    country:"IR",name:"Iran International",     lang:"en",flag:"🇮🇷",url:GN("\"Iran International\" Iran politics military economy Hormuz")},
+  {id:"iranintl",tier:2,desc:"Iran International — London-based, independent; most trusted external source on Iran's economy and crisis.",    country:"IR",name:"Iran International",     lang:"en",flag:"🇮🇷",url:GN("\"Iran International\" Iran politics military economy Hormuz")},
   // Tehran Times: state-adjacent English daily, useful for official Iran perspective
-  {id:"tehrantimes",desc:"Tehran Times — state-adjacent English daily; reflects official Iranian government economic narrative.", country:"IR",name:"Tehran Times",           lang:"en",flag:"🇮🇷",url:GN("Tehran Times Iran economy politics")},
+  {id:"tehrantimes",tier:2,desc:"Tehran Times — state-adjacent English daily; reflects official Iranian government economic narrative.", country:"IR",name:"Tehran Times",           lang:"en",flag:"🇮🇷",url:GN("Tehran Times Iran economy politics")},
   // Financial Tribune: only non-govt Iranian English business paper (may be offline during conflict)
-  {id:"fin_trib",desc:"Financial Tribune — Iran's only non-government English business paper; covers Iranian equities and trade.",    country:"IR",name:"Financial Tribune",      lang:"en",flag:"🇮🇷",url:GN("Financial Tribune Iran business economy markets")},
+  {id:"fin_trib",tier:3,desc:"Financial Tribune — Iran's only non-government English business paper; covers Iranian equities and trade.",    country:"IR",name:"Financial Tribune",      lang:"en",flag:"🇮🇷",url:GN("Financial Tribune Iran business economy markets")},
   // IRNA: official Islamic Republic News Agency, English feed
-  {id:"irna_en",desc:"IRNA — Islamic Republic's official wire; first with government statements, sanctions responses, and data.",     country:"IR",name:"IRNA English",           lang:"en",flag:"🇮🇷",url:GN("IRNA Iran official government economy")},
+  {id:"irna_en",tier:1,desc:"IRNA — Islamic Republic's official wire; first with government statements, sanctions responses, and data.",     country:"IR",name:"IRNA English",           lang:"en",flag:"🇮🇷",url:GN("IRNA Iran official government economy")},
   // Tasnim News: semi-official Iranian wire agency, English RSS
-  {id:"tasnim",desc:"Tasnim News — semi-official Iranian agency; covers IRGC-linked industries, energy, and trade.",      country:"IR",name:"Tasnim News",            lang:"en",flag:"🇮🇷",url:GN("Tasnim News Iran IRGC energy")},
+  {id:"tasnim",tier:3,desc:"Tasnim News — semi-official Iranian agency; covers IRGC-linked industries, energy, and trade.",      country:"IR",name:"Tasnim News",            lang:"en",flag:"🇮🇷",url:GN("Tasnim News Iran IRGC energy")},
   // Mehr News: state-owned Iranian news agency, English
-  {id:"mehrnews",desc:"Mehr News — state-owned Iranian agency; strong on industry, infrastructure, and domestic economy.",    country:"IR",name:"Mehr News Agency",       lang:"en",flag:"🇮🇷",url:GN("Mehr News Iran industry infrastructure")},
+  {id:"mehrnews",tier:3,desc:"Mehr News — state-owned Iranian agency; strong on industry, infrastructure, and domestic economy.",    country:"IR",name:"Mehr News Agency",       lang:"en",flag:"🇮🇷",url:GN("Mehr News Iran industry infrastructure")},
   // IFP News: Independent (covers wide Iran topics), English RSS
-  {id:"ifpnews",desc:"IFP News — aggregates and translates from leading Persian sources; useful cross-section of Iranian press.",     country:"IR",name:"IFP News",               lang:"en",flag:"🇮🇷",url:GN("IFP News Iran politics economy")},
+  {id:"ifpnews",tier:3,desc:"IFP News — aggregates and translates from leading Persian sources; useful cross-section of Iranian press.",     country:"IR",name:"IFP News",               lang:"en",flag:"🇮🇷",url:GN("IFP News Iran politics economy")},
   // Entekhab: major Persian-language news site, auto-translated
-  {id:"entekhab",desc:"انتخاب — one of Iran's most-read Persian news portals, auto-translated; broad economic and political coverage.",    country:"IR",name:"انتخاب Entekhab",        lang:"fa",flag:"🇮🇷",url:GN("site:entekhab.ir","fa","IR","IR:fa")},
+  {id:"entekhab",tier:3,desc:"انتخاب — one of Iran's most-read Persian news portals, auto-translated; broad economic and political coverage.",    country:"IR",name:"انتخاب Entekhab",        lang:"fa",flag:"🇮🇷",url:GN("site:entekhab.ir","fa","IR","IR:fa")},
   // Tabnak: Persian news site covering economy/politics, auto-translated
-  {id:"tabnak",desc:"تابناک — Persian outlet with close ties to Iranian political factions, auto-translated; useful for policy signals.",      country:"IR",name:"تابناک Tabnak",          lang:"fa",flag:"🇮🇷",url:GN("site:tabnak.ir اقتصاد","fa","IR","IR:fa")},
+  {id:"tabnak",tier:3,desc:"تابناک — Persian outlet with close ties to Iranian political factions, auto-translated; useful for policy signals.",      country:"IR",name:"تابناک Tabnak",          lang:"fa",flag:"🇮🇷",url:GN("site:tabnak.ir اقتصاد","fa","IR","IR:fa")},
   // Reuters & Bloomberg Iran-specific feeds
-  {id:"reuters_ir",desc:"Reuters Iran; independent English coverage of sanctions, nuclear talks, and Iranian economic conditions.",  country:"IR",name:"Reuters Iran",           lang:"en",flag:"🇮🇷",url:GN("site:reuters.com Iran economy nuclear sanctions")},
-  {id:"bloom_ir",desc:"Bloomberg Iran; covers oil output, rial, and impact of sanctions and conflict on Iranian markets.",    country:"IR",name:"Bloomberg Iran",         lang:"en",flag:"🇮🇷",url:GN("site:bloomberg.com Iran economy nuclear sanctions"),paywall:true},
+  {id:"reuters_ir",tier:1,desc:"Reuters Iran; independent English coverage of sanctions, nuclear talks, and Iranian economic conditions.",  country:"IR",name:"Reuters Iran",           lang:"en",flag:"🇮🇷",url:GN("site:reuters.com Iran economy nuclear sanctions")},
+  {id:"bloom_ir",tier:1,desc:"Bloomberg Iran; covers oil output, rial, and impact of sanctions and conflict on Iranian markets.",    country:"IR",name:"Bloomberg Iran",         lang:"en",flag:"🇮🇷",url:GN("site:bloomberg.com Iran economy nuclear sanctions"),paywall:true},
 ];
 
 const COUNTRIES = [
@@ -560,6 +560,7 @@ Rules:
 - COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Then HK, Korea, Taiwan, India, Australia, Israel, Middle East, Iran. Then Singapore and Canada.
 - COMPANY BALANCE: At least one full section dedicated to company-specific events (earnings, M&A, dividends, executive changes). Name every company with ticker where known.
 - INDUSTRY TRENDS: When multiple companies in the same sector report similar themes, call out the sector-level pattern explicitly.
+- STRICT FACTUAL RULE: You may ONLY state facts that are EXPLICITLY present in the headline text. Do NOT infer, extrapolate, or add ANY figures, percentages, names, deal sizes, earnings amounts, or details that are not literally in the headline. If a headline says "Apple beats earnings" you write "Apple beat earnings expectations" — not "Apple beat by $0.12" or "driven by Services". When in doubt, stay closer to the headline wording. Violation of this rule is unacceptable.
 
 Articles (cite using [REF:N] at end of each bullet, N = article number):
 ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n")}`;
@@ -605,6 +606,7 @@ Rules:
 - Use the article index to find the correct N for each claim
 - The summaries include "(article N)" — convert to [REF:N]
 - COVERAGE PRIORITY: US and China first, then HK/Korea/Taiwan/India/Australia/Israel/ME/Iran, then Singapore/Canada
+- STRICT FACTUAL RULE: Only state facts explicitly in the headline text. Never add figures, percentages, names, or details not literally present in the headlines. Stay close to exact headline wording.
 
 Article index (use N in [REF:N]):
 ${articleIndex}
@@ -1152,28 +1154,37 @@ function FilingsTab() {
   const [briefLoading, setBriefLoading] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
 
-  const load = async (allTypes = false) => {
+  const load = async () => {
     setLoading(true);
     setFilings([]);
     setBrief("");
-    const results = allTypes ? await fetchAllSecFilings() : await fetchSecFilings(secForm, 100);
-    setFilings(results);
+    // "ALL" fetches each type sequentially to avoid hammering SEC EDGAR
+    if (secForm === "ALL") {
+      const all = [];
+      const seen = new Set();
+      for (const ft of SEC_FORM_TYPES) {
+        const results = await fetchSecFilings(ft.id, 40);
+        results.forEach(f => { if (!seen.has(f.id)) { seen.add(f.id); all.push(f); } });
+        await new Promise(r => setTimeout(r, 200)); // polite delay between requests
+      }
+      setFilings(all.sort((a,b)=>(new Date(b.filed||0))-(new Date(a.filed||0))));
+    } else {
+      setFilings(await fetchSecFilings(secForm, 100));
+    }
     setLoading(false);
   };
 
   const generateBrief = async () => {
+    if (!filtered.length) return;
     setBriefLoading(true);
     setBrief("");
-    // Always fetch all form types for the briefing regardless of current tab view
-    const allFilings = filings.length > 0 ? filings : await fetchAllSecFilings();
-    if (allFilings.length === 0) { setBriefLoading(false); return; }
-    const byEx = { US: allFilings };
-    const text = await generateGlobalFilingsBrief(byEx, "All Forms");
+    const byEx = { US: filtered };
+    const text = await generateGlobalFilingsBrief(byEx, secForm === "ALL" ? "All Form Types" : secForm);
     setBrief(text);
     setBriefLoading(false);
   };
 
-  useEffect(() => { if (secForm === 'ALL') load(true); else load(false); }, [secForm]);
+  useEffect(() => { load(); }, [secForm]);
 
   const filtered = filings.filter(f =>
     !searchFilter ||
@@ -1244,7 +1255,7 @@ function FilingsTab() {
       <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",marginBottom:16}}>
         <div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
           <span style={{...mono,fontSize:10,color:"#888"}}>Form type:</span>
-          <button onClick={()=>{ setSecForm("ALL"); load(true); }}
+          <button onClick={()=>setSecForm("ALL")}
             style={{...mono,fontSize:10,padding:"3px 9px",borderRadius:4,cursor:"pointer",
               border: secForm==="ALL" ? "2px solid #1a1a1a" : "1px solid #ddd",
               background: secForm==="ALL" ? "#1a1a1a" : "#fff",
@@ -1674,7 +1685,10 @@ const SOURCE_RANK = {
 function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[1].code);
   const [selectedSource,  setSelectedSource]  = useState("ALL");
+  const [selectedTier,    setSelectedTier]    = useState(0); // 0 = all tiers
   const [briefLoading,    setBriefLoading]    = useState({});
+  const TIER_LABELS = {1:"Tier 1 · Wire & Exchange", 2:"Tier 2 · Major Press", 3:"Tier 3 · Specialist"};
+  const TIER_COLORS = {1:"#2e7d32", 2:"#1565c0", 3:"#6a1b9a"};
 
   const countryObj   = COUNTRIES.find(c => c.code === selectedCountry);
   const rankOrder    = SOURCE_RANK[selectedCountry] || [];
@@ -1684,9 +1698,12 @@ function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
     ...rankOrder.map(id => allCountrySources.find(s => s.id === id)).filter(Boolean),
     ...allCountrySources.filter(s => !rankOrder.includes(s.id)),
   ];
-  const visibleSources = selectedSource === "ALL"
+  const tierFilteredSources = selectedTier === 0
     ? rankedSources
-    : rankedSources.filter(s => s.id === selectedSource);
+    : rankedSources.filter(s => (s.tier||3) === selectedTier);
+  const visibleSources = selectedSource === "ALL"
+    ? tierFilteredSources
+    : tierFilteredSources.filter(s => s.id === selectedSource);
 
   const countryArts = canonical.filter(a => a.country === selectedCountry);
   const briefKey = `sources_country_${selectedCountry}`;
@@ -1721,6 +1738,19 @@ function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
         </div>
 
         {/* Source dropdown */}
+        {/* Tier filter */}
+        <div style={{display:"flex",gap:4,marginLeft:4,flexWrap:"wrap"}}>
+          {[0,1,2,3].map(t=>(
+            <button key={t} onClick={()=>{setSelectedTier(t);setSelectedSource("ALL");}}
+              style={{fontFamily:"'DM Mono',monospace",fontSize:9,padding:"3px 8px",
+                borderRadius:3,cursor:"pointer",
+                border: selectedTier===t ? `1px solid ${t===0?"#888":TIER_COLORS[t]}` : "1px solid #ddd",
+                background: selectedTier===t ? (t===0?"#888":TIER_COLORS[t]) : "#fff",
+                color: selectedTier===t ? "#fff" : "#888"}}>
+              {t===0?"All tiers":`T${t}`}
+            </button>
+          ))}
+        </div>
         <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888",
           letterSpacing:"0.08em",whiteSpace:"nowrap",marginLeft:8}}>SOURCE</span>
         <div style={{position:"relative"}}>
@@ -1997,12 +2027,20 @@ export default function App() {
   countryArts.forEach(a=>{if(a.sector)sectorCountsForCountry[a.sector]=(sectorCountsForCountry[a.sector]||0)+1;});
   const watchlistHits=canonical.filter(a=>a.watchMatches?.length>0).length;
 
-  const SIX_HOURS_MS = 12 * 60 * 60 * 1000;
+  const WINDOW_OPTIONS = [
+    { h:3,  label:"3h"  },
+    { h:6,  label:"6h"  },
+    { h:12, label:"12h" },
+    { h:24, label:"24h" },
+    { h:48, label:"48h" },
+  ];
+  const [windowHours, setWindowHours] = useState(12);
+  const WINDOW_MS = windowHours * 60 * 60 * 1000;
   const breakingArts = (() => {
-    // Filter to last 12 hours
+    // Filter to selected time window
     const raw = canonical.filter(a => {
       const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
-      return t > 0 && (Date.now() - t) < SIX_HOURS_MS;
+      return t > 0 && (Date.now() - t) < WINDOW_MS;
     }).sort((a,b) => {
       // Sort newest first so caps keep freshest articles
       const ta = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
@@ -2026,12 +2064,12 @@ export default function App() {
   })();
 
   const MAIN_TABS=[
-    {id:"breaking", label:`⚡ Breaking${breakingArts.length>0?` (${breakingArts.length})`:""}`},
-    {id:"region",  label:"⊕ Regions"},
-    {id:"sector",  label:"▦ Sectors"},
-    {id:"sources", label:"◫ Sources"},
-    {id:"watchlist", label:`◎ Watchlist${watchlistHits>0?` (${watchlistHits})`:""}` },
-    {id:"filings", label:"📋 Filings"},
+    {id:"breaking",tier:3, label:`⚡ Breaking${breakingArts.length>0?` (${breakingArts.length})`:""}`},
+    {id:"region",tier:3,  label:"⊕ Regions"},
+    {id:"sector",tier:3,  label:"▦ Sectors"},
+    {id:"sources",tier:3, label:"◫ Sources"},
+    {id:"watchlist",tier:3, label:`◎ Watchlist${watchlistHits>0?` (${watchlistHits})`:""}` },
+    {id:"filings",tier:3, label:"📋 Filings"},
   ];
 
   return (
@@ -2255,25 +2293,29 @@ export default function App() {
         {/* BREAKING NEWS */}
         {mainTab==="breaking"&&(()=>{
           const briefKey="breaking";
-          const TWO_HOURS_MS  = 2 * 60 * 60 * 1000;
-          const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
-          const SIX_H_MS      = 6 * 60 * 60 * 1000;
-          const buckets = [
-            { label:"Last 2 hours",  arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); return (Date.now()-t)<TWO_HOURS_MS; }) },
-            { label:"2 – 4 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=TWO_HOURS_MS&&age<FOUR_HOURS_MS; }) },
-            { label:"4 – 6 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=FOUR_HOURS_MS&&age<SIX_H_MS; }) },
-            { label:"6 – 12 hours",   arts: breakingArts.filter(a=>{ const t=a.pubDate?new Date(a.pubDate).getTime():(a.fetchedAt||0); const age=Date.now()-t; return age>=SIX_H_MS; }) },
-          ].filter(b=>b.arts.length>0);
+
           return (
             <div>
               {/* Brief card */}
               <div style={{background:"#fff",border:"1px solid #e8e2d6",borderRadius:10,padding:"16px 18px",marginBottom:20,animation:"fadeIn 0.4s ease"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                     <span style={{fontSize:20}}>⚡</span>
                     <div>
-                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>BREAKING · {breakingArts.length} stories · last 12h</div>
+                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>BREAKING · {breakingArts.length} stories · last {windowHours}h</div>
                       <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Breaking News Intelligence</div>
+                    </div>
+                    <div style={{display:"flex",gap:4,marginLeft:8}}>
+                      {WINDOW_OPTIONS.map(o=>(
+                        <button key={o.h} onClick={()=>setWindowHours(o.h)}
+                          style={{fontFamily:"'DM Mono',monospace",fontSize:9,padding:"2px 7px",
+                            borderRadius:3,cursor:"pointer",
+                            border: windowHours===o.h ? "1px solid #c0392b" : "1px solid #ddd",
+                            background: windowHours===o.h ? "#c0392b" : "#fff",
+                            color: windowHours===o.h ? "#fff" : "#888"}}>
+                          {o.label}
+                        </button>
+                      ))}
                     </div>
                   </div>
                   <button onClick={async()=>{
@@ -2310,25 +2352,23 @@ export default function App() {
                 )}
               </div>
 
-              {/* Time-bucketed articles */}
-              {buckets.length===0?(
-                <div style={{textAlign:"center",color:"#888",fontFamily:"'DM Mono',monospace",fontSize:11,padding:40}}>no articles in the last 12 hours — try refreshing</div>
-              ):buckets.map(bucket=>(
-                <div key={bucket.label} style={{marginBottom:24}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c0392b",fontWeight:600,letterSpacing:"0.08em"}}>⚡ {bucket.label.toUpperCase()}</span>
-                    <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#aaa"}}>{bucket.arts.length} stories</span>
-                    <div style={{flex:1,height:1,background:"#e8e2d6"}}/>
-                    {/* Country breakdown pills */}
-                    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                      {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{ const n=bucket.arts.filter(a=>a.country===c.code).length; return n?<span key={c.code} style={{fontSize:9,color:"#3a6080",fontFamily:"'DM Mono',monospace"}}>{c.flag}{n}</span>:null; })}
-                    </div>
+              {/* Chronological feed */}
+              {breakingArts.length===0?(
+                <div style={{textAlign:"center",color:"#888",fontFamily:"'DM Mono',monospace",fontSize:11,padding:40}}>no articles in the last {windowHours}h — try refreshing</div>
+              ):(
+                <div>
+                  {/* Country breakdown summary */}
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12,padding:"6px 0",borderBottom:"1px solid #e8e2d6"}}>
+                    {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{
+                      const n=breakingArts.filter(a=>a.country===c.code).length;
+                      return n?<span key={c.code} style={{fontSize:10,color:"#3a6080",fontFamily:"'DM Mono',monospace",background:"#f0f4f8",padding:"2px 6px",borderRadius:3}}>{c.flag} {n}</span>:null;
+                    })}
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                    {bucket.arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
+                    {breakingArts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           );
         })()}
