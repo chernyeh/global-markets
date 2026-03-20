@@ -21,6 +21,75 @@ const MSCI_SECTORS = [
 const SECTOR_MAP = Object.fromEntries(MSCI_SECTORS.map(s => [s.code, s]));
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// CORPORATE ACTION SIGNAL ENGINE
+// ═══════════════════════════════════════════════════════════════════════════════
+const SIGNAL_META = {
+  SP2: { label:"Strong Positive", short:"▲▲", color:"#fff", bg:"#1b7a3e", border:"#145c2e" },
+  SP1: { label:"Positive",        short:"▲",  color:"#1b7a3e", bg:"#e6f4ec", border:"#a8d5b8" },
+  N:   { label:"Neutral",         short:"–",  color:"#666",    bg:"#f5f5f5", border:"#ddd"    },
+  SN1: { label:"Negative",        short:"▽",  color:"#b84a00", bg:"#fff3ee", border:"#ffccbc" },
+  SN2: { label:"Strong Negative", short:"▽▽", color:"#fff",    bg:"#c0392b", border:"#922b21" },
+};
+
+// Signal categories — each has a default signal strength and a management flag
+const SIGNAL_CATEGORIES = {
+  // Earnings & guidance
+  EARNINGS_BEAT:     { label:"Earnings Beat",       signal:"SP2", mgmt:false },
+  EARNINGS_MISS:     { label:"Earnings Miss",        signal:"SN2", mgmt:false },
+  REVENUE_BEAT:      { label:"Revenue Beat",         signal:"SP1", mgmt:false },
+  REVENUE_MISS:      { label:"Revenue Miss",         signal:"SN1", mgmt:false },
+  GUIDANCE_UP:       { label:"Guidance Raised",      signal:"SP2", mgmt:false },
+  GUIDANCE_DOWN:     { label:"Guidance Cut",         signal:"SN2", mgmt:false },
+  PROFIT_WARNING:    { label:"Profit Warning",       signal:"SN2", mgmt:false },
+  // Capital returns
+  DIVIDEND_RAISE:    { label:"Dividend Raise",       signal:"SP1", mgmt:false },
+  DIVIDEND_CUT:      { label:"Dividend Cut",         signal:"SN2", mgmt:false },
+  SPECIAL_DIVIDEND:  { label:"Special Dividend",     signal:"SP2", mgmt:false },
+  BUYBACK:           { label:"Share Buyback",        signal:"SP1", mgmt:false },
+  // M&A
+  MA_ACQUIRER:       { label:"M&A — Acquirer",       signal:"SP1", mgmt:false },
+  MA_TARGET:         { label:"M&A — Target",         signal:"SP2", mgmt:false },
+  // Restructuring
+  RESTRUCTURE:       { label:"Restructuring",        signal:"SN1", mgmt:false },
+  LAYOFFS:           { label:"Layoffs",              signal:"SN1", mgmt:false },
+  // Management & leadership
+  CEO_NEW:           { label:"New CEO",              signal:"SP1", mgmt:true  },
+  CEO_RESIGN:        { label:"CEO Resignation",      signal:"SN1", mgmt:true  },
+  CFO_CHANGE:        { label:"CFO Change",           signal:"SN1", mgmt:true  },
+  BOARD_CHANGE:      { label:"Board Change",         signal:"SP1", mgmt:true  },
+  ACTIVIST_INVESTOR: { label:"Activist Investor",    signal:"SP1", mgmt:true  },
+  MGMT_INTERVIEW:    { label:"Mgmt Interview",       signal:"N",   mgmt:true  },
+  MGMT_STRATEGY:     { label:"Strategy Change",      signal:"SP1", mgmt:true  },
+  MGMT_TURNAROUND:   { label:"Turnaround Plan",      signal:"SP1", mgmt:true  },
+  MGMT_UNDER_PRESSURE:{ label:"Mgmt Under Pressure", signal:"SN1", mgmt:true  },
+  MGMT_BUY:          { label:"Director Buying",      signal:"SP2", mgmt:true  },
+  MGMT_SELL:         { label:"Director Selling",     signal:"SN1", mgmt:true  },
+  // Regulatory & legal
+  REGULATORY_FINE:   { label:"Regulatory Fine",      signal:"SN2", mgmt:false },
+  REGULATORY_BLOCK:  { label:"Regulatory Block",     signal:"SN2", mgmt:false },
+  ACCOUNTING_ISSUE:  { label:"Accounting Issue",     signal:"SN2", mgmt:false },
+  LAWSUIT:           { label:"Lawsuit / Legal",      signal:"SN1", mgmt:false },
+  // Contracts & business
+  CONTRACT_WIN:      { label:"Contract Win",         signal:"SP2", mgmt:false },
+  CONTRACT_LOSS:     { label:"Contract Loss",        signal:"SN2", mgmt:false },
+  PARTNERSHIP:       { label:"Partnership / JV",     signal:"SP1", mgmt:false },
+  DEBT_ISSUE:        { label:"Debt / Covenant",      signal:"SN2", mgmt:false },
+  // Analyst & market
+  RATING_UP:         { label:"Analyst Upgrade",      signal:"SP1", mgmt:false },
+  RATING_DOWN:       { label:"Analyst Downgrade",    signal:"SN1", mgmt:false },
+  IPO:               { label:"IPO / Listing",        signal:"SP1", mgmt:false },
+  DELISTING:         { label:"Delisting",            signal:"SN2", mgmt:false },
+  // Catch-all
+  MACRO:             { label:"Macro / Policy",       signal:"N",   mgmt:false },
+  OTHER:             { label:"Other",                signal:"N",   mgmt:false },
+};
+
+// Context flags that UPGRADE signal strength for management events
+// e.g. new CEO after profit warning = SP2 not just SP1
+const WEAKNESS_CONTEXT_PATTERNS = /after (disappointing|poor|weak|dismal|miss|profit warning)|amid (investor|analyst|shareholder) pressure|following (strategic review|underperformance|losses|write[- ]?down)|turnaround|restructur|strategic (overhaul|pivot|reset|review)|under pressure|calls for (change|resignation|shake[- ]?up)|operational (challenges|difficulties|failure)|execution (failure|miss)|replac(es|ing|ed) (CEO|chief)|activist/i;
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // SOURCES
 // ═══════════════════════════════════════════════════════════════════════════════
 const GN = (q,hl="en-US",gl="US",ceid="US:en") =>
@@ -295,7 +364,7 @@ async function fetchFeed(source) {
         source: source.name, sourceId: source.id,
         country: source.country, flag: source.flag, lang: source.lang,
         fetchedAt: Date.now(),
-        translatedTitle: null, insight: null, sector: null, duplicateOf: null, isMicro: classifyMicro(title),
+        translatedTitle: null, insight: null, sector: null, signal: null, signalCategory: null, weaknessContext: false, duplicateOf: null, isMicro: classifyMicro(title),
         watchMatches: [],
       };
     }).filter(Boolean);
@@ -489,11 +558,37 @@ async function enrichBatch(articles) {
   }));
 
   // Step 2: Enrich with Claude using pre-translated titles
+  const catCodes = Object.keys(SIGNAL_CATEGORIES).join("|");
   const prompt=`Financial analyst. For each headline return a JSON array (one object per item).
-Each item: {"translated":"<English title>","insight":"<one sentence investor takeaway>","sector":"<code>"}
+Each item: {"translated":"<English title>","insight":"<one sentence investor takeaway>","sector":"<sector code>","signal":"<signal code>","signalCategory":"<category code>","weaknessContext":<true|false>}
 Use EXACTLY the pre-translated title provided — do not re-translate.
+
 Sector codes: FIN=banks/insurance/capital markets, IT=software/hardware/semis, IND=manufacturing/transport/conglomerates, CD=autos/retail/luxury/leisure, CS=food/beverages/household, HC=pharma/biotech/hospitals, EN=oil/gas/renewables, MAT=mining/chemicals/steel, COM=media/telecom/internet platforms, RE=property/REITs, UTL=power/water, MAC=central bank/rates/GDP/trade/FX/fiscal/elections/tariffs, UNK=unclear.
-Return ONLY a valid JSON array. ${withTranslations.length} items:
+
+Signal codes (what is the LIKELY SHARE PRICE impact for the named company?):
+SP2 = Strong Positive: clear upside catalyst — earnings beat, contract win, buyback, special dividend, M&A target at premium, director buying, turnaround plan by credible new CEO
+SP1 = Positive: mild positive — analyst upgrade, dividend raise, new CEO (no distress context), small contract win, partnership, IPO
+N  = Neutral: macro/policy news, no direct named-company impact, general market commentary
+SN1 = Negative: mild negative — analyst downgrade, minor regulatory query, CFO change, small earnings miss, director selling
+SN2 = Strong Negative: clear downside — profit warning, dividend cut, CEO resignation under pressure, regulatory fine, accounting restatement, debt covenant breach, large earnings miss, contract loss
+
+Signal category — pick the SINGLE best code:
+${catCodes}
+
+Special management signals — use these when the article is about leadership/strategy:
+MGMT_INTERVIEW = CEO/CFO gives interview (set weaknessContext=true if it follows poor results or under pressure)
+MGMT_STRATEGY = new strategic direction announced
+MGMT_TURNAROUND = explicit turnaround plan after underperformance (set signal=SP2 if new leader, SN1 if incumbent)
+MGMT_UNDER_PRESSURE = management defending strategy under analyst/investor/activist pressure (signal=SN1)
+MGMT_BUY = director/insider buying own stock (signal=SP2 — high conviction bullish signal)
+MGMT_SELL = director/insider selling own stock (signal=SN1)
+ACTIVIST_INVESTOR = activist fund takes stake or pushes for change (signal=SP1)
+
+weaknessContext: set to TRUE if the headline mentions or implies the event follows a period of poor results, execution failure, strategic miss, investor pressure, or calls for change. Otherwise false.
+
+STRICT FACTUAL RULE: Only classify based on what is EXPLICITLY in the headline. Do not infer figures or details not present. When uncertain between two categories, pick the more conservative signal strength.
+
+Return ONLY a valid JSON array, no markdown. ${withTranslations.length} items:
 ${withTranslations.map((a,i)=>`${i}. ${a._preTranslated}`).join("\n")}`;
 
   try {
@@ -755,6 +850,11 @@ function Tag({children,color="#c0392b",onClick}) {
 
 function ArticleCard({art, highlightKeyword=null}) {
   const sec = art.sector ? SECTOR_MAP[art.sector] : null;
+  const sigMeta   = art.signal ? SIGNAL_META[art.signal] : null;
+  const catMeta   = art.signalCategory ? SIGNAL_CATEGORIES[art.signalCategory] : null;
+  const isMgmt    = catMeta?.mgmt === true;
+  const isStrong  = art.signal === "SP2" || art.signal === "SN2";
+  const isWeakCtx = art.weaknessContext === true;
   const isCJK = s => s && (s.match(/[\u4e00-\u9fff\uac00-\ud7ff\u3040-\u309f]/g)||[]).length / s.length > 0.25;
   const rawTitle = art.translatedTitle || art.title;
   const displayTitle = isCJK(rawTitle) && art.lang !== "en"
@@ -771,14 +871,32 @@ function ArticleCard({art, highlightKeyword=null}) {
     ? art.watchMatches?.find(m=>m.keyword===highlightKeyword)
     : null;
 
+  // Visual treatment priority: management-in-weakness > strong signal > watchlist match > default
+  const cardBg = isMgmt && isWeakCtx
+    ? "linear-gradient(90deg,#fdf6e3 0%,#fff9f0 60%,transparent 100%)"
+    : isStrong && art.signal==="SP2"
+      ? "linear-gradient(90deg,#e6f4ec44 0%,transparent 100%)"
+      : isStrong && art.signal==="SN2"
+        ? "linear-gradient(90deg,#fdecea44 0%,transparent 100%)"
+        : isHighlighted
+          ? "linear-gradient(90deg,#c9a84c04 0%,transparent 100%)"
+          : "transparent";
+  const cardBorderLeft = isMgmt && isWeakCtx
+    ? "3px solid #c9a84c"
+    : isStrong
+      ? `3px solid ${art.signal==="SP2"?"#1b7a3e":"#c0392b"}`
+      : isHighlighted
+        ? `2px solid ${directMatches.length?"#c0392b":"#4a9eff"}`
+        : "2px solid transparent";
+
   return (
     <div style={{
       padding:"13px 0",
       borderBottom:"1px solid #e8e2d6",
       animation:"fadeIn 0.3s ease",
-      background: isHighlighted ? "linear-gradient(90deg,#c9a84c04 0%,transparent 100%)" : "transparent",
-      borderLeft: isHighlighted ? `2px solid ${directMatches.length?"#c0392b":"#4a9eff"}` : "2px solid transparent",
-      paddingLeft: isHighlighted ? 10 : 0,
+      background: cardBg,
+      borderLeft: cardBorderLeft,
+      paddingLeft: (isMgmt && isWeakCtx) || isStrong || isHighlighted ? 10 : 0,
     }}>
       <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:5,marginBottom:5}}>
         <span style={{fontSize:11,color:"#c0392b",fontFamily:"'DM Mono',monospace",fontWeight:600}}>
@@ -805,6 +923,28 @@ function ArticleCard({art, highlightKeyword=null}) {
         })()}
         {art.lang!=="en" && <Tag color="#7a8fa6">{art.lang.toUpperCase()}→EN</Tag>}
         {sec && sec.code!=="UNK" && <Tag color={sec.color}>{sec.icon} {sec.label}</Tag>}
+        {/* Corporate Action Signal badge */}
+        {sigMeta && art.signal !== "N" && (
+          <span style={{
+            display:"inline-flex",alignItems:"center",gap:3,
+            fontFamily:"'DM Mono',monospace",fontSize:9,fontWeight:700,
+            padding:"2px 7px",borderRadius:3,letterSpacing:"0.04em",
+            color:sigMeta.color, background:sigMeta.bg, border:`1px solid ${sigMeta.border}`,
+          }}>
+            {sigMeta.short} {catMeta?.label||art.signalCategory}
+          </span>
+        )}
+        {/* Management signal — special treatment */}
+        {isMgmt && isWeakCtx && (
+          <span style={{
+            display:"inline-flex",alignItems:"center",gap:3,
+            fontFamily:"'DM Mono',monospace",fontSize:9,fontWeight:700,
+            padding:"2px 7px",borderRadius:3,letterSpacing:"0.04em",
+            color:"#7a5c00",background:"#fdf6e3",border:"1px solid #e8c94c",
+          }}>
+            ⚑ post-weakness
+          </span>
+        )}
         {/* Watchlist match badges */}
         {directMatches.map(m=>(
           <Tag key={m.keyword} color="#c0392b">⦿ {m.keyword}</Tag>
@@ -1981,9 +2121,24 @@ export default function App() {
         const shouldStore = translationOk ? r.translated
           : a.lang === "en" && r.translated && r.translated !== a.title ? r.translated
           : null;
+        // Resolve final signal — weakness context can upgrade management signals
+        let resolvedSignal = r.signal || a.signal || "N";
+        const cat = r.signalCategory || a.signalCategory || "OTHER";
+        const isWeakness = r.weaknessContext === true || a.weaknessContext;
+        const catMeta = SIGNAL_CATEGORIES[cat];
+        if (catMeta?.mgmt && isWeakness) {
+          // Upgrade: SP1 → SP2, SN1 → SN2, N → SN1 in weakness context
+          const upgrade = { SP1:"SP2", N:"SN1", SN1:"SN2" };
+          resolvedSignal = upgrade[resolvedSignal] || resolvedSignal;
+        }
         return {...a,
           translatedTitle: shouldStore || a.translatedTitle,
-          insight:r.insight||a.insight,sector:r.sector||a.sector};
+          insight: r.insight || a.insight,
+          sector: r.sector || a.sector,
+          signal: resolvedSignal,
+          signalCategory: cat,
+          weaknessContext: isWeakness,
+        };
       });
       setAllArticles(working);
     }
@@ -2035,6 +2190,7 @@ export default function App() {
     { h:48, label:"48h" },
   ];
   const [windowHours, setWindowHours] = useState(12);
+  const [signalFilter, setSignalFilter] = useState("ALL"); // ALL|SP2|SP1|SN1|SN2|MGMT
   const WINDOW_MS = windowHours * 60 * 60 * 1000;
   const breakingArts = (() => {
     // Filter to selected time window
@@ -2355,20 +2511,66 @@ export default function App() {
               {/* Chronological feed */}
               {breakingArts.length===0?(
                 <div style={{textAlign:"center",color:"#888",fontFamily:"'DM Mono',monospace",fontSize:11,padding:40}}>no articles in the last {windowHours}h — try refreshing</div>
-              ):(
-                <div>
-                  {/* Country breakdown summary */}
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12,padding:"6px 0",borderBottom:"1px solid #e8e2d6"}}>
-                    {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{
-                      const n=breakingArts.filter(a=>a.country===c.code).length;
-                      return n?<span key={c.code} style={{fontSize:10,color:"#3a6080",fontFamily:"'DM Mono',monospace",background:"#f0f4f8",padding:"2px 6px",borderRadius:3}}>{c.flag} {n}</span>:null;
-                    })}
+              ):(()=>{
+                // Apply signal filter
+                const signalFiltered = signalFilter==="ALL" ? breakingArts
+                  : signalFilter==="MGMT" ? breakingArts.filter(a=>SIGNAL_CATEGORIES[a.signalCategory]?.mgmt)
+                  : breakingArts.filter(a=>a.signal===signalFilter);
+                const enrichedAny = breakingArts.some(a=>a.signal);
+                return (
+                  <div>
+                    {/* Signal filter bar — only show after enrichment */}
+                    {enrichedAny && (
+                      <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:12,padding:"8px 0",borderBottom:"1px solid #e8e2d6",alignItems:"center"}}>
+                        <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#888",letterSpacing:"0.08em",marginRight:2}}>SIGNAL</span>
+                        {[
+                          {id:"ALL", label:"All"},
+                          {id:"SP2", label:"▲▲ Strong +"},
+                          {id:"SP1", label:"▲ Positive"},
+                          {id:"SN1", label:"▽ Negative"},
+                          {id:"SN2", label:"▽▽ Strong −"},
+                          {id:"MGMT",label:"⚑ Management"},
+                        ].map(f=>(
+                          <button key={f.id} onClick={()=>setSignalFilter(f.id)}
+                            style={{fontFamily:"'DM Mono',monospace",fontSize:9,padding:"3px 9px",
+                              borderRadius:3,cursor:"pointer",transition:"all 0.15s",
+                              border: signalFilter===f.id
+                                ? `1px solid ${f.id==="SP2"?"#1b7a3e":f.id==="SP1"?"#2e7d32":f.id==="SN1"?"#b84a00":f.id==="SN2"?"#c0392b":f.id==="MGMT"?"#c9a84c":"#888"}`
+                                : "1px solid #ddd",
+                              background: signalFilter===f.id
+                                ? (f.id==="SP2"?"#1b7a3e":f.id==="SP1"?"#e6f4ec":f.id==="SN1"?"#fff3ee":f.id==="SN2"?"#c0392b":f.id==="MGMT"?"#fdf6e3":"#555")
+                                : "#fff",
+                              color: signalFilter===f.id
+                                ? (f.id==="SP2"||f.id==="SN2"||f.id==="ALL"?"#fff":f.id==="SP1"?"#1b7a3e":f.id==="SN1"?"#b84a00":f.id==="MGMT"?"#7a5c00":"#fff")
+                                : "#888",
+                            }}>
+                            {f.label}
+                          </button>
+                        ))}
+                        <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#aaa",marginLeft:4}}>
+                          {signalFiltered.length} articles
+                        </span>
+                      </div>
+                    )}
+                    {/* Country breakdown summary */}
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12,padding:"6px 0",borderBottom:"1px solid #e8e2d6"}}>
+                      {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{
+                        const n=signalFiltered.filter(a=>a.country===c.code).length;
+                        return n?<span key={c.code} style={{fontSize:10,color:"#3a6080",fontFamily:"'DM Mono',monospace",background:"#f0f4f8",padding:"2px 6px",borderRadius:3}}>{c.flag} {n}</span>:null;
+                      })}
+                    </div>
+                    {signalFiltered.length===0?(
+                      <div style={{textAlign:"center",color:"#aaa",fontFamily:"'DM Mono',monospace",fontSize:11,padding:32}}>
+                        no {signalFilter!=="ALL"?signalFilter+" ":""} signals — enrich articles first
+                      </div>
+                    ):(
+                      <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                        {signalFiltered.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
+                      </div>
+                    )}
                   </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                    {breakingArts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           );
         })()}
