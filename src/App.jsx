@@ -1060,6 +1060,91 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// OVERFLOW MENU — ··· button with dropdown for secondary header actions
+// ═══════════════════════════════════════════════════════════════════════════════
+function OverflowMenu({allArticles, enrichedCount, dupeCount, showDupes, setShowDupes,
+                       isLoading, enriching, runEnrichment, setAllArticles,
+                       setBriefs, setLastFetch, setStatusMsg, SK}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
+  }, []);
+
+  const mono = { fontFamily:"'DM Mono',monospace" };
+  const unenriched = allArticles.filter(a => !a.insight).length;
+
+  const item = (label, onClick, color="#333", disabled=false) => (
+    <button onClick={() => { if (!disabled) { onClick(); setOpen(false); } }}
+      disabled={disabled}
+      style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 16px",
+        background:"none",border:"none",color:disabled?"#ccc":color,
+        cursor:disabled?"not-allowed":"pointer",...mono,fontSize:11,
+        textAlign:"left",whiteSpace:"nowrap",opacity:disabled?0.5:1}}
+      onMouseOver={e=>{ if(!disabled) e.currentTarget.style.background="#f5f5f5"; }}
+      onMouseOut={e=>e.currentTarget.style.background="none"}>
+      {label}
+    </button>
+  );
+
+  return (
+    <div ref={ref} style={{position:"relative",flexShrink:0}}>
+      <button onClick={() => setOpen(p => !p)}
+        style={{padding:"5px 10px",border:"1px solid #ccc",borderRadius:5,
+          background:open?"#f0f0f0":"none",color:"#555",cursor:"pointer",
+          ...mono,fontSize:14,lineHeight:1,letterSpacing:"0.1em"}}>
+        ···
+      </button>
+
+      {open && (
+        <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",
+          background:"#fff",border:"1px solid #e0e0e0",borderRadius:8,
+          boxShadow:"0 4px 20px rgba(0,0,0,0.12)",zIndex:300,minWidth:230,overflow:"hidden"}}>
+
+          {/* Stats */}
+          <div style={{padding:"8px 16px",borderBottom:"1px solid #f0ece4",...mono,fontSize:9,color:"#888",display:"flex",gap:14}}>
+            <span style={{color:"#2a4a6a"}}>{allArticles.length} fetched</span>
+            <span style={{color:"#1a3a2a"}}>−{dupeCount} dupes</span>
+            <span style={{color:"#2a3a1a"}}>{enrichedCount} enriched</span>
+          </div>
+
+          {item(
+            <><span style={{animation:enriching?"spin 1s linear infinite":"none",display:"inline-block"}}>✦</span> {enriching ? "Enriching…" : `Enrich headlines (${unenriched})`}</>,
+            () => { if (unenriched) runEnrichment(allArticles, allArticles.filter(a=>!a.insight)); },
+            "#7b68ee",
+            isLoading || enriching || unenriched === 0
+          )}
+
+          {item(
+            showDupes ? "∙ Hide duplicates" : "∙ Show duplicates",
+            () => setShowDupes(p => !p)
+          )}
+
+          <div style={{borderTop:"1px solid #f0ece4"}}/>
+
+          {item(
+            <>✕ Clear cache</>,
+            () => {
+              if (!window.confirm("Clear all cached headlines and summaries? The app will re-fetch everything from scratch.")) return;
+              Object.values(SK).forEach(k => localStorage.removeItem(k));
+              setAllArticles([]); setBriefs({}); setLastFetch({});
+              setStatusMsg("Cache cleared — reloading…");
+              setTimeout(() => window.location.reload(), 800);
+            },
+            "#c0392b"
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // REGULATORY FILINGS TAB
 // ═══════════════════════════════════════════════════════════════════════════════
 const FILING_EXCHANGES = [
@@ -1992,74 +2077,21 @@ export default function App() {
             </button>
 
             {/* ··· overflow menu */}
-            {(()=>{
-              const [menuOpen, setMenuOpen] = React.useState(false);
-              const menuRef = React.useRef(null);
-              React.useEffect(()=>{
-                const handler = e => { if(menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
-                document.addEventListener("mousedown", handler);
-                document.addEventListener("touchstart", handler);
-                return ()=>{ document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
-              },[]);
-              const menuItem = (onClick, children, color="#333", disabled=false) => (
-                <button onClick={()=>{ if(!disabled){ onClick(); setMenuOpen(false); } }}
-                  disabled={disabled}
-                  style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 14px",
-                    background:"none",border:"none",color:disabled?"#bbb":color,cursor:disabled?"not-allowed":"pointer",
-                    fontFamily:"'DM Mono',monospace",fontSize:11,textAlign:"left",transition:"background 0.1s",
-                    opacity:disabled?0.5:1,whiteSpace:"nowrap"}}
-                  onMouseOver={e=>{ if(!disabled) e.currentTarget.style.background="#f5f5f5"; }}
-                  onMouseOut={e=>e.currentTarget.style.background="none"}>
-                  {children}
-                </button>
-              );
-              return (
-                <div ref={menuRef} style={{position:"relative",flexShrink:0}}>
-                  <button onClick={()=>setMenuOpen(p=>!p)}
-                    style={{padding:"5px 10px",border:"1px solid #ccc",borderRadius:5,background:menuOpen?"#f0f0f0":"none",
-                      color:"#555",cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:13,lineHeight:1}}>
-                    ···
-                  </button>
-                  {menuOpen&&(
-                    <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",
-                      background:"#fff",border:"1px solid #e0e0e0",borderRadius:8,
-                      boxShadow:"0 4px 20px rgba(0,0,0,0.12)",zIndex:300,minWidth:220,overflow:"hidden"}}>
-
-                      {/* Stats row */}
-                      <div style={{padding:"8px 14px",borderBottom:"1px solid #f0ece4",
-                        fontFamily:"'DM Mono',monospace",fontSize:9,color:"#888",display:"flex",gap:12}}>
-                        <span style={{color:"#2a4a6a"}}>{allArticles.length} fetched</span>
-                        <span style={{color:"#1a3a2a"}}>−{dupeCount} dupes</span>
-                        <span style={{color:"#2a3a1a"}}>{enrichedCount} enriched</span>
-                      </div>
-
-                      {menuItem(
-                        ()=>{ const toEnrich=allArticles.filter(a=>!a.insight); if(toEnrich.length) runEnrichment(allArticles,toEnrich); },
-                        <><span style={{animation:enriching?"spin 1s linear infinite":"none",display:"inline-block"}}>✦</span> {enriching?"enriching…":`Enrich headlines (${allArticles.filter(a=>!a.insight).length})`}</>,
-                        "#7b68ee",
-                        isLoading||enriching||allArticles.filter(a=>!a.insight).length===0
-                      )}
-                      {menuItem(
-                        ()=>setShowDupes(p=>!p),
-                        <>{showDupes?"∙ Hide duplicates":"∙ Show duplicates"}</>
-                      )}
-                      <div style={{borderTop:"1px solid #f0ece4",marginTop:2}}/>
-                      {menuItem(
-                        ()=>{
-                          if(!window.confirm("Clear all cached headlines and summaries? The app will re-fetch and re-enrich everything from scratch.")) return;
-                          Object.values(SK).forEach(k=>localStorage.removeItem(k));
-                          setAllArticles([]); setBriefs({}); setLastFetch({});
-                          setStatusMsg("Cache cleared — reloading…");
-                          setTimeout(()=>window.location.reload(), 800);
-                        },
-                        <>✕ Clear cache</>,
-                        "#c0392b"
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+            <OverflowMenu
+              allArticles={allArticles}
+              enrichedCount={enrichedCount}
+              dupeCount={dupeCount}
+              showDupes={showDupes}
+              setShowDupes={setShowDupes}
+              isLoading={isLoading}
+              enriching={enriching}
+              runEnrichment={runEnrichment}
+              setAllArticles={setAllArticles}
+              setBriefs={setBriefs}
+              setLastFetch={setLastFetch}
+              setStatusMsg={setStatusMsg}
+              SK={SK}
+            />
           </div>
         </div>
 
