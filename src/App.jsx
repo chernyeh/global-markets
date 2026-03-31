@@ -114,7 +114,7 @@ const NEWS_BRIEF_GROUPS = [
     market: "United States",
     flag: "🇺🇸",
     color: "#b84a00",
-    sources: ["seekalpha","wsj","barrons","marketwatch","axios_biz"],
+    sources: ["wsj_heard","wsj_mkt","seekalpha","wsj","barrons","marketwatch","axios_biz"],
     desc: "Seeking Alpha Earnings · WSJ · Barron's · MarketWatch · Axios",
   },
 ];
@@ -132,6 +132,8 @@ const SOURCES = [
   {id:"marketwatch",tier:2,desc:"Dow Jones-owned; strong on US equities, earnings, and retail investor flow.",country:"US",name:"MarketWatch",            lang:"en",flag:"🇺🇸",url:GN("site:marketwatch.com markets stocks")},
   {id:"wsj",tier:2,        country:"US",name:"WSJ Markets",            lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",paywall:true},
   {id:"wsj2",tier:2,       country:"US",name:"WSJ Business",           lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/WSJcomUSBusiness",paywall:true},
+  {id:"wsj_heard",tier:2,  desc:"WSJ Heard on the Street — flagship stock analysis column; buy/sell calls, earnings analysis, company-specific deep dives. Highest-signal WSJ feed for equity investors.", country:"US",name:"WSJ Heard on the Street",lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSHEARDONTHESTREET",paywall:true},
+  {id:"wsj_mkt",tier:2,    desc:"WSJ Markets Features — longer-form WSJ market analysis, stock-specific features, and sector deep dives beyond daily news.",                                              country:"US",name:"WSJ Markets Features",   lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",paywall:true},
   {id:"bloomberg",tier:1,  country:"US",name:"Bloomberg Markets",      lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/markets/news.rss",paywall:true},
   {id:"bloomberg2",tier:1, country:"US",name:"Bloomberg Business",     lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/business/news.rss",paywall:true},
   {id:"ft",tier:2,         country:"US",name:"Financial Times",        lang:"en",flag:"🇺🇸",url:GN("site:ft.com markets economy business"),paywall:true},
@@ -998,13 +1000,15 @@ function BriefRenderer({text, articles=[]}) {
           );
         }
         const mergedMatch = trimmed.match(/^\*\*([^*]+)\*\*:?\n([\s\S]+)$/);
+        // Strip [REF:N] citation markers from plain paragraphs (exec summary, risk sections)
+        const cleanPara = trimmed.replace(/\[REF:[\d,\s]+\]/g, "").trim();
         return (
           <p key={i} style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:14,
             color:"#1a1a1a",lineHeight:1.7,margin:"10px 0",
             background:"#f0ece4",padding:"14px 18px",borderRadius:4}}>
             {mergedMatch
-              ? <><strong>{mergedMatch[1]}</strong>{": "}{mergedMatch[2]}</>
-              : trimmed.replace(/\*\*([^*]+)\*\*/g, (_, t) => t)
+              ? <><strong>{mergedMatch[1].replace(/\[REF:[\d,\s]+\]/g,"").trim()}</strong>{": "}{mergedMatch[2].replace(/\[REF:[\d,\s]+\]/g,"").trim()}</>
+              : cleanPara.replace(/\*\*([^*]+)\*\*/g, (_, t) => t)
             }
           </p>
         );
@@ -1514,7 +1518,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
 // SOURCES TAB
 // ═══════════════════════════════════════════════════════════════════════════════
 const SOURCE_RANK = {
-  US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","ft","wapo","nyt","barrons","marketwatch","axios_biz","semafor","politico","seekalpha","prnewswire"],
+  US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","wsj_heard","wsj_mkt","ft","wapo","nyt","barrons","marketwatch","axios_biz","semafor","politico","seekalpha","prnewswire"],
   DE: ["reuters_de","bloom_de","handelsblatt","handelsblatt_en","faz","faz_finance","spiegel_de","sz_de","dw_de"],
   CA: ["reuters_ca","bloom_ca","globe_mail","fin_post","bnn"],
   SG: ["reuters_sg","bloom_sg","bt_sg","bt_stocks_watch","edge_sg_stocks_watch","edge_sg_focus","sginvestors","edge_sg","cna_sg","sgx_annc","sg_biz_review"],
@@ -1960,77 +1964,130 @@ export default function App() {
         ::-webkit-scrollbar-track{background:transparent}
       `}</style>
 
-      <header style={{background:"#fff",borderBottom:"2px solid #1a1a1a",padding:"0 24px",position:"sticky",top:0,zIndex:200}}>
-        <div style={{maxWidth:1500,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:58}}>
-          <div style={{display:"flex",alignItems:"center",gap:18}}>
-            <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:23,color:"#1a1a1a",fontWeight:700,letterSpacing:"-0.03em",lineHeight:1}}>GLOBAL MARKETS</div>
-              <div style={{fontFamily:"'DM Mono',monospace",fontSize:8,color:"#888",letterSpacing:"0.3em",marginTop:2}}>INTELLIGENCE WIRE</div>
-            </div>
-            <div style={{display:"flex",gap:2}}>
-              {MAIN_TABS.map(({id,label})=>(
-                <button key={id} onClick={()=>setMainTab(id)}
-                  style={{padding:"5px 13px",border:"none",background:"none",
-                    color:mainTab===id?"#c0392b":"#333",
-                    borderBottom:mainTab===id?"2px solid #c0392b":"2px solid transparent",
-                    fontWeight:mainTab===id?600:400,
-                    cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:12,transition:"all 0.15s"}}>
-                  {label}
-                </button>
-              ))}
-            </div>
+      <header style={{background:"#fff",borderBottom:"2px solid #1a1a1a",position:"sticky",top:0,zIndex:200}}>
+        {/* Row 1: logo + controls */}
+        <div style={{maxWidth:1500,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:52,padding:"0 24px"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:21,color:"#1a1a1a",fontWeight:700,letterSpacing:"-0.03em",lineHeight:1,flexShrink:0}}>
+            GLOBAL MARKETS
+            <span style={{fontFamily:"'DM Mono',monospace",fontSize:7,color:"#aaa",letterSpacing:"0.25em",marginLeft:8,fontWeight:400,verticalAlign:"middle"}}>WIRE</span>
           </div>
 
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,position:"relative"}}>
+            {/* Status indicator — always visible */}
             {(isLoading||enriching||statusMsg)&&(
-              <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888",display:"flex",alignItems:"center",gap:6}}>
-                <Dots/>{statusMsg||"processing…"}
+              <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888",display:"flex",alignItems:"center",gap:5}}>
+                <Dots/><span style={{display:"none",["@media(min-width:600px)"]:{display:"inline"}}}>{statusMsg||"…"}</span>
               </span>
             )}
-            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,display:"flex",gap:10,color:"#888"}}>
-              <span style={{color:"#2a4a6a"}}>{allArticles.length} fetched</span>
-              <span style={{color:"#1a3a2a"}}>−{dupeCount} dupes</span>
-              <span style={{color:"#2a3a1a"}}>{enrichedCount} enriched</span>
-            </div>
-            <button onClick={()=>setShowDupes(p=>!p)}
-              style={{fontSize:9,padding:"4px 9px",border:"1px solid #ccc",borderRadius:4,background:showDupes?"#f0f0f0":"none",color:showDupes?"#333":"#888",cursor:"pointer",fontFamily:"'DM Mono',monospace"}}>
-              {showDupes?"∙ hide dupes":"∙ show dupes"}
-            </button>
-            <button onClick={()=>{
-                if(!window.confirm("Clear all cached headlines and summaries? The app will re-fetch and re-enrich everything from scratch.")) return;
-                Object.values(SK).forEach(k=>localStorage.removeItem(k));
-                setAllArticles([]); setBriefs({}); setLastFetch({});
-                setStatusMsg("Cache cleared — reloading…");
-                setTimeout(()=>window.location.reload(), 800);
-              }}
-              style={{fontSize:9,padding:"4px 9px",border:"1px solid #e0b0b0",borderRadius:4,background:"none",color:"#c0392b",cursor:"pointer",fontFamily:"'DM Mono',monospace"}}
-              onMouseOver={e=>e.currentTarget.style.background="#fdecea"}
-              onMouseOut={e=>e.currentTarget.style.background="none"}>
-              ✕ clear cache
-            </button>
+
+            {/* Refresh — always visible, primary action */}
             <button onClick={()=>fetchSources(SOURCES)} disabled={isLoading||enriching}
-              style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"1px solid #bbb",color:"#333",padding:"6px 14px",borderRadius:5,cursor:(isLoading||enriching)?"not-allowed":"pointer",fontFamily:"'DM Mono',monospace",fontSize:11,opacity:(isLoading||enriching)?0.5:1}}
+              style={{display:"flex",alignItems:"center",gap:4,background:"none",border:"1px solid #bbb",
+                color:"#333",padding:"5px 11px",borderRadius:5,cursor:(isLoading||enriching)?"not-allowed":"pointer",
+                fontFamily:"'DM Mono',monospace",fontSize:11,opacity:(isLoading||enriching)?0.5:1,flexShrink:0}}
               onMouseOver={e=>e.currentTarget.style.background="#f5f5f5"}
               onMouseOut={e=>e.currentTarget.style.background="none"}>
               <span style={{display:"inline-block",animation:isLoading?"spin 1s linear infinite":"none"}}>⟳</span>
-              {isLoading?"refreshing…":"refresh all"}
+              <span>{isLoading?"refreshing…":"refresh"}</span>
             </button>
-            <button onClick={()=>{ const toEnrich=allArticles.filter(a=>!a.insight); if(toEnrich.length) runEnrichment(allArticles,toEnrich); }}
-              disabled={isLoading||enriching||allArticles.filter(a=>!a.insight).length===0}
-              title="Add investor insights + sector tags to all headlines (uses Claude API)"
-              style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"1px solid #7b68ee",color:"#7b68ee",padding:"6px 14px",borderRadius:5,cursor:(isLoading||enriching||allArticles.filter(a=>!a.insight).length===0)?"not-allowed":"pointer",fontFamily:"'DM Mono',monospace",fontSize:11,opacity:(isLoading||enriching||allArticles.filter(a=>!a.insight).length===0)?0.4:1}}
-              onMouseOver={e=>{ if(!enriching&&!isLoading) e.currentTarget.style.background="#f0eeff"; }}
-              onMouseOut={e=>e.currentTarget.style.background="none"}>
-              <span style={{animation:enriching?"spin 1s linear infinite":"none",display:"inline-block"}}>✦</span>
-              {enriching?"enriching…":`enrich (${allArticles.filter(a=>!a.insight).length})`}
-            </button>
+
+            {/* ··· overflow menu */}
+            {(()=>{
+              const [menuOpen, setMenuOpen] = React.useState(false);
+              const menuRef = React.useRef(null);
+              React.useEffect(()=>{
+                const handler = e => { if(menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+                document.addEventListener("mousedown", handler);
+                document.addEventListener("touchstart", handler);
+                return ()=>{ document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
+              },[]);
+              const menuItem = (onClick, children, color="#333", disabled=false) => (
+                <button onClick={()=>{ if(!disabled){ onClick(); setMenuOpen(false); } }}
+                  disabled={disabled}
+                  style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 14px",
+                    background:"none",border:"none",color:disabled?"#bbb":color,cursor:disabled?"not-allowed":"pointer",
+                    fontFamily:"'DM Mono',monospace",fontSize:11,textAlign:"left",transition:"background 0.1s",
+                    opacity:disabled?0.5:1,whiteSpace:"nowrap"}}
+                  onMouseOver={e=>{ if(!disabled) e.currentTarget.style.background="#f5f5f5"; }}
+                  onMouseOut={e=>e.currentTarget.style.background="none"}>
+                  {children}
+                </button>
+              );
+              return (
+                <div ref={menuRef} style={{position:"relative",flexShrink:0}}>
+                  <button onClick={()=>setMenuOpen(p=>!p)}
+                    style={{padding:"5px 10px",border:"1px solid #ccc",borderRadius:5,background:menuOpen?"#f0f0f0":"none",
+                      color:"#555",cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:13,lineHeight:1}}>
+                    ···
+                  </button>
+                  {menuOpen&&(
+                    <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",
+                      background:"#fff",border:"1px solid #e0e0e0",borderRadius:8,
+                      boxShadow:"0 4px 20px rgba(0,0,0,0.12)",zIndex:300,minWidth:220,overflow:"hidden"}}>
+
+                      {/* Stats row */}
+                      <div style={{padding:"8px 14px",borderBottom:"1px solid #f0ece4",
+                        fontFamily:"'DM Mono',monospace",fontSize:9,color:"#888",display:"flex",gap:12}}>
+                        <span style={{color:"#2a4a6a"}}>{allArticles.length} fetched</span>
+                        <span style={{color:"#1a3a2a"}}>−{dupeCount} dupes</span>
+                        <span style={{color:"#2a3a1a"}}>{enrichedCount} enriched</span>
+                      </div>
+
+                      {menuItem(
+                        ()=>{ const toEnrich=allArticles.filter(a=>!a.insight); if(toEnrich.length) runEnrichment(allArticles,toEnrich); },
+                        <><span style={{animation:enriching?"spin 1s linear infinite":"none",display:"inline-block"}}>✦</span> {enriching?"enriching…":`Enrich headlines (${allArticles.filter(a=>!a.insight).length})`}</>,
+                        "#7b68ee",
+                        isLoading||enriching||allArticles.filter(a=>!a.insight).length===0
+                      )}
+                      {menuItem(
+                        ()=>setShowDupes(p=>!p),
+                        <>{showDupes?"∙ Hide duplicates":"∙ Show duplicates"}</>
+                      )}
+                      <div style={{borderTop:"1px solid #f0ece4",marginTop:2}}/>
+                      {menuItem(
+                        ()=>{
+                          if(!window.confirm("Clear all cached headlines and summaries? The app will re-fetch and re-enrich everything from scratch.")) return;
+                          Object.values(SK).forEach(k=>localStorage.removeItem(k));
+                          setAllArticles([]); setBriefs({}); setLastFetch({});
+                          setStatusMsg("Cache cleared — reloading…");
+                          setTimeout(()=>window.location.reload(), 800);
+                        },
+                        <>✕ Clear cache</>,
+                        "#c0392b"
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+
+        {/* Row 2: scrollable tab bar */}
+        <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",borderTop:"1px solid #f0ece4",
+          scrollbarWidth:"none",msOverflowStyle:"none"}}
+          // hide scrollbar visually but keep scroll behaviour
+        >
+          <style>{`::-webkit-scrollbar{display:none}`}</style>
+          <div style={{display:"flex",padding:"0 16px",width:"max-content",minWidth:"100%"}}>
+            {MAIN_TABS.map(({id,label})=>(
+              <button key={id} onClick={()=>setMainTab(id)}
+                style={{padding:"7px 12px",border:"none",background:"none",
+                  color:mainTab===id?"#c0392b":"#555",
+                  borderBottom:mainTab===id?"2px solid #c0392b":"2px solid transparent",
+                  fontWeight:mainTab===id?600:400,
+                  cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:11,
+                  whiteSpace:"nowrap",transition:"all 0.15s",flexShrink:0}}>
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </header>
 
       {/* SUB-NAV */}
       {mainTab!=="watchlist"&&mainTab!=="sources"&&mainTab!=="breaking"&&mainTab!=="newsbriefs"&&mainTab!=="filings"&&(
-        <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:58,zIndex:199,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:88,zIndex:199,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
           <div style={{maxWidth:1500,margin:"0 auto",padding:"0 24px",display:"flex",width:"max-content",minWidth:"100%"}}>
             {mainTab==="region"?(
               COUNTRIES.map(c=>{
