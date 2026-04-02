@@ -114,8 +114,8 @@ const NEWS_BRIEF_GROUPS = [
     market: "United States",
     flag: "🇺🇸",
     color: "#b84a00",
-    sources: ["wsj_heard","wsj_mkt","seekalpha","wsj","barrons","marketwatch","axios_biz"],
-    desc: "Seeking Alpha Earnings · WSJ · Barron's · MarketWatch · Axios",
+    sources: ["wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","seekalpha","wsj","barrons","marketwatch","axios_biz"],
+    desc: "WSJ Heard on the Street · WSJ Markets Features · WSJ Global Equities Roundup · WSJ Global Commodities Roundup · Seeking Alpha Earnings · Barron's · MarketWatch · Axios",
   },
 ];
 
@@ -134,6 +134,8 @@ const SOURCES = [
   {id:"wsj2",tier:2,       country:"US",name:"WSJ Business",           lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/WSJcomUSBusiness",paywall:true},
   {id:"wsj_heard",tier:2,  desc:"WSJ Heard on the Street — flagship stock analysis column; buy/sell calls, earnings analysis, company-specific deep dives. Highest-signal WSJ feed for equity investors.", country:"US",name:"WSJ Heard on the Street",lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSHEARDONTHESTREET",paywall:true},
   {id:"wsj_mkt",tier:2,    desc:"WSJ Markets Features — longer-form WSJ market analysis, stock-specific features, and sector deep dives beyond daily news.",                                              country:"US",name:"WSJ Markets Features",   lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",paywall:true},
+  {id:"wsj_global_equities",tier:2,desc:"WSJ Global Equities Roundup: Market Talk — daily global equity market insights, regional trading activity, and stock-specific catalysts across major exchanges.",country:"US",name:"WSJ Global Equities Roundup",lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSGLOBALEQUITIESROUNDUP",paywall:true},
+  {id:"wsj_global_commodities",tier:2,desc:"WSJ Global Commodities Roundup: Market Talk — daily commodity price moves, supply/demand dynamics, and macroeconomic impacts on oil, metals, and agricultural markets.",country:"US",name:"WSJ Global Commodities Roundup",lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSGLOBALCOMMODITIESROUNDUP",paywall:true},
   {id:"bloomberg",tier:1,  country:"US",name:"Bloomberg Markets",      lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/markets/news.rss",paywall:true},
   {id:"bloomberg2",tier:1, country:"US",name:"Bloomberg Business",     lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/business/news.rss",paywall:true},
   {id:"ft",tier:2,         country:"US",name:"Financial Times",        lang:"en",flag:"🇺🇸",url:GN("site:ft.com markets economy business"),paywall:true},
@@ -626,7 +628,7 @@ Rules:
 Articles (cite using [REF:N] at end of each bullet, N = article number):
 ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n")}`;
     const text = await callClaude(prompt, 6000);
-    return {text, articles: sourceArticles};
+    return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
   const summaries = await Promise.all(chunks.map((chunk, ci) => {
@@ -671,7 +673,7 @@ ${articleIndex}
 Summaries to synthesise:
 ${summaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
   const text = await callClaude(synthPrompt, 6000);
-  return {text, articles: sourceArticles};
+  return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1022,12 +1024,18 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
   const briefData=briefs[briefKey];
   const brief = briefData?.text ?? (typeof briefData==="string" ? briefData : null);
   const briefArts = briefData?.articles ?? articles;
+  const generatedAt = briefData?.generatedAt ?? null;
   const isLoading=loading[briefKey];
   const run=async()=>{
     setLoading(p=>({...p,[briefKey]:true}));
     const b=await generateBriefUnlimited(articles,label);
     setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
     setLoading(p=>({...p,[briefKey]:false}));
+  };
+  const formatTime = (ms) => {
+    try {
+      return new Date(ms).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+    } catch { return ""; }
   };
   return (
     <div style={{background:"#fff",borderLeft:"3px solid #c0392b",border:"1px solid #e0e0e0",borderRadius:10,
@@ -1037,7 +1045,7 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
           <span style={{fontSize:16}}>{icon}</span>
           <div>
             <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.12em"}}>
-              AI INVESTMENT BRIEF · {articles.length} articles analysed
+              AI INVESTMENT BRIEF · {articles.length} articles analysed{generatedAt ? ` · generated ${formatTime(generatedAt)}` : ""}
             </div>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#1a1a1a",fontWeight:700}}>
               {label}
@@ -1690,7 +1698,7 @@ function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
       </div>
       {brief && (
         <div style={{background:"#fff",borderLeft:"3px solid #c0392b",border:"1px solid #e0e0e0",borderRadius:10,padding:"18px 22px",marginBottom:20,animation:"fadeIn 0.4s ease"}}>
-          <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.12em",marginBottom:2}}>AI INVESTMENT BRIEF · {countryArts.length} articles analysed</div>
+          <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.12em",marginBottom:2}}>AI INVESTMENT BRIEF · {countryArts.length} articles analysed{briefData?.generatedAt ? ` · generated ${new Date(briefData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
           <BriefRenderer text={brief} articles={briefArts}/>
         </div>
       )}
@@ -1775,7 +1783,7 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{fontSize:18}}>📰</span>
             <div>
-              <div style={{...mono,fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>GLOBAL NEWS BRIEFS · {allBriefArts.length} articles</div>
+              <div style={{...mono,fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>GLOBAL NEWS BRIEFS · {allBriefArts.length} articles{masterBriefData?.generatedAt ? ` · generated ${new Date(masterBriefData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Company News Intelligence</div>
             </div>
           </div>
@@ -1815,7 +1823,7 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
             <div key={group.market} style={{background:"#fff",border:`1px solid ${group.color}22`,borderRadius:10,padding:"14px 16px",borderTop:`3px solid ${group.color}`}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
                 <div>
-                  <div style={{...mono,fontSize:9,color:group.color,letterSpacing:"0.08em",fontWeight:600}}>{group.flag} {group.market.toUpperCase()} · {arts.length} articles</div>
+                  <div style={{...mono,fontSize:9,color:group.color,letterSpacing:"0.08em",fontWeight:600}}>{group.flag} {group.market.toUpperCase()} · {arts.length} articles{briefData?.generatedAt ? ` · generated ${new Date(briefData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
                   <div style={{...mono,fontSize:8,color:"#aaa",marginTop:2}}>{group.desc}</div>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -2222,7 +2230,7 @@ export default function App() {
                   <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                     <span style={{fontSize:20}}>⚡</span>
                     <div>
-                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>BREAKING · {breakingArts.length} stories · last {windowHours}h</div>
+                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>BREAKING · {breakingArts.length} stories · last {windowHours}h{briefs[briefKey]?.generatedAt ? ` · generated ${new Date(briefs[briefKey].generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
                       <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Breaking News Intelligence</div>
                     </div>
                     <div style={{display:"flex",gap:4,marginLeft:8}}>
@@ -2322,7 +2330,7 @@ export default function App() {
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <span style={{fontSize:20,color:sec.color}}>{sec.icon}</span>
                           <div>
-                            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:sec.color,letterSpacing:"0.1em",fontWeight:600}}>{sec.code} · {arts.length} stories</div>
+                            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:sec.color,letterSpacing:"0.1em",fontWeight:600}}>{sec.code} · {arts.length} stories{briefs[briefKey]?.generatedAt ? ` · generated ${new Date(briefs[briefKey].generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
                             <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>{sec.label}</div>
                           </div>
                         </div>
