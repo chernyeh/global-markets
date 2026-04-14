@@ -130,18 +130,19 @@ const SOURCES = [
   // ── United States ──────────────────────────────────────────────────────────
   {id:"reuters",tier:1,    country:"US",name:"Reuters Business",       lang:"en",flag:"🇺🇸",url:GN("site:reuters.com business finance")},
   {id:"marketwatch",tier:2,desc:"Dow Jones-owned; strong on US equities, earnings, and retail investor flow.",country:"US",name:"MarketWatch",            lang:"en",flag:"🇺🇸",url:GN("site:marketwatch.com markets stocks")},
-  {id:"wsj",tier:2,        country:"US",name:"WSJ Markets",            lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",paywall:true},
-  {id:"wsj2",tier:2,       country:"US",name:"WSJ Business",           lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/WSJcomUSBusiness",paywall:true},
-  {id:"wsj_heard",tier:2,  desc:"WSJ Heard on the Street — flagship stock analysis column; buy/sell calls, earnings analysis, company-specific deep dives. Highest-signal WSJ feed for equity investors.", country:"US",name:"WSJ Heard on the Street",lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSHEARDONTHESTREET",paywall:true},
-  {id:"wsj_mkt",tier:2,    desc:"WSJ Markets Features — longer-form WSJ market analysis, stock-specific features, and sector deep dives beyond daily news.",                                              country:"US",name:"WSJ Markets Features",   lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",paywall:true},
-  {id:"wsj_global_equities",tier:2,desc:"WSJ Global Equities Roundup: Market Talk — daily global equity market insights, regional trading activity, and stock-specific catalysts across major exchanges.",country:"US",name:"WSJ Global Equities Roundup",lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSGLOBALEQUITIESROUNDUP",paywall:true},
-  {id:"wsj_global_commodities",tier:2,desc:"WSJ Global Commodities Roundup: Market Talk — daily commodity price moves, supply/demand dynamics, and macroeconomic impacts on oil, metals, and agricultural markets.",country:"US",name:"WSJ Global Commodities Roundup",lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSGLOBALCOMMODITIESROUNDUP",paywall:true},
+  {id:"wsj",tier:2,        country:"US",name:"WSJ Markets",            lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",paywall:true,limit:15},
+  {id:"wsj2",tier:2,       country:"US",name:"WSJ Business",           lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/WSJcomUSBusiness",paywall:true,limit:15},
+  {id:"wsj_heard",tier:2,  desc:"WSJ Heard on the Street — flagship stock analysis column; buy/sell calls, earnings analysis, company-specific deep dives. Highest-signal WSJ feed for equity investors.", country:"US",name:"WSJ Heard on the Street",lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSHEARDONTHESTREET",paywall:true,limit:15},
+  {id:"wsj_mkt",tier:2,    desc:"WSJ Markets Features — longer-form WSJ market analysis, stock-specific features, and sector deep dives beyond daily news.",                                              country:"US",name:"WSJ Markets Features",   lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSMarketsMain",paywall:true,limit:15},
+  {id:"wsj_global_equities",tier:2,desc:"WSJ Global Equities Roundup: Market Talk — daily global equity market insights, regional trading activity, and stock-specific catalysts across major exchanges.",country:"US",name:"WSJ Global Equities Roundup",lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSGLOBALEQUITIESROUNDUP",paywall:true,limit:15},
+  {id:"wsj_global_commodities",tier:2,desc:"WSJ Global Commodities Roundup: Market Talk — daily commodity price moves, supply/demand dynamics, and macroeconomic impacts on oil, metals, and agricultural markets.",country:"US",name:"WSJ Global Commodities Roundup",lang:"en",flag:"🇺🇸",url:"https://feeds.content.dowjones.io/public/rss/RSSGLOBALCOMMODITIESROUNDUP",paywall:true,limit:15},
   {id:"bloomberg",tier:1,  country:"US",name:"Bloomberg Markets",      lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/markets/news.rss",paywall:true},
   {id:"bloomberg2",tier:1, country:"US",name:"Bloomberg Business",     lang:"en",flag:"🇺🇸",url:"https://feeds.bloomberg.com/business/news.rss",paywall:true},
-  {id:"ft",tier:2,         country:"US",name:"Financial Times",        lang:"en",flag:"🇺🇸",url:GN("site:ft.com markets economy business"),paywall:true},
-  {id:"nyt",tier:2,        country:"US",name:"NY Times Business",      lang:"en",flag:"🇺🇸",url:"https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",paywall:true},
+  {id:"ft",tier:2,         country:"US",name:"Financial Times",        lang:"en",flag:"🇺🇸",url:GN("site:ft.com markets economy business"),paywall:true,limit:15},
+  {id:"nyt",tier:2,        country:"US",name:"NY Times Business",      lang:"en",flag:"🇺🇸",url:"https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",paywall:true,limit:15},
   {id:"axios_biz",tier:2,  desc:"Axios — smart brevity format; fast, context-rich on tech, policy, and market-moving Washington news.",country:"US",name:"Axios Business",         lang:"en",flag:"🇺🇸",url:GN("site:axios.com business economy markets finance")},
-  {id:"wapo",tier:2,       desc:"Washington Post — authoritative on US politics, policy, and national security; essential for Washington-driven market moves.",country:"US",name:"Washington Post",        lang:"en",flag:"🇺🇸",url:GN("site:washingtonpost.com business economy policy"),paywall:true},
+  {id:"wapo",tier:2,       desc:"Washington Post — authoritative on US politics, policy, and national security; essential for Washington-driven market moves.",country:"US",name:"Washington Post",        lang:"en",flag:"🇺🇸",url:GN("site:washingtonpost.com business economy policy"),paywall:true,limit:15},
+  {id:"wapo_politics",tier:2,desc:"Washington Post Politics — WaPo's policy, trade, and regulatory coverage; essential for tariff, Fed, and executive-order market catalysts.",country:"US",name:"Washington Post Politics",lang:"en",flag:"🇺🇸",url:GN("site:washingtonpost.com politics trade tariff regulation federal-reserve national-security"),paywall:true,limit:15},
   {id:"barrons",tier:2,    desc:"Barron\'s — Dow Jones\'s premier investment weekly; stock-specific analysis, ratings, earnings previews, and buy/sell calls. Highly actionable for fundamental investors.",country:"US",name:"Barron\'s",              lang:"en",flag:"🇺🇸",url:GN("site:barrons.com stocks earnings analysis"),paywall:true},
   {id:"seekalpha",tier:3,  desc:"Seeking Alpha Earnings — earnings beats/misses, dividend announcements, and analyst rating changes. Filtered to high-signal corporate events only.",country:"US",name:"Seeking Alpha Earnings",  lang:"en",flag:"🇺🇸",url:GN("site:seekingalpha.com earnings beat miss dividend CEO acquires merger")},
   {id:"prnewswire",tier:3, desc:"PR Newswire — filtered to primary corporate events: earnings results, M&A, dividend changes, and CEO/CFO appointments only.",country:"US",name:"PR Newswire",            lang:"en",flag:"🇺🇸",url:GN("site:prnewswire.com quarterly results OR earnings per share OR acquires OR merger agreement OR dividend OR appoints CEO OR names CFO")},
@@ -179,8 +180,9 @@ const SOURCES = [
   {id:"sgx_annc",tier:3,      desc:"SGX company announcements — earnings, dividends, rights issues, M&A and corporate actions from SGX-listed companies. Most actionable micro feed for SGX investors.",country:"SG",name:"SGX Announcements",    lang:"en",flag:"🇸🇬",url:GN("SGX company earnings dividend rights issue acquisition Singapore announcement")},
   {id:"sg_biz_review",tier:3, desc:"Singapore Business Review — company-specific news on SGX listings, deal flow, and corporate actions.",                                      country:"SG",name:"SG Business Review",   lang:"en",flag:"🇸🇬",url:GN("site:sbr.com.sg")},
   // ── Hong Kong ──────────────────────────────────────────────────────────────
-  {id:"scmp",tier:2,desc:"Hong Kong\'s English paper of record; best English-language lens on China policy and HKEX.",       country:"HK",name:"South China Morning Post",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com business finance"),paywall:true},
-  {id:"scmp_markets",tier:2,desc:"SCMP Markets Today — daily column unpacking HK and China market moves, company results, and trading catalysts. Direct equivalent of BT Stocks Watch for HKEX.",country:"HK",name:"SCMP Markets Today",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com markets-today OR business-briefing"),paywall:true},
+  {id:"scmp",tier:2,desc:"Hong Kong\'s English paper of record; best English-language lens on China policy and HKEX.",       country:"HK",name:"South China Morning Post",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com business finance"),paywall:true,limit:15},
+  {id:"scmp_markets",tier:2,desc:"SCMP Markets Today — daily column unpacking HK and China market moves, company results, and trading catalysts. Direct equivalent of BT Stocks Watch for HKEX.",country:"HK",name:"SCMP Markets Today",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com markets-today OR business-briefing"),paywall:true,limit:15},
+  {id:"scmp_china",tier:2,desc:"SCMP China — South China Morning Post's China-focused coverage; trade, technology, regulatory crackdowns, and geopolitics from HK's leading English paper.",country:"HK",name:"SCMP China News",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com China economy trade technology policy"),paywall:true,limit:15},
   {id:"mingtiandi",tier:3,desc:"Specialist in China and Asia real estate; essential for REIT and property investors.", country:"HK",name:"Mingtiandi",             lang:"en",flag:"🇭🇰",url:GN("site:mingtiandi.com")},
   {id:"hket",tier:2,desc:"Hong Kong Economic Times — HK\'s top Chinese financial daily, auto-translated.",       country:"HK",name:"香港經濟日報 HKET",        lang:"zh",flag:"🇭🇰",url:GN("site:hket.com 財經","zh-HK","HK","HK:zh-Hant")},
   {id:"mingpao",tier:2,desc:"Ming Pao Finance — respected HK Chinese daily; strong on local markets and Mainland flows.",    country:"HK",name:"明報財經 Ming Pao",       lang:"zh",flag:"🇭🇰",url:GN("site:mingpao.com 財經","zh-HK","HK","HK:zh-Hant")},
@@ -206,16 +208,16 @@ const SOURCES = [
   {id:"reuters_tw",tier:1,desc:"Reuters Taiwan; essential for TSMC, semiconductors, and US-China tech trade.", country:"TW",name:"Reuters Taiwan",          lang:"en",flag:"🇹🇼",url:GN("site:reuters.com Taiwan economy business")},
   {id:"bloom_tw",tier:1,desc:"Bloomberg Taiwan; covers TWD, TAIEX, and chip sector in depth.",   country:"TW",name:"Bloomberg Taiwan",        lang:"en",flag:"🇹🇼",url:GN("site:bloomberg.com Taiwan markets economy"),paywall:true},
   // ── India ──────────────────────────────────────────────────────────────────
-  {id:"econ_times",tier:2,desc:"India's most-read financial daily; essential for NSE/BSE, RBI policy, and conglomerates.", country:"IN",name:"Economic Times",         lang:"en",flag:"🇮🇳",url:"https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",paywall:true},
-  {id:"biz_std",tier:2,desc:"Business Standard — analyst-favourite for macroeconomic depth and policy commentary.",    country:"IN",name:"Business Standard",      lang:"en",flag:"🇮🇳",url:"https://www.business-standard.com/rss/markets-106.rss",paywall:true},
-  {id:"mint",tier:2,desc:"Mint/Livemint — HT-owned; strong on startups, fintech, and technology investments.",       country:"IN",name:"Mint Markets",           lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/markets",paywall:true},
-  {id:"mint2",tier:2,desc:"Mint markets sub-feed; focused on Sensex, Nifty, and equity-specific news.",      country:"IN",name:"Mint Companies",         lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/companies",paywall:true},
-  {id:"mint3",tier:2,desc:"Mint companies sub-feed; earnings, M&A, and corporate strategy.",      country:"IN",name:"Mint Economy",            lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/economy",paywall:true},
-  {id:"hindubiz",tier:2,desc:"The Hindu BusinessLine — rigorous, less breathless than peers; good for agriculture and rural economy.",   country:"IN",name:"Hindu BusinessLine",     lang:"en",flag:"🇮🇳",url:"https://www.thehindubusinessline.com/?service=rss",paywall:true},
-  {id:"fin_exp",tier:2,desc:"Financial Express — Indian Express Group's financial arm; strong on banking and government schemes.",    country:"IN",name:"Financial Express",       lang:"en",flag:"🇮🇳",url:"https://www.financialexpress.com/feed/",paywall:true},
-  {id:"moneyctrl",tier:2,desc:"Moneycontrol — India's highest-traffic financial site; fastest on markets and breaking corporate news.",  country:"IN",name:"Moneycontrol Markets",   lang:"en",flag:"🇮🇳",url:"https://www.moneycontrol.com/rss/business.xml",paywall:true},
-  {id:"cnbctv18",tier:2,desc:"CNBC TV18 — real-time Indian market television wire; good for intraday flow and broker commentary.",   country:"IN",name:"CNBC-TV18 Markets",      lang:"en",flag:"🇮🇳",url:"https://www.cnbctv18.com/commonfeeds/v1/eng/rss/market.xml"},
-  {id:"forbes_in",tier:2,desc:"Forbes India — features-driven; valuable for billionaire moves, startup funding, and deals.",  country:"IN",name:"Forbes India",           lang:"en",flag:"🇮🇳",url:GN("site:forbesindia.com economy business markets"),paywall:true},
+  {id:"econ_times",tier:2,desc:"India's most-read financial daily; essential for NSE/BSE, RBI policy, and conglomerates.", country:"IN",name:"Economic Times",         lang:"en",flag:"🇮🇳",url:"https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",paywall:true,limit:5},
+  {id:"biz_std",tier:2,desc:"Business Standard — analyst-favourite for macroeconomic depth and policy commentary.",    country:"IN",name:"Business Standard",      lang:"en",flag:"🇮🇳",url:"https://www.business-standard.com/rss/markets-106.rss",paywall:true,limit:5},
+  {id:"mint",tier:2,desc:"Mint/Livemint — HT-owned; strong on startups, fintech, and technology investments.",       country:"IN",name:"Mint Markets",           lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/markets",paywall:true,limit:5},
+  {id:"mint2",tier:2,desc:"Mint markets sub-feed; focused on Sensex, Nifty, and equity-specific news.",      country:"IN",name:"Mint Companies",         lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/companies",paywall:true,limit:5},
+  {id:"mint3",tier:2,desc:"Mint companies sub-feed; earnings, M&A, and corporate strategy.",      country:"IN",name:"Mint Economy",            lang:"en",flag:"🇮🇳",url:"https://www.livemint.com/rss/economy",paywall:true,limit:5},
+  {id:"hindubiz",tier:2,desc:"The Hindu BusinessLine — rigorous, less breathless than peers; good for agriculture and rural economy.",   country:"IN",name:"Hindu BusinessLine",     lang:"en",flag:"🇮🇳",url:"https://www.thehindubusinessline.com/?service=rss",paywall:true,limit:5},
+  {id:"fin_exp",tier:2,desc:"Financial Express — Indian Express Group's financial arm; strong on banking and government schemes.",    country:"IN",name:"Financial Express",       lang:"en",flag:"🇮🇳",url:"https://www.financialexpress.com/feed/",paywall:true,limit:5},
+  {id:"moneyctrl",tier:2,desc:"Moneycontrol — India's highest-traffic financial site; fastest on markets and breaking corporate news.",  country:"IN",name:"Moneycontrol Markets",   lang:"en",flag:"🇮🇳",url:"https://www.moneycontrol.com/rss/business.xml",paywall:true,limit:5},
+  {id:"cnbctv18",tier:2,desc:"CNBC TV18 — real-time Indian market television wire; good for intraday flow and broker commentary.",   country:"IN",name:"CNBC-TV18 Markets",      lang:"en",flag:"🇮🇳",url:"https://www.cnbctv18.com/commonfeeds/v1/eng/rss/market.xml",limit:5},
+  {id:"forbes_in",tier:2,desc:"Forbes India — features-driven; valuable for billionaire moves, startup funding, and deals.",  country:"IN",name:"Forbes India",           lang:"en",flag:"🇮🇳",url:GN("site:forbesindia.com economy business markets"),paywall:true,limit:5},
   {id:"reuters_in",tier:1,desc:"Reuters India; authoritative on RBI, macro data, and large-cap corporates in English.", country:"IN",name:"Reuters India",           lang:"en",flag:"🇮🇳",url:GN("site:reuters.com India economy business markets")},
   {id:"bloom_in",tier:1,desc:"Bloomberg India; covers Sensex, rupee, and major conglomerates like Reliance and Adani.",   country:"IN",name:"Bloomberg India",         lang:"en",flag:"🇮🇳",url:GN("site:bloomberg.com India markets economy"),paywall:true},
   // ── Australia ──────────────────────────────────────────────────────────────
@@ -272,6 +274,8 @@ const SOURCES = [
   {id:"menafn_kw",tier:3,desc:"MENAFN Kuwait — press release wire covering KSE-listed companies and Kuwaiti government initiatives.",   country:"ME",name:"MENAFN Kuwait",           lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Kuwait"},
   {id:"menafn_bh",tier:3,desc:"MENAFN Bahrain — covers Bahrain Bourse and the island's financial services and fintech sector.",   country:"ME",name:"MENAFN Bahrain",          lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Bahrain"},
   {id:"menafn_om",tier:3,desc:"MENAFN Oman — covers MSM (Muscat Stock Exchange) and Omani energy and logistics projects.",   country:"ME",name:"MENAFN Oman",             lang:"en",flag:"🌍",url:"https://menafn.com/Rss/RssFeeds.aspx?section=Oman"},
+  {id:"aljazeera",tier:1,desc:"Al Jazeera English — Qatar's global news network; authoritative Middle East conflict reporting, Gulf policy, and geopolitical analysis with broad MENA reach.",country:"ME",name:"Al Jazeera English",lang:"en",flag:"🌍",url:"https://www.aljazeera.com/xml/rss/all.xml"},
+  {id:"aljazeera_biz",tier:1,desc:"Al Jazeera Business — AJ's dedicated business and economy coverage; strong on oil markets, Gulf sovereign funds, and MENA economic policy.",country:"ME",name:"Al Jazeera Business",lang:"en",flag:"🌍",url:GN("site:aljazeera.com economy business Middle East Gulf oil"),limit:15},
   {id:"reuters_me",tier:1,desc:"Reuters Gulf; covers oil prices, OPEC+ decisions, and major Gulf sovereign moves in English.",  country:"ME",name:"Reuters Gulf",            lang:"en",flag:"🌍",url:GN("site:reuters.com Saudi Arabia UAE Qatar Kuwait Oman Bahrain economy")},
   {id:"bloom_me",tier:1,desc:"Bloomberg Gulf; strong on Saudi Aramco, UAE banks, and Gulf currency pegs.",    country:"ME",name:"Bloomberg Gulf",          lang:"en",flag:"🌍",url:GN("site:bloomberg.com Saudi Arabia UAE Qatar Kuwait Gulf economy"),paywall:true},
   {id:"alarabiya_ar",tier:3,desc:"العربية — leading pan-Arab TV network's business feed, auto-translated; fast on Gulf market sentiment.",country:"ME",name:"العربية أعمال",           lang:"ar",flag:"🌍",url:GN("site:alarabiya.net اقتصاد أعمال","ar","SA","SA:ar")},
@@ -340,7 +344,7 @@ async function fetchFeed(source) {
     const xml = new DOMParser().parseFromString(text, "text/xml");
     const items = Array.from(xml.querySelectorAll("item"));
     if (!items.length) return [];
-    return items.slice(0,10).map(item => {
+    return items.slice(0, source.limit || 10).map(item => {
       const g = t => item.querySelector(t)?.textContent?.trim() || "";
       let title = g("title").replace(/<!\[CDATA\[|\]\]>/g,"").trim();
       title = title
@@ -620,7 +624,7 @@ Rules:
 - Each bullet must be 1-2 sentences with real detail and investor perspective
 - Name EVERY company mentioned in the headlines
 - End each bullet with [REF:N] citing the article number(s)
-- COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Then HK, Korea, Taiwan, India, Australia, Israel, Middle East, Iran. Then Singapore and Canada.
+- COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Within US coverage, prioritise WSJ, Washington Post, NY Times, and Financial Times — give these sources the most weight. Then HK, Korea, Taiwan, Australia, Israel, Middle East (including Al Jazeera), Iran. Then Singapore and Canada. Indian stories should be mentioned briefly unless they have clear global market impact.
 - COMPANY BALANCE: At least one full section dedicated to company-specific events. Name every company with ticker where known.
 - INDUSTRY TRENDS: When multiple companies in the same sector report similar themes, call out the sector-level pattern explicitly.
 - STRICT FACTUAL RULE: You may ONLY state facts that are EXPLICITLY present in the headline text. Do NOT infer, extrapolate, or add ANY figures, percentages, names, deal sizes, earnings amounts, or details that are not literally in the headline. Violation of this rule is unacceptable.
@@ -1611,18 +1615,18 @@ function WatchlistTab({allArticles, setAllArticles}) {
 // SOURCES TAB
 // ═══════════════════════════════════════════════════════════════════════════════
 const SOURCE_RANK = {
-  US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","wsj_heard","wsj_mkt","ft","wapo","nyt","barrons","marketwatch","axios_biz","semafor","politico","seekalpha","prnewswire"],
+  US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","ft","wapo","wapo_politics","nyt","barrons","marketwatch","axios_biz","semafor","politico","seekalpha","prnewswire"],
   DE: ["reuters_de","bloom_de","handelsblatt","handelsblatt_en","faz","faz_finance","spiegel_de","sz_de","dw_de"],
   CA: ["reuters_ca","bloom_ca","globe_mail","fin_post","bnn"],
   SG: ["reuters_sg","bloom_sg","bt_sg","bt_stocks_watch","edge_sg_stocks_watch","edge_sg_focus","sginvestors","edge_sg","cna_sg","sgx_annc","sg_biz_review"],
-  HK: ["reuters_hk","bloom_hk","scmp","scmp_markets","mingtiandi","hket","mingpao"],
+  HK: ["reuters_hk","bloom_hk","scmp","scmp_markets","scmp_china","mingtiandi","hket","mingpao"],
   KR: ["reuters_kr","bloom_kr","kr_herald","yonhap","yonhap2","ktimes","ked","hankyung","maeil","chosunbiz"],
   TW: ["reuters_tw","bloom_tw","focus_tw","taipei_t","digitimes","udn_money","ctee"],
   IN: ["reuters_in","bloom_in","econ_times","mint","mint2","mint3","biz_std","hindubiz","fin_exp","cnbctv18","moneyctrl","forbes_in"],
   AU: ["reuters_au","bloom_au","afr","afr_street_talk","market_herald","smh","abc_au","stockhead_top10","fnarena","stockhead_au","guardian_au","the_aus"],
   CN: ["reuters_cn","bloom_cn","xinhua","cgtn","chinadaily","caixin","caixin_briefs","kr36","globaltimes","yicai","peoples_d"],
   IL: ["globes_il","reuters_il","bloom_il","jpost_il","toi_il","haaretz_il","ctech_il","calcalist"],
-  ME: ["arabnews","arabnews_biz","national_ae","gulfnews","arabianbiz","reuters_me","bloom_me","agbi","tradearabia","alarabiya","zawya","gulfbiz","gulftimes","khaleej","saudigazette","menafn_sa","menafn_uae","menafn_qa","menafn_kw","menafn_bh","menafn_om","alarabiya_ar"],
+  ME: ["aljazeera","aljazeera_biz","reuters_me","bloom_me","arabnews","arabnews_biz","national_ae","gulfnews","arabianbiz","agbi","tradearabia","alarabiya","zawya","gulfbiz","gulftimes","khaleej","saudigazette","menafn_sa","menafn_uae","menafn_qa","menafn_kw","menafn_bh","menafn_om","alarabiya_ar"],
   IR: ["iranintl","reuters_ir","bloom_ir","tehrantimes","fin_trib","irna_en","tasnim","ifpnews","mehrnews","entekhab","tabnak"],
   JP: ["nikkei_asia","nikkei_biz_spotlight"],
 };
