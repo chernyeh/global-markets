@@ -925,7 +925,125 @@ function findLinksForBullet(bulletText, articles) {
     .filter(x=>x.score>=2).sort((a,b)=>b.score-a.score).slice(0,3).map(x=>x.art);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// STOCK QUOTE HELPERS — Yahoo Finance links + 1-day price performance
+// ═══════════════════════════════════════════════════════════════════════════════
+const QUOTE_CACHE = {};
+const QUOTE_TTL = 5 * 60 * 1000;
+
+const SKIP_TICKERS = new Set([
+  "REF","US","EU","UK","HK","JP","CN","KR","TW","IN","AU","DE","SG","CA","IL","IR","ME",
+  "USD","EUR","GBP","JPY","CNY","SGD","HKD","AUD","CAD","KRW","TWD","INR","SAR","AED",
+  "GDP","CEO","CFO","CTO","IPO","ETF","ESG","AI","API","EPS","QOQ","YOY","MOM","PE",
+  "FED","ECB","IMF","BOJ","RBI","MAS","PBOC","BOK","RBA","BOC","SNB","BOE",
+  "NYSE","NASDAQ","HKEX","SGX","TSE","KSE","ASX","BSE","NSE","LSE",
+  "OPEC","NATO","UN","WTO","BIS","SWIFT","G7","G20","ASEAN","GCC",
+]);
+
+function extractTickers(text) {
+  const re = /\(([A-Z0-9][A-Z0-9.-]{1,8})\)/g;
+  const found = new Set();
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const t = m[1];
+    if (!SKIP_TICKERS.has(t)) found.add(t);
+  }
+  return [...found];
+}
+
+async function fetchQuotes(tickers) {
+  if (!tickers.length) return {};
+  const now = Date.now();
+  const needFetch = tickers.filter(t => !QUOTE_CACHE[t] || now - QUOTE_CACHE[t].ts > QUOTE_TTL);
+  const fromCache = Object.fromEntries(
+    tickers
+      .filter(t => QUOTE_CACHE[t] && now - QUOTE_CACHE[t].ts <= QUOTE_TTL)
+      .map(t => [t, QUOTE_CACHE[t].data])
+  );
+  if (!needFetch.length) return fromCache;
+  try {
+    const r = await fetch(`/api/quote?symbols=${encodeURIComponent(needFetch.join(","))}`);
+    if (!r.ok) return fromCache;
+    const data = await r.json();
+    const results = data?.quoteResponse?.result ?? [];
+    const fresh = {};
+    for (const q of results) {
+      const pct = q.regularMarketChangePercent;
+      fresh[q.symbol] = { pct: typeof pct === "number" ? pct : null };
+      QUOTE_CACHE[q.symbol] = { data: fresh[q.symbol], ts: now };
+    }
+    // Mark tickers Yahoo didn't recognise so we don't retry until TTL
+    for (const t of needFetch) {
+      if (!(t in fresh)) {
+        fresh[t] = null;
+        QUOTE_CACHE[t] = { data: null, ts: now };
+      }
+    }
+    return { ...fromCache, ...fresh };
+  } catch {
+    return fromCache;
+  }
+}
+
+// Wraps "Company Name (TICKER)" occurrences with a Yahoo Finance link + price badge
+function renderTickers(text, quotes, baseKey = "") {
+  if (!text || quotes === null) return text;
+  // Company name: title-case words (each word starts with capital); ticker: 2–9 uppercase/numeric chars
+  const re = /([A-Z][A-Za-z0-9.,&'-]{0,}(?:\s+[A-Z][A-Za-z0-9.,&'-]*){0,4})\s+\(([A-Z0-9][A-Z0-9.-]{1,8})\)/g;
+  const nodes = [];
+  let last = 0, m;
+  while ((m = re.exec(text)) !== null) {
+    const [full, company, ticker] = m;
+    if (SKIP_TICKERS.has(ticker)) continue;
+    const quote = quotes[ticker];
+    if (quote === undefined) continue; // not in Yahoo Finance response
+    const pct = quote?.pct;
+    const yahooUrl = `https://finance.yahoo.com/quote/${ticker}/`;
+    if (m.index > last) nodes.push(text.slice(last, m.index));
+    nodes.push(
+      <span key={`${baseKey}-${m.index}`} style={{whiteSpace:"nowrap"}}>
+        <a href={yahooUrl} target="_blank" rel="noopener noreferrer"
+          style={{color:"inherit",textDecoration:"underline",textDecorationColor:"#b0b0b0",textUnderlineOffset:"2px"}}>
+          {company}
+        </a>
+        {" "}
+        <span style={{
+          color: pct == null ? "#999" : pct >= 0 ? "#2e7d32" : "#c0392b",
+          fontWeight: 700,
+          fontSize: "0.85em",
+        }}>
+          ({pct == null ? ticker : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`})
+        </span>
+      </span>
+    );
+    last = m.index + full.length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes.length ? nodes : text;
+}
+
+// Handles **bold** markers AND ticker links in inline text
+function renderInline(text, quotes, baseKey = "") {
+  if (!text || quotes === null) return text;
+  const parts = text.split(/(\*\*[^*]+\*\*)/);
+  if (parts.length === 1) return renderTickers(text, quotes, baseKey);
+  return parts.flatMap((part, pi) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return [<strong key={`${baseKey}-b${pi}`} style={{color:"#1a1a1a"}}>{renderTickers(part.slice(2,-2), quotes, `${baseKey}-b${pi}`)}</strong>];
+    }
+    return renderTickers(part, quotes, `${baseKey}-p${pi}`);
+  });
+}
+
 function BriefRenderer({text, articles=[]}) {
+  const [quotes, setQuotes] = useState(null);
+  useEffect(() => {
+    if (!text) return;
+    const tickers = extractTickers(text);
+    if (!tickers.length) { setQuotes({}); return; }
+    fetchQuotes(tickers).then(setQuotes);
+  }, [text]);
+
   if (!text) return null;
   const rawLines = text.split("\n");
   const lines = [];
@@ -977,8 +1095,8 @@ function BriefRenderer({text, articles=[]}) {
               <span style={{color:"#c0392b",fontWeight:700,marginTop:2,flexShrink:0,fontSize:16}}>•</span>
               <span style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:14,color:"#1a1a1a",lineHeight:1.7}}>
                 {boldMatch
-                  ? <><strong style={{color:"#1a1a1a"}}>{boldMatch[1]}</strong>{boldMatch[2]?": "+boldMatch[2]:""}</>
-                  : cleanTxt}
+                  ? <><strong style={{color:"#1a1a1a"}}>{renderTickers(boldMatch[1], quotes, `${i}-b`)}</strong>{boldMatch[2] ? <>{": "}{renderInline(boldMatch[2], quotes, `${i}-r`)}</> : ""}</>
+                  : renderInline(cleanTxt, quotes, `${i}-t`)}
                 {links.map((a,li) => {
                   const src = SOURCES.find(s=>s.id===a.sourceId);
                   const isPaywall = src?.paywall;
@@ -1013,8 +1131,8 @@ function BriefRenderer({text, articles=[]}) {
             color:"#1a1a1a",lineHeight:1.7,margin:"10px 0",
             background:"#f0ece4",padding:"14px 18px",borderRadius:4}}>
             {mergedMatch
-              ? <><strong>{mergedMatch[1].replace(/\[REF:[\d,\s]+\]/g,"").trim()}</strong>{": "}{mergedMatch[2].replace(/\[REF:[\d,\s]+\]/g,"").trim()}</>
-              : cleanPara.replace(/\*\*([^*]+)\*\*/g, (_, t) => t)
+              ? <><strong>{renderTickers(mergedMatch[1].replace(/\[REF:[\d,\s]+\]/g,"").trim(), quotes, `${i}-mb`)}</strong>{": "}{renderInline(mergedMatch[2].replace(/\[REF:[\d,\s]+\]/g,"").trim(), quotes, `${i}-mr`)}</>
+              : renderInline(cleanPara, quotes, `${i}-p`)
             }
           </p>
         );
