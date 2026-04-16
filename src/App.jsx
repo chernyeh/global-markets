@@ -83,6 +83,41 @@ const WEAKNESS_CONTEXT_PATTERNS = /after (disappointing|poor|weak|dismal|miss|pr
 // ═══════════════════════════════════════════════════════════════════════════════
 const NEWS_BRIEF_GROUPS = [
   {
+    market: "Broker Calls & Analyst Actions",
+    flag: "🎯",
+    color: "#7b1fa2",
+    sources: ["benzinga_upgrades","benzinga_downgrades","benzinga_initiation","benzinga_pt","sa_wsb","sa_currents","investing_ratings","openinsider"],
+    desc: "Benzinga Upgrades · Benzinga Downgrades · Benzinga Initiations · Benzinga Price Targets · SA Wall St Breakfast · SA Market Currents · Investing.com Ratings · OpenInsider Buys",
+  },
+  {
+    market: "Ideas & Commentary",
+    flag: "💡",
+    color: "#1565c0",
+    sources: ["ft_alphaville","wsj_heard","wsj_mkt","barrons","semafor","benzinga_ideas","seekalpha"],
+    desc: "FT Alphaville · WSJ Heard on the Street · WSJ Markets Features · Barron's · Semafor · Benzinga Trade Ideas · Seeking Alpha",
+  },
+  {
+    market: "United States",
+    flag: "🇺🇸",
+    color: "#b84a00",
+    sources: ["wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","seekalpha","wsj","barrons","marketwatch","axios_biz"],
+    desc: "WSJ Heard on the Street · WSJ Markets Features · WSJ Global Equities Roundup · WSJ Global Commodities Roundup · Seeking Alpha Earnings · Barron's · MarketWatch · Axios",
+  },
+  {
+    market: "Canada",
+    flag: "🇨🇦",
+    color: "#c0392b",
+    sources: ["globe_itm","stockchase","bnn","fin_post","globe_mail"],
+    desc: "Globe Inside the Market · Stockchase Top Picks · BNN Bloomberg · Financial Post · Globe and Mail",
+  },
+  {
+    market: "United Kingdom",
+    flag: "🇬🇧",
+    color: "#1a237e",
+    sources: ["investors_chron","cityam","telegraph_biz","thisismoney"],
+    desc: "Investors Chronicle · City A.M. · Telegraph Business · This is Money",
+  },
+  {
     market: "Singapore",
     flag: "🇸🇬",
     color: "#c0392b",
@@ -109,13 +144,6 @@ const NEWS_BRIEF_GROUPS = [
     color: "#6a1b9a",
     sources: ["nikkei_biz_spotlight","nikkei_asia"],
     desc: "Nikkei Biz Spotlight · Nikkei Asia",
-  },
-  {
-    market: "United States",
-    flag: "🇺🇸",
-    color: "#b84a00",
-    sources: ["wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","seekalpha","wsj","barrons","marketwatch","axios_biz"],
-    desc: "WSJ Heard on the Street · WSJ Markets Features · WSJ Global Equities Roundup · WSJ Global Commodities Roundup · Seeking Alpha Earnings · Barron's · MarketWatch · Axios",
   },
 ];
 
@@ -148,6 +176,17 @@ const SOURCES = [
   {id:"prnewswire",tier:3, desc:"PR Newswire — filtered to primary corporate events: earnings results, M&A, dividend changes, and CEO/CFO appointments only.",country:"US",name:"PR Newswire",            lang:"en",flag:"🇺🇸",url:GN("site:prnewswire.com quarterly results OR earnings per share OR acquires OR merger agreement OR dividend OR appoints CEO OR names CFO")},
   {id:"semafor",tier:2,    desc:"Semafor Business — sharp, independently sourced business and finance journalism; well-connected on Wall Street, Washington policy, and global capital flows.",country:"US",name:"Semafor Business",       lang:"en",flag:"🇺🇸",url:GN("site:semafor.com business finance economy markets")},
   {id:"politico",tier:2,   desc:"Politico Economy — authoritative on US fiscal policy, Fed regulation, trade, and Washington\'s influence on markets. Essential for policy-driven investment themes.",country:"US",name:"Politico Economy",       lang:"en",flag:"🇺🇸",url:GN("site:politico.com economy finance tax trade regulation")},
+  // ── Analyst Actions & Investment Ideas (US) ───────────────────────────────
+  {id:"benzinga_upgrades",tier:2,desc:"Benzinga Analyst Upgrades — real-time feed of Wall Street analyst upgrades with price target changes. One of the best open RSS sources for actionable broker calls on US-listed stocks.",country:"US",name:"Benzinga Upgrades",lang:"en",flag:"🇺🇸",url:"https://www.benzinga.com/analyst-ratings/upgrades/feed",limit:15},
+  {id:"benzinga_downgrades",tier:2,desc:"Benzinga Analyst Downgrades — real-time feed of Wall Street analyst downgrades with price target changes. Essential for tracking deteriorating broker sentiment on US stocks.",country:"US",name:"Benzinga Downgrades",lang:"en",flag:"🇺🇸",url:"https://www.benzinga.com/analyst-ratings/downgrades/feed",limit:15},
+  {id:"benzinga_pt",tier:2,desc:"Benzinga Price Target Changes — analyst price target revisions without rating change; captures subtle conviction shifts before full upgrades/downgrades.",country:"US",name:"Benzinga Price Targets",lang:"en",flag:"🇺🇸",url:"https://www.benzinga.com/analyst-ratings/price-target/feed",limit:15},
+  {id:"benzinga_initiation",tier:2,desc:"Benzinga New Initiations — fresh analyst coverage initiations; high-signal for stocks entering institutional research coverage or post-IPO initiation cycles.",country:"US",name:"Benzinga Initiations",lang:"en",flag:"🇺🇸",url:"https://www.benzinga.com/analyst-ratings/initiation/feed",limit:15},
+  {id:"benzinga_ideas",tier:3,desc:"Benzinga Trading Ideas — long and short investment thesis articles from Benzinga analysts; structured trade ideas with entry, target, and rationale.",country:"US",name:"Benzinga Trade Ideas",lang:"en",flag:"🇺🇸",url:"https://www.benzinga.com/trading-ideas/feed",limit:10},
+  {id:"sa_wsb",tier:2,desc:"Seeking Alpha Wall Street Breakfast — SA's definitive daily pre-market briefing; covers overnight analyst rating changes, earnings surprises, and macro movers in concise bullets.",country:"US",name:"SA Wall St Breakfast",lang:"en",flag:"🇺🇸",url:"https://seekingalpha.com/tag/wall-st-breakfast.xml",limit:10},
+  {id:"sa_currents",tier:2,desc:"Seeking Alpha Market Currents — real-time news items on analyst actions, dividend changes, corporate events, and market-moving corporate announcements.",country:"US",name:"SA Market Currents",lang:"en",flag:"🇺🇸",url:"https://seekingalpha.com/market_currents.xml",limit:15},
+  {id:"ft_alphaville",tier:2,desc:"FT Alphaville — Financial Times's irreverent markets blog; incisive short-form investment commentary, credit market analysis, and contrarian trade ideas from seasoned journalists.",country:"US",name:"FT Alphaville",lang:"en",flag:"🇺🇸",url:"https://ftav.substack.com/feed",limit:10},
+  {id:"investing_ratings",tier:2,desc:"Investing.com Analyst Ratings — aggregated analyst rating changes and price target updates across global equities; broad coverage of US, European, and Asian broker actions.",country:"US",name:"Investing.com Ratings",lang:"en",flag:"🇺🇸",url:"https://www.investing.com/rss/news_1061.rss",limit:15},
+  {id:"openinsider",tier:2,desc:"OpenInsider — SEC Form 4 insider purchases; insider buying is one of the highest-conviction investment signals. Filters to purchase transactions only, excluding options exercises.",country:"US",name:"OpenInsider Buys",lang:"en",flag:"🇺🇸",url:"https://openinsider.com/rss"},
   // ── Germany ────────────────────────────────────────────────────────────────
   {id:"handelsblatt",tier:2,  desc:"Handelsblatt — Germany\'s leading financial daily; required reading for DAX, German industry and European monetary policy.",               country:"DE",name:"Handelsblatt",        lang:"de",flag:"🇩🇪",url:"https://www.handelsblatt.com/contentexport/feed/schlagzeilen",paywall:true},
   {id:"handelsblatt_en",tier:2,desc:"Handelsblatt English — curated English-language coverage of German business and European economic news.",                                 country:"DE",name:"Handelsblatt (EN)",    lang:"en",flag:"🇩🇪",url:GN("site:handelsblatt.com english economy business"),paywall:true},
@@ -160,6 +199,8 @@ const SOURCES = [
   {id:"bloom_de",tier:1,      desc:"Bloomberg Germany — markets and corporate coverage with a Germany/DACH focus.",                                                           country:"DE",name:"Bloomberg Germany",    lang:"en",flag:"🇩🇪",url:GN("site:bloomberg.com Germany economy business"),paywall:true},
   // ── Canada ─────────────────────────────────────────────────────────────────
   {id:"globe_mail",tier:2,desc:"Canada\'s newspaper of record; best source for Bay Street and TSX corporate news.", country:"CA",name:"Globe and Mail",         lang:"en",flag:"🇨🇦",url:GN("site:theglobeandmail.com business economy markets"),paywall:true},
+  {id:"globe_itm",tier:2,desc:"Globe and Mail Inside the Market — G&M's daily analyst upgrades/downgrades column and stock-move writeups; the essential broker-call digest for TSX and Canadian-listed stocks.",country:"CA",name:"Globe Inside the Market",lang:"en",flag:"🇨🇦",url:GN("site:theglobeandmail.com \"inside the market\" OR \"analyst upgrades\" OR \"analyst downgrades\"","en-CA","CA","CA:en"),paywall:true,limit:15},
+  {id:"stockchase",tier:2,desc:"Stockchase — tracks every stock pick and pan from BNN Market Call guests in RSS form; the most reliable Canadian broker call feed covering TSX and US-listed names.",country:"CA",name:"Stockchase Top Picks",lang:"en",flag:"🇨🇦",url:"https://stockchase.com/rss/toppicks",limit:15},
   {id:"fin_post",tier:2,desc:"Canada\'s leading dedicated financial daily; covers TSX, commodities, and energy.",   country:"CA",name:"Financial Post",         lang:"en",flag:"🇨🇦",url:GN("site:financialpost.com"),paywall:true},
   {id:"bnn",tier:2,desc:"BNN Bloomberg\'s Canadian TV wire; fast-moving market updates and Bay Street commentary.",        country:"CA",name:"BNN Bloomberg Canada",   lang:"en",flag:"🇨🇦",url:GN("site:bnnbloomberg.ca")},
   {id:"reuters_ca",tier:1,desc:"Reuters\' Canada-focused feed; strong on energy, mining, and macro.", country:"CA",name:"Reuters Canada",         lang:"en",flag:"🇨🇦",url:GN("site:reuters.com Canada economy business")},
@@ -293,6 +334,8 @@ const SOURCES = [
   {id:"bloom_ir",tier:1,desc:"Bloomberg Iran; covers oil output, rial, and impact of sanctions and conflict on Iranian markets.",    country:"IR",name:"Bloomberg Iran",         lang:"en",flag:"🇮🇷",url:GN("site:bloomberg.com Iran economy nuclear sanctions"),paywall:true},
   // ── United Kingdom ─────────────────────────────────────────────────────────
   {id:"cityam",tier:2,desc:"City A.M. — London's dedicated free financial daily; fastest on FTSE movers, City M&A, and UK corporate news. Essential for LSE and London financial market coverage.",country:"GB",name:"City A.M.",lang:"en",flag:"🇬🇧",url:"https://www.cityam.com/feed/"},
+  {id:"investors_chron",tier:2,desc:"Investors Chronicle — the UK's premier investment magazine (FT Group); publishes explicit buy/sell/hold recommendations with valuations on FTSE and AIM stocks. Essential for UK equity ideas.",country:"GB",name:"Investors Chronicle",lang:"en",flag:"🇬🇧",url:GN("site:investorschronicle.co.uk buy sell hold recommendation"),paywall:true,limit:15},
+  {id:"thisismoney",tier:3,desc:"This is Money — Daily Mail's investing section; covers FTSE movers, broker notes, and retail investor-friendly stock analysis with wide UK reach.",country:"GB",name:"This is Money",lang:"en",flag:"🇬🇧",url:"https://www.thisismoney.co.uk/money/investing/index.rss"},
   {id:"telegraph_biz",tier:2,desc:"The Telegraph Business — strong on UK corporate strategy, energy majors, and government economic policy; authoritative conservative broadsheet.",country:"GB",name:"Telegraph Business",lang:"en",flag:"🇬🇧",url:GN("site:telegraph.co.uk business economy finance"),paywall:true},
   {id:"reuters_uk",tier:1,desc:"Reuters UK — wire coverage of FTSE 100, Bank of England decisions, and British corporate and macro news.",country:"GB",name:"Reuters UK",lang:"en",flag:"🇬🇧",url:GN("site:reuters.com UK Britain economy business FTSE")},
   {id:"bloom_uk",tier:1,desc:"Bloomberg UK — authoritative on sterling, gilts, BoE policy, and major UK-listed corporates.",country:"GB",name:"Bloomberg UK",lang:"en",flag:"🇬🇧",url:GN("site:bloomberg.com UK Britain economy markets"),paywall:true},
@@ -1762,14 +1805,14 @@ function WatchlistTab({allArticles, setAllArticles}) {
 // SOURCES TAB
 // ═══════════════════════════════════════════════════════════════════════════════
 const SOURCE_RANK = {
-  US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","ft","wapo","wapo_politics","nyt","barrons","marketwatch","axios_biz","semafor","politico","seekalpha","prnewswire"],
-  GB: ["reuters_uk","bloom_uk","cityam","telegraph_biz"],
+  US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","ft","wapo","wapo_politics","nyt","barrons","marketwatch","axios_biz","semafor","politico","benzinga_upgrades","benzinga_downgrades","benzinga_pt","benzinga_initiation","sa_wsb","sa_currents","ft_alphaville","investing_ratings","openinsider","benzinga_ideas","seekalpha","prnewswire"],
+  GB: ["reuters_uk","bloom_uk","cityam","investors_chron","telegraph_biz","thisismoney"],
   DE: ["reuters_de","bloom_de","handelsblatt","handelsblatt_en","faz","faz_finance","spiegel_de","sz_de","dw_de"],
   FR: ["reuters_fr","bloom_fr","lesechos","lesechos_en"],
   IT: ["reuters_it","bloom_it","sole24ore"],
   CH: ["reuters_ch","bloom_ch","nzz","nzz_en"],
   EU: ["reuters_eu","bloom_eu","politico_eu","euractiv"],
-  CA: ["reuters_ca","bloom_ca","globe_mail","fin_post","bnn"],
+  CA: ["reuters_ca","bloom_ca","globe_mail","globe_itm","stockchase","fin_post","bnn"],
   SG: ["reuters_sg","bloom_sg","bt_sg","bt_stocks_watch","edge_sg_stocks_watch","edge_sg_focus","sginvestors","edge_sg","cna_sg","sgx_annc","sg_biz_review"],
   HK: ["reuters_hk","bloom_hk","scmp","scmp_markets","scmp_china","mingtiandi","hket","mingpao"],
   KR: ["reuters_kr","bloom_kr","kr_herald","yonhap","yonhap2","ktimes","ked","hankyung","maeil","chosunbiz"],
