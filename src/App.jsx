@@ -884,7 +884,7 @@ function ArticleCard({art, highlightKeyword=null}) {
         )}
       </div>
       <a href={art.link} target="_blank" rel="noopener noreferrer"
-        style={{color:"#1a1a1a",fontFamily:"'Playfair Display',Georgia,serif",
+        style={{color:"#1a1a1a",fontFamily:"'Spectral',Georgia,serif",
           fontSize:14,lineHeight:1.5,fontWeight:600,textDecoration:"none",
           display:"block",marginBottom:4,transition:"color 0.15s"}}
         onMouseOver={e=>e.target.style.color="#c0392b"}
@@ -900,7 +900,7 @@ function ArticleCard({art, highlightKeyword=null}) {
       {art.insight&&(
         <div style={{fontSize:12,color:"#666",lineHeight:1.65,
           borderLeft:"2px solid #c9a84c33",paddingLeft:9,
-          fontStyle:"italic",fontFamily:"'DM Sans',sans-serif"}}>
+          fontStyle:"italic",fontFamily:"'Spectral',Georgia,serif"}}>
           {art.insight}
         </div>
       )}
@@ -1069,7 +1069,7 @@ function BriefRenderer({text, articles=[]}) {
         if (!trimmed) return <div key={i} style={{height:6}}/>;
         if (trimmed.startsWith("## ")) {
           return (
-            <div key={i} style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:13,
+            <div key={i} style={{fontFamily:"'Spectral',Georgia,serif",fontSize:13,
               fontWeight:700,color:"#8B4513",margin:"22px 0 10px",
               textTransform:"uppercase",letterSpacing:"0.1em",
               borderBottom:"2px solid #e0d8cc",paddingBottom:6}}>
@@ -1079,7 +1079,7 @@ function BriefRenderer({text, articles=[]}) {
         }
         if (trimmed.startsWith("# ")) {
           return (
-            <div key={i} style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,
+            <div key={i} style={{fontFamily:"'Spectral',Georgia,serif",fontSize:16,
               fontWeight:700,color:"#1a1a1a",margin:"4px 0 14px",lineHeight:1.3}}>
               {trimmed.replace(/^# /,"")}
             </div>
@@ -1093,7 +1093,7 @@ function BriefRenderer({text, articles=[]}) {
           return (
             <div key={i} style={{display:"flex",gap:8,margin:"8px 0",paddingLeft:8,alignItems:"flex-start"}}>
               <span style={{color:"#c0392b",fontWeight:700,marginTop:2,flexShrink:0,fontSize:16}}>•</span>
-              <span style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:14,color:"#1a1a1a",lineHeight:1.7}}>
+              <span style={{fontFamily:"'Spectral',Georgia,serif",fontSize:14,color:"#1a1a1a",lineHeight:1.7}}>
                 {boldMatch
                   ? <><strong style={{color:"#1a1a1a"}}>{renderTickers(boldMatch[1], quotes, `${i}-b`)}</strong>{boldMatch[2] ? <>{": "}{renderInline(boldMatch[2], quotes, `${i}-r`)}</> : ""}</>
                   : renderInline(cleanTxt, quotes, `${i}-t`)}
@@ -1127,7 +1127,7 @@ function BriefRenderer({text, articles=[]}) {
         // Strip [REF:N] citation markers from plain paragraphs (exec summary, risk sections)
         const cleanPara = trimmed.replace(/\[REF:[\d,\s]+\]/g, "").trim();
         return (
-          <p key={i} style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:14,
+          <p key={i} style={{fontFamily:"'Spectral',Georgia,serif",fontSize:14,
             color:"#1a1a1a",lineHeight:1.7,margin:"10px 0",
             background:"#f0ece4",padding:"14px 18px",borderRadius:4}}>
             {mergedMatch
@@ -1169,7 +1169,7 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
             <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.12em"}}>
               AI INVESTMENT BRIEF · {articles.length} articles analysed{generatedAt ? ` · generated ${formatTime(generatedAt)}` : ""}
             </div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#1a1a1a",fontWeight:700}}>
+            <div style={{fontFamily:"'Spectral',serif",fontSize:15,color:"#1a1a1a",fontWeight:700}}>
               {label}
             </div>
           </div>
@@ -1445,7 +1445,7 @@ function FilingsTab() {
         </div>
       );
       if (trimmed.startsWith("## ")) return (
-        <div key={i} style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,
+        <div key={i} style={{fontFamily:"'Spectral',serif",fontSize:15,fontWeight:700,
           color:"#1a1a1a",marginTop:i===0?0:20,marginBottom:7}}>
           {trimmed.replace("## ","")}
         </div>
@@ -1625,14 +1625,14 @@ function WatchlistTab({allArticles, setAllArticles}) {
     <div style={{animation:"fadeIn 0.3s ease"}}>
       <div style={{background:"#fff",borderLeft:"3px solid #c0392b",border:"1px solid #e0e0e0",borderRadius:10,padding:"20px 24px",marginBottom:20}}>
         <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.12em",marginBottom:4}}>WATCHLIST TRACKER</div>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#1a1a1a",fontWeight:600,marginBottom:14}}>Intelligent Keyword Monitoring</div>
-        <p style={{fontSize:12,color:"#4a6a8a",fontFamily:"'DM Sans',sans-serif",lineHeight:1.7,margin:"0 0 16px"}}>
+        <div style={{fontFamily:"'Spectral',serif",fontSize:15,color:"#1a1a1a",fontWeight:600,marginBottom:14}}>Intelligent Keyword Monitoring</div>
+        <p style={{fontSize:12,color:"#4a6a8a",fontFamily:"'Spectral',Georgia,serif",lineHeight:1.7,margin:"0 0 16px"}}>
           Add companies, people, sectors, or themes to track. Claude will flag both direct mentions and related stories — competitors, suppliers, regulators, macro factors — giving you a complete picture around each subject.
         </p>
         <div style={{display:"flex",gap:8,marginBottom:16}}>
           <input value={inputVal} onChange={e=>setInputVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addKeyword()}
             placeholder="e.g. Samsung, Fed rate cut, TSMC, Reliance Industries…"
-            style={{flex:1,background:"#fff",border:"1px solid #ddd",borderRadius:6,padding:"9px 14px",color:"#1a1a1a",fontFamily:"'DM Sans',sans-serif",fontSize:13,outline:"none"}}/>
+            style={{flex:1,background:"#fff",border:"1px solid #ddd",borderRadius:6,padding:"9px 14px",color:"#1a1a1a",fontFamily:"'Spectral',Georgia,serif",fontSize:13,outline:"none"}}/>
           <button onClick={addKeyword}
             style={{padding:"9px 18px",background:"#c0392b11",border:"1px solid #c0392b66",color:"#c0392b",borderRadius:6,cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:11,transition:"all 0.15s"}}
             onMouseOver={e=>e.currentTarget.style.background="#fdecea"}
@@ -1682,7 +1682,7 @@ function WatchlistTab({allArticles, setAllArticles}) {
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:kwBriefs[activeKw]?12:0}}>
               <div>
                 <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.12em"}}>INTELLIGENCE BRIEF · {kwArticles.length} relevant articles</div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#1a1a1a",fontWeight:600}}>"{activeKw}" — Full Picture</div>
+                <div style={{fontFamily:"'Spectral',serif",fontSize:15,color:"#1a1a1a",fontWeight:600}}>"{activeKw}" — Full Picture</div>
               </div>
               <button onClick={async()=>{
                   setKwBriefLoad(p=>({...p,[activeKw]:true}));
@@ -1777,7 +1777,7 @@ function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
         <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888",letterSpacing:"0.08em",whiteSpace:"nowrap"}}>COUNTRY</span>
         <div style={{position:"relative"}}>
           <select value={selectedCountry} onChange={e=>{setSelectedCountry(e.target.value);setSelectedSource("ALL");}}
-            style={{appearance:"none",background:"#fff",border:"1px solid #c0392b",borderRadius:6,padding:"7px 32px 7px 12px",fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",cursor:"pointer",outline:"none",minWidth:180}}>
+            style={{appearance:"none",background:"#fff",border:"1px solid #c0392b",borderRadius:6,padding:"7px 32px 7px 12px",fontFamily:"'Spectral',serif",fontSize:14,color:"#1a1a1a",cursor:"pointer",outline:"none",minWidth:180}}>
             {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>(<option key={c.code} value={c.code}>{c.flag} {c.label}</option>))}
           </select>
           <span style={{position:"absolute",right:9,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",color:"#c0392b",fontSize:10}}>▼</span>
@@ -1796,7 +1796,7 @@ function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
         <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888",letterSpacing:"0.08em",whiteSpace:"nowrap",marginLeft:8}}>SOURCE</span>
         <div style={{position:"relative"}}>
           <select value={selectedSource} onChange={e=>setSelectedSource(e.target.value)}
-            style={{appearance:"none",background:"#fff",border:"1px solid #bbb",borderRadius:6,padding:"7px 32px 7px 12px",fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",cursor:"pointer",outline:"none",minWidth:200}}>
+            style={{appearance:"none",background:"#fff",border:"1px solid #bbb",borderRadius:6,padding:"7px 32px 7px 12px",fontFamily:"'Spectral',serif",fontSize:14,color:"#1a1a1a",cursor:"pointer",outline:"none",minWidth:200}}>
             <option value="ALL">All sources ({rankedSources.length})</option>
             {rankedSources.map((s,i)=>(<option key={s.id} value={s.id}>#{i+1} {s.name} ({canonical.filter(a=>a.sourceId===s.id||a.originalSourceId===s.id).length})</option>))}
           </select>
@@ -1906,7 +1906,7 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
             <span style={{fontSize:18}}>📰</span>
             <div>
               <div style={{...mono,fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>GLOBAL NEWS BRIEFS · {allBriefArts.length} articles{masterBriefData?.generatedAt ? ` · generated ${new Date(masterBriefData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Company News Intelligence</div>
+              <div style={{fontFamily:"'Spectral',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Company News Intelligence</div>
             </div>
           </div>
           <button onClick={generateMasterBrief} disabled={briefLoading[masterBriefKey]||!allBriefArts.length}
@@ -2166,9 +2166,8 @@ export default function App() {
   ];
 
   return (
-    <div style={{minHeight:"100vh",background:"#f5f0e8",color:"#1a1a1a",fontFamily:"'DM Sans',system-ui,sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#f5f0e8",color:"#1a1a1a",fontFamily:"'Spectral',Georgia,serif"}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500;600&display=swap');
         @keyframes pulse{0%,100%{opacity:.2}50%{opacity:1}}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
@@ -2182,7 +2181,7 @@ export default function App() {
       <header style={{background:"#fff",borderBottom:"2px solid #1a1a1a",position:"sticky",top:0,zIndex:200}}>
         {/* Row 1: logo + controls */}
         <div style={{maxWidth:1500,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:52,padding:"0 24px"}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:21,color:"#1a1a1a",fontWeight:700,letterSpacing:"-0.03em",lineHeight:1,flexShrink:0}}>
+          <div style={{fontFamily:"'Spectral',serif",fontSize:21,color:"#1a1a1a",fontWeight:700,letterSpacing:"-0.03em",lineHeight:1,flexShrink:0}}>
             GLOBAL MARKETS
             <span style={{fontFamily:"'DM Mono',monospace",fontSize:7,color:"#aaa",letterSpacing:"0.25em",marginLeft:8,fontWeight:400,verticalAlign:"middle"}}>WIRE</span>
           </div>
@@ -2353,7 +2352,7 @@ export default function App() {
                     <span style={{fontSize:20}}>⚡</span>
                     <div>
                       <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>BREAKING · {breakingArts.length} stories · last {windowHours}h{briefs[briefKey]?.generatedAt ? ` · generated ${new Date(briefs[briefKey].generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
-                      <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Breaking News Intelligence</div>
+                      <div style={{fontFamily:"'Spectral',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Breaking News Intelligence</div>
                     </div>
                     <div style={{display:"flex",gap:4,marginLeft:8}}>
                       {WINDOW_OPTIONS.map(o=>(
@@ -2453,7 +2452,7 @@ export default function App() {
                           <span style={{fontSize:20,color:sec.color}}>{sec.icon}</span>
                           <div>
                             <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:sec.color,letterSpacing:"0.1em",fontWeight:600}}>{sec.code} · {arts.length} stories{briefs[briefKey]?.generatedAt ? ` · generated ${new Date(briefs[briefKey].generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
-                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>{sec.label}</div>
+                            <div style={{fontFamily:"'Spectral',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>{sec.label}</div>
                           </div>
                         </div>
                         <div style={{display:"flex",gap:6}}>
