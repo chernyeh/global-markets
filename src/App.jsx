@@ -2168,10 +2168,12 @@ export default function App() {
   return (
     <div style={{minHeight:"100vh",background:"#f5f0e8",color:"#1a1a1a",fontFamily:"'Spectral',Georgia,serif"}}>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Mono:wght@400;500;600&display=swap');
+        *{box-sizing:border-box;font-family:'Spectral',Georgia,serif}
+        button,select,input,textarea{font-family:'Spectral',Georgia,serif}
         @keyframes pulse{0%,100%{opacity:.2}50%{opacity:1}}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-        *{box-sizing:border-box}
         input{outline:none}
         ::-webkit-scrollbar{width:3px;height:3px}
         ::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
