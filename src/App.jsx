@@ -142,8 +142,22 @@ const NEWS_BRIEF_GROUPS = [
     market: "Japan",
     flag: "🇯🇵",
     color: "#6a1b9a",
-    sources: ["nikkei_biz_spotlight","nikkei_asia"],
-    desc: "Nikkei Biz Spotlight · Nikkei Asia",
+    sources: ["jp_analyst_calls","nikkei_biz_spotlight","nikkei_asia","reuters_jp"],
+    desc: "Japan Analyst Actions · Nikkei Biz Spotlight · Nikkei Asia · Reuters Japan",
+  },
+  {
+    market: "Asia Broker Calls & Analyst Actions",
+    flag: "🌏",
+    color: "#006064",
+    sources: ["asia_broker_calls","jp_analyst_calls","kr_analyst_calls","reuters_asia","nikkei_biz_spotlight","fnarena","investing_ratings"],
+    desc: "Pan-Asia Analyst Actions · Japan Analyst Actions · Korea Analyst Actions · Reuters Asia · Nikkei Biz Spotlight · FNArena · Investing.com Ratings",
+  },
+  {
+    market: "Korea / Taiwan",
+    flag: "🇰🇷",
+    color: "#1a237e",
+    sources: ["kr_analyst_calls","ked","ktimes","kr_herald","yonhap","focus_tw","reuters_kr","bloom_kr"],
+    desc: "Korea Analyst Actions · KED Global · Korea Times · Korea Herald · Yonhap · Focus Taiwan · Reuters Korea · Bloomberg Korea",
   },
 ];
 
@@ -208,6 +222,11 @@ const SOURCES = [
   // ── Nikkei Asia ──────────────────────────────────────────────────────────
   {id:"nikkei_asia",tier:2,   desc:"Nikkei Asia — premier English-language source for Asian corporate news; essential for Japan, Korea, SEA company-level coverage.",          country:"JP",name:"Nikkei Asia",          lang:"en",flag:"🇯🇵",url:"https://asia.nikkei.com/rss/feed/nar",paywall:true},
   {id:"nikkei_biz_spotlight",tier:2,desc:"Nikkei Asia Business Spotlight — company-specific deep dives; earnings, management changes, and strategic pivots for Japan and Asia-listed corporates.",country:"JP",name:"Nikkei Biz Spotlight",lang:"en",flag:"🇯🇵",url:GN("site:asia.nikkei.com business companies"),paywall:true},
+  {id:"jp_analyst_calls",tier:2,desc:"Japan Analyst Actions — English-language Reuters and Bloomberg coverage of broker upgrades, downgrades, and price target changes on TSE-listed stocks.",country:"JP",name:"Japan Analyst Actions",lang:"en",flag:"🇯🇵",url:GN("Japan stocks analyst upgrade downgrade price target raises cuts initiates TSE Reuters Bloomberg"),limit:15},
+  {id:"reuters_jp",tier:1,desc:"Reuters Japan — wire coverage of TSE, Bank of Japan policy decisions, and major Japanese corporates in English.",country:"JP",name:"Reuters Japan",lang:"en",flag:"🇯🇵",url:GN("site:reuters.com Japan economy business finance TSE BOJ Nikkei")},
+  // ── Pan-Asia (Analyst Actions) ────────────────────────────────────────────
+  {id:"asia_broker_calls",tier:2,desc:"Pan-Asia Analyst Actions — Reuters and Bloomberg English-language feed for analyst upgrades, downgrades, and price target changes across Asian equity markets (Japan, Korea, HK, Taiwan, Singapore, Australia).",country:"HK",name:"Asia Analyst Actions",lang:"en",flag:"🌏",url:GN("Asia stocks analyst upgrade downgrade price target raises cuts initiates HKEX TSE KOSPI ASX SGX Reuters Bloomberg"),limit:15},
+  {id:"reuters_asia",tier:1,desc:"Reuters Asia Markets — pan-Asian wire covering trading activity, earnings, and macro moves across Japan, Korea, China, India, SEA, and Australia.",country:"HK",name:"Reuters Asia Markets",lang:"en",flag:"🌏",url:GN("site:reuters.com Asia markets economy business finance")},
   // ── Singapore ──────────────────────────────────────────────────────────────
   {id:"bt_sg",tier:2,desc:"SGX\'s go-to daily; essential for listed companies, REITs, and MAS policy.",      country:"SG",name:"Business Times SG",      lang:"en",flag:"🇸🇬",url:GN("site:businesstimes.com.sg"),paywall:true},
   {id:"bt_stocks_watch",tier:2,desc:"BT Stocks Watch — daily BT column flagging company-specific news and trading catalysts for SGX-listed stocks. High-signal micro feed.",country:"SG",name:"BT Stocks Watch",lang:"en",flag:"🇸🇬",url:GN("site:businesstimes.com.sg stocks-watch"),paywall:true},
@@ -227,9 +246,13 @@ const SOURCES = [
   {id:"mingtiandi",tier:3,desc:"Specialist in China and Asia real estate; essential for REIT and property investors.", country:"HK",name:"Mingtiandi",             lang:"en",flag:"🇭🇰",url:GN("site:mingtiandi.com")},
   {id:"hket",tier:2,desc:"Hong Kong Economic Times — HK\'s top Chinese financial daily, auto-translated.",       country:"HK",name:"香港經濟日報 HKET",        lang:"zh",flag:"🇭🇰",url:GN("site:hket.com 財經","zh-HK","HK","HK:zh-Hant")},
   {id:"mingpao",tier:2,desc:"Ming Pao Finance — respected HK Chinese daily; strong on local markets and Mainland flows.",    country:"HK",name:"明報財經 Ming Pao",       lang:"zh",flag:"🇭🇰",url:GN("site:mingpao.com 財經","zh-HK","HK","HK:zh-Hant")},
+  {id:"hkex_news",tier:2,desc:"HKEX Company Announcements — earnings, dividends, rights issues, and corporate actions from Hong Kong-listed companies; most actionable micro feed for HKEX equity investors.",country:"HK",name:"HKEX Announcements",lang:"en",flag:"🇭🇰",url:GN("HKEX company earnings dividend rights issue acquisition Hong Kong announcement")},
+  {id:"aastocks_hk",tier:3,desc:"AAStocks — Hong Kong's leading Chinese-language financial portal; broker calls, Hang Seng constituent news, and corporate events. Auto-translated.",country:"HK",name:"AAStocks HK",lang:"zh",flag:"🇭🇰",url:GN("AAStocks 港股 股票 升級 降級 目標價","zh-HK","HK","HK:zh-Hant")},
+  {id:"etnet_hk",tier:3,desc:"ET Net — major HK financial media; covers HKEX company results, analyst recommendations, and corporate actions. Auto-translated.",country:"HK",name:"ET Net HK",lang:"zh",flag:"🇭🇰",url:GN("site:etnet.com.hk 財經 股票 業績","zh-HK","HK","HK:zh-Hant")},
   {id:"reuters_hk",tier:1,desc:"Reuters\' Hong Kong desk; key for Hang Seng, IPOs, and China-HK market mechanics.", country:"HK",name:"Reuters Hong Kong",       lang:"en",flag:"🇭🇰",url:GN("site:reuters.com \"Hong Kong\" economy business finance")},
   {id:"bloom_hk",tier:1,desc:"Bloomberg HK; covers Hang Seng constituents, H-shares, and property sector.",   country:"HK",name:"Bloomberg Hong Kong",     lang:"en",flag:"🇭🇰",url:GN("site:bloomberg.com \"Hong Kong\" markets economy"),paywall:true},
   // ── Korea ──────────────────────────────────────────────────────────────────
+  {id:"kr_analyst_calls",tier:2,desc:"Korea Analyst Actions — English-language Reuters and Bloomberg broker upgrades, downgrades, and price target changes on KOSPI/KOSDAQ-listed stocks.",country:"KR",name:"Korea Analyst Actions",lang:"en",flag:"🇰🇷",url:GN("Korea stocks analyst upgrade downgrade price target raises cuts initiates KOSPI Samsung Reuters Bloomberg"),limit:15},
   {id:"ked",tier:2,desc:"Korea Economic Daily's English arm; first-mover on Samsung, SK, and Korean chaebol.",        country:"KR",name:"KED Global",             lang:"en",flag:"🇰🇷",url:GN("site:kedglobal.com"),paywall:true},
   {id:"ktimes",tier:2,desc:"Korea Times Business — broad English coverage of Korean economy and trade policy.",      country:"KR",name:"Korea Times Business",    lang:"en",flag:"🇰🇷",url:"https://feed.koreatimes.co.kr/k/business.xml",paywall:true},
   {id:"kr_herald",tier:2,desc:"Korea Herald Economy — accessible English daily; good for foreign investor context.",  country:"KR",name:"Korea Herald Business",  lang:"en",flag:"🇰🇷",url:"https://www.koreaherald.com/rss/kh_Business",paywall:true},
@@ -1814,8 +1837,8 @@ const SOURCE_RANK = {
   EU: ["reuters_eu","bloom_eu","politico_eu","euractiv"],
   CA: ["reuters_ca","bloom_ca","globe_mail","globe_itm","stockchase","fin_post","bnn"],
   SG: ["reuters_sg","bloom_sg","bt_sg","bt_stocks_watch","edge_sg_stocks_watch","edge_sg_focus","sginvestors","edge_sg","cna_sg","sgx_annc","sg_biz_review"],
-  HK: ["reuters_hk","bloom_hk","scmp","scmp_markets","scmp_china","mingtiandi","hket","mingpao"],
-  KR: ["reuters_kr","bloom_kr","kr_herald","yonhap","yonhap2","ktimes","ked","hankyung","maeil","chosunbiz"],
+  HK: ["reuters_hk","bloom_hk","asia_broker_calls","reuters_asia","hkex_news","scmp","scmp_markets","scmp_china","mingtiandi","aastocks_hk","etnet_hk","hket","mingpao"],
+  KR: ["reuters_kr","bloom_kr","kr_analyst_calls","kr_herald","yonhap","yonhap2","ktimes","ked","hankyung","maeil","chosunbiz"],
   TW: ["reuters_tw","bloom_tw","focus_tw","taipei_t","digitimes","udn_money","ctee"],
   IN: ["reuters_in","bloom_in","econ_times","mint","mint2","mint3","biz_std","hindubiz","fin_exp","cnbctv18","moneyctrl","forbes_in"],
   AU: ["reuters_au","bloom_au","afr","afr_street_talk","market_herald","smh","abc_au","stockhead_top10","fnarena","stockhead_au","guardian_au","the_aus"],
@@ -1823,7 +1846,7 @@ const SOURCE_RANK = {
   IL: ["globes_il","reuters_il","bloom_il","jpost_il","toi_il","haaretz_il","ctech_il","calcalist"],
   ME: ["aljazeera","aljazeera_biz","reuters_me","bloom_me","arabnews","arabnews_biz","national_ae","gulfnews","arabianbiz","agbi","tradearabia","alarabiya","zawya","gulfbiz","gulftimes","khaleej","saudigazette","menafn_sa","menafn_uae","menafn_qa","menafn_kw","menafn_bh","menafn_om","alarabiya_ar"],
   IR: ["iranintl","reuters_ir","bloom_ir","tehrantimes","fin_trib","irna_en","tasnim","ifpnews","mehrnews","entekhab","tabnak"],
-  JP: ["nikkei_asia","nikkei_biz_spotlight"],
+  JP: ["reuters_jp","nikkei_asia","nikkei_biz_spotlight","jp_analyst_calls"],
 };
 
 function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
