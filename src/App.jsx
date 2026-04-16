@@ -291,12 +291,41 @@ const SOURCES = [
   {id:"tabnak",tier:3,desc:"تابناک — Persian outlet with close ties to Iranian political factions, auto-translated; useful for policy signals.",      country:"IR",name:"تابناک Tabnak",          lang:"fa",flag:"🇮🇷",url:GN("site:tabnak.ir اقتصاد","fa","IR","IR:fa")},
   {id:"reuters_ir",tier:1,desc:"Reuters Iran; independent English coverage of sanctions, nuclear talks, and Iranian economic conditions.",  country:"IR",name:"Reuters Iran",           lang:"en",flag:"🇮🇷",url:GN("site:reuters.com Iran economy nuclear sanctions")},
   {id:"bloom_ir",tier:1,desc:"Bloomberg Iran; covers oil output, rial, and impact of sanctions and conflict on Iranian markets.",    country:"IR",name:"Bloomberg Iran",         lang:"en",flag:"🇮🇷",url:GN("site:bloomberg.com Iran economy nuclear sanctions"),paywall:true},
+  // ── United Kingdom ─────────────────────────────────────────────────────────
+  {id:"cityam",tier:2,desc:"City A.M. — London's dedicated free financial daily; fastest on FTSE movers, City M&A, and UK corporate news. Essential for LSE and London financial market coverage.",country:"GB",name:"City A.M.",lang:"en",flag:"🇬🇧",url:"https://www.cityam.com/feed/"},
+  {id:"telegraph_biz",tier:2,desc:"The Telegraph Business — strong on UK corporate strategy, energy majors, and government economic policy; authoritative conservative broadsheet.",country:"GB",name:"Telegraph Business",lang:"en",flag:"🇬🇧",url:GN("site:telegraph.co.uk business economy finance"),paywall:true},
+  {id:"reuters_uk",tier:1,desc:"Reuters UK — wire coverage of FTSE 100, Bank of England decisions, and British corporate and macro news.",country:"GB",name:"Reuters UK",lang:"en",flag:"🇬🇧",url:GN("site:reuters.com UK Britain economy business FTSE")},
+  {id:"bloom_uk",tier:1,desc:"Bloomberg UK — authoritative on sterling, gilts, BoE policy, and major UK-listed corporates.",country:"GB",name:"Bloomberg UK",lang:"en",flag:"🇬🇧",url:GN("site:bloomberg.com UK Britain economy markets"),paywall:true},
+  // ── France ─────────────────────────────────────────────────────────────────
+  {id:"lesechos",tier:2,desc:"Les Echos — France's equivalent of the FT; the most credible French financial daily. Essential for CAC 40, French corporates (LVMH, TotalEnergies, BNP), and ECB policy.",country:"FR",name:"Les Echos",lang:"fr",flag:"🇫🇷",url:GN("site:lesechos.fr economie finance marchés","fr","FR","FR:fr"),paywall:true},
+  {id:"lesechos_en",tier:2,desc:"Les Echos (English GN) — English-language coverage of major French business and European economic news surfaced via Google News.",country:"FR",name:"Les Echos (EN)",lang:"en",flag:"🇫🇷",url:GN("site:lesechos.fr economy finance CAC40"),paywall:true},
+  {id:"reuters_fr",tier:1,desc:"Reuters France — wire coverage of CAC 40, French government economic policy, and major French corporates in English.",country:"FR",name:"Reuters France",lang:"en",flag:"🇫🇷",url:GN("site:reuters.com France economy business finance CAC")},
+  {id:"bloom_fr",tier:1,desc:"Bloomberg France — markets and corporate coverage with a France/CAC 40 focus.",country:"FR",name:"Bloomberg France",lang:"en",flag:"🇫🇷",url:GN("site:bloomberg.com France economy markets"),paywall:true},
+  // ── Italy ──────────────────────────────────────────────────────────────────
+  {id:"sole24ore",tier:2,desc:"Il Sole 24 Ore — Italy's newspaper of record for business; essential for Italian sovereign debt, banking sector (Intesa, UniCredit), and FTSE MIB. Auto-translated.",country:"IT",name:"Il Sole 24 Ore",lang:"it",flag:"🇮🇹",url:GN("site:ilsole24ore.com economia finanza mercati","it","IT","IT:it"),paywall:true},
+  {id:"reuters_it",tier:1,desc:"Reuters Italy — wire coverage of Italian politics risk, sovereign spreads, and major Italian corporates in English.",country:"IT",name:"Reuters Italy",lang:"en",flag:"🇮🇹",url:GN("site:reuters.com Italy economy business finance")},
+  {id:"bloom_it",tier:1,desc:"Bloomberg Italy — authoritative on Italian BTP spreads, ECB transmission, and Italian banking sector.",country:"IT",name:"Bloomberg Italy",lang:"en",flag:"🇮🇹",url:GN("site:bloomberg.com Italy economy markets"),paywall:true},
+  // ── Switzerland ────────────────────────────────────────────────────────────
+  {id:"nzz",tier:2,desc:"Neue Zürcher Zeitung — one of Europe's most respected and rigorously edited papers; authoritative on SNB policy, CHF, and Swiss multinationals (UBS, Nestlé, Novartis, Roche). Auto-translated.",country:"CH",name:"NZZ",lang:"de",flag:"🇨🇭",url:GN("site:nzz.ch Wirtschaft Finanzen Märkte","de","CH","CH:de"),paywall:true},
+  {id:"nzz_en",tier:2,desc:"NZZ English — English-language content from Neue Zürcher Zeitung; Swiss macro, SNB policy, and European geopolitics.",country:"CH",name:"NZZ (EN)",lang:"en",flag:"🇨🇭",url:GN("site:nzz.ch english economy finance"),paywall:true},
+  {id:"reuters_ch",tier:1,desc:"Reuters Switzerland — wire coverage of SNB rate decisions, CHF moves, and Swiss banking and pharma sectors.",country:"CH",name:"Reuters Switzerland",lang:"en",flag:"🇨🇭",url:GN("site:reuters.com Switzerland SNB economy business")},
+  {id:"bloom_ch",tier:1,desc:"Bloomberg Switzerland — authoritative on UBS, Credit Suisse aftermath, SNB, and Swiss franc dynamics.",country:"CH",name:"Bloomberg Switzerland",lang:"en",flag:"🇨🇭",url:GN("site:bloomberg.com Switzerland economy markets"),paywall:true},
+  // ── Pan-European ───────────────────────────────────────────────────────────
+  {id:"politico_eu",tier:2,desc:"Politico Europe — the definitive source on EU legislation, ECB policy, Brussels regulation, and trade; essential for European market-moving policy developments.",country:"EU",name:"Politico Europe",lang:"en",flag:"🇪🇺",url:GN("site:politico.eu economy finance ECB trade regulation eurozone")},
+  {id:"euractiv",tier:2,desc:"Euractiv — specialist in EU legislative process, regulatory changes, and European policy debates; deepest coverage of Brussels decisions that move European markets.",country:"EU",name:"Euractiv",lang:"en",flag:"🇪🇺",url:GN("site:euractiv.com economy finance trade regulation energy")},
+  {id:"reuters_eu",tier:1,desc:"Reuters Europe — pan-European wire; ECB decisions, eurozone macro data, and major cross-border corporate events.",country:"EU",name:"Reuters Europe",lang:"en",flag:"🇪🇺",url:GN("site:reuters.com Europe eurozone ECB economy")},
+  {id:"bloom_eu",tier:1,desc:"Bloomberg Europe — authoritative on ECB, eurozone macro, and major European index constituents.",country:"EU",name:"Bloomberg Europe",lang:"en",flag:"🇪🇺",url:GN("site:bloomberg.com Europe eurozone ECB economy"),paywall:true},
 ];
 
 const COUNTRIES = [
   {code:"ALL",label:"All Markets",   flag:"🌐"},
   {code:"US", label:"United States", flag:"🇺🇸"},
+  {code:"GB", label:"United Kingdom",flag:"🇬🇧"},
   {code:"DE", label:"Germany",       flag:"🇩🇪"},
+  {code:"FR", label:"France",        flag:"🇫🇷"},
+  {code:"IT", label:"Italy",         flag:"🇮🇹"},
+  {code:"CH", label:"Switzerland",   flag:"🇨🇭"},
+  {code:"EU", label:"Pan-European",  flag:"🇪🇺"},
   {code:"CA", label:"Canada",        flag:"🇨🇦"},
   {code:"SG", label:"Singapore",     flag:"🇸🇬"},
   {code:"HK", label:"Hong Kong",     flag:"🇭🇰"},
@@ -624,7 +653,7 @@ Rules:
 - Each bullet must be 1-2 sentences with real detail and investor perspective
 - Name EVERY company mentioned in the headlines
 - End each bullet with [REF:N] citing the article number(s)
-- COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Within US coverage, prioritise WSJ, Washington Post, NY Times, and Financial Times — give these sources the most weight. Then HK, Korea, Taiwan, Australia, Israel, Middle East (including Al Jazeera), Iran. Then Singapore and Canada. Indian stories should be mentioned briefly unless they have clear global market impact.
+- COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Within US coverage, prioritise WSJ, Washington Post, NY Times, and Financial Times — give these sources the most weight. Then Europe (UK, Germany, France, Italy, Switzerland, pan-European), then HK, Korea, Taiwan, Australia, Israel, Middle East (including Al Jazeera), Iran. Then Singapore and Canada. Indian stories should be mentioned briefly unless they have clear global market impact.
 - COMPANY BALANCE: At least one full section dedicated to company-specific events. Name every company with ticker where known.
 - INDUSTRY TRENDS: When multiple companies in the same sector report similar themes, call out the sector-level pattern explicitly.
 - STRICT FACTUAL RULE: You may ONLY state facts that are EXPLICITLY present in the headline text. Do NOT infer, extrapolate, or add ANY figures, percentages, names, deal sizes, earnings amounts, or details that are not literally in the headline. Violation of this rule is unacceptable.
@@ -1734,7 +1763,12 @@ function WatchlistTab({allArticles, setAllArticles}) {
 // ═══════════════════════════════════════════════════════════════════════════════
 const SOURCE_RANK = {
   US: ["reuters","bloomberg","bloomberg2","wsj","wsj2","wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","ft","wapo","wapo_politics","nyt","barrons","marketwatch","axios_biz","semafor","politico","seekalpha","prnewswire"],
+  GB: ["reuters_uk","bloom_uk","cityam","telegraph_biz"],
   DE: ["reuters_de","bloom_de","handelsblatt","handelsblatt_en","faz","faz_finance","spiegel_de","sz_de","dw_de"],
+  FR: ["reuters_fr","bloom_fr","lesechos","lesechos_en"],
+  IT: ["reuters_it","bloom_it","sole24ore"],
+  CH: ["reuters_ch","bloom_ch","nzz","nzz_en"],
+  EU: ["reuters_eu","bloom_eu","politico_eu","euractiv"],
   CA: ["reuters_ca","bloom_ca","globe_mail","fin_post","bnn"],
   SG: ["reuters_sg","bloom_sg","bt_sg","bt_stocks_watch","edge_sg_stocks_watch","edge_sg_focus","sginvestors","edge_sg","cna_sg","sgx_annc","sg_biz_review"],
   HK: ["reuters_hk","bloom_hk","scmp","scmp_markets","scmp_china","mingtiandi","hket","mingpao"],
