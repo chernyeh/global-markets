@@ -100,8 +100,8 @@ const NEWS_BRIEF_GROUPS = [
     market: "United States",
     flag: "🇺🇸",
     color: "#b84a00",
-    sources: ["wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","seekalpha","wsj","barrons","marketwatch","axios_biz"],
-    desc: "WSJ Heard on the Street · WSJ Markets Features · WSJ Global Equities Roundup · WSJ Global Commodities Roundup · Seeking Alpha Earnings · Barron's · MarketWatch · Axios",
+    sources: ["wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","seekalpha","wsj","barrons","marketwatch","axios_biz","fierce_pharma"],
+    desc: "WSJ Heard on the Street · WSJ Markets Features · WSJ Global Equities Roundup · WSJ Global Commodities Roundup · Seeking Alpha Earnings · Barron's · MarketWatch · Axios · Fierce Pharma",
   },
   {
     market: "Canada",
@@ -201,6 +201,7 @@ const SOURCES = [
   {id:"ft_alphaville",tier:2,desc:"FT Alphaville — Financial Times's irreverent markets blog; incisive short-form investment commentary, credit market analysis, and contrarian trade ideas from seasoned journalists.",country:"US",name:"FT Alphaville",lang:"en",flag:"🇺🇸",url:"https://ftav.substack.com/feed",limit:10},
   {id:"investing_ratings",tier:2,desc:"Investing.com Analyst Ratings — aggregated analyst rating changes and price target updates across global equities; broad coverage of US, European, and Asian broker actions.",country:"US",name:"Investing.com Ratings",lang:"en",flag:"🇺🇸",url:"https://www.investing.com/rss/news_1061.rss",limit:15},
   {id:"openinsider",tier:2,desc:"OpenInsider — SEC Form 4 insider purchases; insider buying is one of the highest-conviction investment signals. Filters to purchase transactions only, excluding options exercises.",country:"US",name:"OpenInsider Buys",lang:"en",flag:"🇺🇸",url:"https://openinsider.com/rss"},
+  {id:"fierce_pharma",tier:2,desc:"Fierce Pharma — leading pharma industry trade publication; covers drug approvals, clinical trial results, FDA decisions, M&A, and pipeline news for biopharma and large-cap pharma stocks.",country:"US",name:"Fierce Pharma",lang:"en",flag:"🇺🇸",url:"https://www.fiercepharma.com/rss/xml",limit:15},
   // ── Germany ────────────────────────────────────────────────────────────────
   {id:"handelsblatt",tier:2,  desc:"Handelsblatt — Germany\'s leading financial daily; required reading for DAX, German industry and European monetary policy.",               country:"DE",name:"Handelsblatt",        lang:"de",flag:"🇩🇪",url:"https://www.handelsblatt.com/contentexport/feed/schlagzeilen",paywall:true},
   {id:"handelsblatt_en",tier:2,desc:"Handelsblatt English — curated English-language coverage of German business and European economic news.",                                 country:"DE",name:"Handelsblatt (EN)",    lang:"en",flag:"🇩🇪",url:GN("site:handelsblatt.com english economy business"),paywall:true},
