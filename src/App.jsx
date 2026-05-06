@@ -93,8 +93,8 @@ const NEWS_BRIEF_GROUPS = [
     market: "Ideas & Commentary",
     flag: "💡",
     color: "#1565c0",
-    sources: ["ft_alphaville","wsj_heard","wsj_mkt","barrons","semafor","benzinga_ideas","seekalpha"],
-    desc: "FT Alphaville · WSJ Heard on the Street · WSJ Markets Features · Barron's · Semafor · Benzinga Trade Ideas · Seeking Alpha",
+    sources: ["ft_alphaville","wsj_heard","wsj_mkt","barrons","ibd","semafor","benzinga_ideas","seekalpha"],
+    desc: "FT Alphaville · WSJ Heard on the Street · WSJ Markets Features · Barron's · Investors Business Daily · Semafor · Benzinga Trade Ideas · Seeking Alpha",
   },
   {
     market: "United States",
@@ -202,6 +202,7 @@ const SOURCES = [
   {id:"investing_ratings",tier:2,desc:"Investing.com Analyst Ratings — aggregated analyst rating changes and price target updates across global equities; broad coverage of US, European, and Asian broker actions.",country:"US",name:"Investing.com Ratings",lang:"en",flag:"🇺🇸",url:"https://www.investing.com/rss/news_1061.rss",limit:15},
   {id:"openinsider",tier:2,desc:"OpenInsider — SEC Form 4 insider purchases; insider buying is one of the highest-conviction investment signals. Filters to purchase transactions only, excluding options exercises.",country:"US",name:"OpenInsider Buys",lang:"en",flag:"🇺🇸",url:"https://openinsider.com/rss"},
   {id:"fierce_pharma",tier:2,desc:"Fierce Pharma — leading pharma industry trade publication; covers drug approvals, clinical trial results, FDA decisions, M&A, and pipeline news for biopharma and large-cap pharma stocks.",country:"US",name:"Fierce Pharma",lang:"en",flag:"🇺🇸",url:"https://www.fiercepharma.com/rss/xml",limit:15},
+  {id:"ibd",tier:2,desc:"Investors Business Daily — IBD's flagship stock analysis using CAN SLIM methodology; IBD 50 growth stock picks, breakout alerts, sector rotation, and Big Picture market trend column. Essential for growth and momentum investors.",country:"US",name:"Investors Business Daily",lang:"en",flag:"🇺🇸",url:GN("site:investors.com stocks analysis breakout \"IBD 50\" \"CAN SLIM\" market"),limit:15},
   // ── Germany ────────────────────────────────────────────────────────────────
   {id:"handelsblatt",tier:2,  desc:"Handelsblatt — Germany\'s leading financial daily; required reading for DAX, German industry and European monetary policy.",               country:"DE",name:"Handelsblatt",        lang:"de",flag:"🇩🇪",url:"https://www.handelsblatt.com/contentexport/feed/schlagzeilen",paywall:true},
   {id:"handelsblatt_en",tier:2,desc:"Handelsblatt English — curated English-language coverage of German business and European economic news.",                                 country:"DE",name:"Handelsblatt (EN)",    lang:"en",flag:"🇩🇪",url:GN("site:handelsblatt.com english economy business"),paywall:true},
