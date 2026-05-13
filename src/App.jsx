@@ -83,6 +83,14 @@ const WEAKNESS_CONTEXT_PATTERNS = /after (disappointing|poor|weak|dismal|miss|pr
 // ═══════════════════════════════════════════════════════════════════════════════
 const NEWS_BRIEF_GROUPS = [
   {
+    market: "🌐 Global Overview",
+    flag: "🌐",
+    color: "#1a1a1a",
+    sources: ["reuters","bloomberg","ft","reuters_latam","mercopress","reuters_cee","emerging_europe","reuters_africa","african_business","reuters_emasia","nikkei_sea","caixin","econ_times","nikkei_asia","reuters_jp","reuters_kr","arabnews_biz","ft_alphaville","wsj_heard"],
+    desc: "Reuters · Bloomberg · FT · Reuters LatAm · Reuters CEE · Reuters Africa · Reuters SEA · Caixin · Nikkei Asia · FT Alphaville · WSJ Heard — cross-regional synthesis from 19 curated tier-1 sources",
+    isGlobal: true,
+  },
+  {
     market: "Broker Calls & Analyst Actions",
     flag: "🎯",
     color: "#7b1fa2",
@@ -408,6 +416,129 @@ const COUNTRIES = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// EMERGING MARKETS — countries, clusters, sources (lazy-loaded, not in SOURCES)
+// ═══════════════════════════════════════════════════════════════════════════════
+const EM_COUNTRIES = [
+  // LatAm
+  {code:"BR",label:"Brazil",      flag:"🇧🇷",cluster:"LATAM"},
+  {code:"MX",label:"Mexico",      flag:"🇲🇽",cluster:"LATAM"},
+  {code:"AR",label:"Argentina",   flag:"🇦🇷",cluster:"LATAM"},
+  {code:"CL",label:"Chile",       flag:"🇨🇱",cluster:"LATAM"},
+  {code:"CO",label:"Colombia",    flag:"🇨🇴",cluster:"LATAM"},
+  {code:"PE",label:"Peru",        flag:"🇵🇪",cluster:"LATAM"},
+  // CEE
+  {code:"PL",label:"Poland",      flag:"🇵🇱",cluster:"CEE"},
+  {code:"TR",label:"Turkey",      flag:"🇹🇷",cluster:"CEE"},
+  {code:"HU",label:"Hungary",     flag:"🇭🇺",cluster:"CEE"},
+  {code:"CZ",label:"Czech Rep.",  flag:"🇨🇿",cluster:"CEE"},
+  {code:"RO",label:"Romania",     flag:"🇷🇴",cluster:"CEE"},
+  {code:"GR",label:"Greece",      flag:"🇬🇷",cluster:"CEE"},
+  // Africa
+  {code:"ZA",label:"South Africa",flag:"🇿🇦",cluster:"AFRICA"},
+  {code:"NG",label:"Nigeria",     flag:"🇳🇬",cluster:"AFRICA"},
+  {code:"KE",label:"Kenya",       flag:"🇰🇪",cluster:"AFRICA"},
+  {code:"EG",label:"Egypt",       flag:"🇪🇬",cluster:"AFRICA"},
+  {code:"MA",label:"Morocco",     flag:"🇲🇦",cluster:"AFRICA"},
+  // EM Asia
+  {code:"ID",label:"Indonesia",   flag:"🇮🇩",cluster:"EMASIA"},
+  {code:"TH",label:"Thailand",    flag:"🇹🇭",cluster:"EMASIA"},
+  {code:"MY",label:"Malaysia",    flag:"🇲🇾",cluster:"EMASIA"},
+  {code:"PH",label:"Philippines", flag:"🇵🇭",cluster:"EMASIA"},
+  {code:"VN",label:"Vietnam",     flag:"🇻🇳",cluster:"EMASIA"},
+];
+
+const EM_CLUSTERS = [
+  {id:"LATAM",  label:"Latin America",           flag:"🌎",color:"#1b7a3e",
+   countries:["BR","MX","AR","CL","CO","PE"],
+   panSources:["reuters_latam","mercopress","bnnlatam"]},
+  {id:"CEE",    label:"Central & Eastern Europe", flag:"🌍",color:"#1565c0",
+   countries:["PL","TR","HU","CZ","RO","GR"],
+   panSources:["reuters_cee","emerging_europe","daily_sabah_biz"]},
+  {id:"AFRICA", label:"Africa",                   flag:"🌍",color:"#7b1fa2",
+   countries:["ZA","NG","KE","EG","MA"],
+   panSources:["reuters_africa","african_business","businessday_ng"]},
+  {id:"EMASIA", label:"EM Asia",                  flag:"🌏",color:"#e65100",
+   countries:["ID","TH","MY","PH","VN"],
+   panSources:["reuters_emasia","bangkokpost_biz","inquirer_ph"]},
+];
+
+const EM_STALE_MS = 2 * 60 * 60 * 1000; // 2 hours for on-demand clusters
+
+const EM_SOURCES = [
+  // ── Latin America ─────────────────────────────────────────────────────────
+  {id:"reuters_latam",tier:1,country:"BR",name:"Reuters LatAm",       lang:"en",flag:"🌎",url:GN("site:reuters.com Brazil Mexico Argentina Chile Colombia Peru economy markets")},
+  {id:"mercopress",   tier:2,country:"AR",name:"MercoPress",          lang:"en",flag:"🌎",url:"https://en.mercopress.com/rss.xml",limit:10},
+  {id:"infomoney",    tier:2,country:"BR",name:"InfoMoney",           lang:"pt",flag:"🇧🇷",url:"https://www.infomoney.com.br/feed/rss/"},
+  {id:"valor_br",     tier:2,country:"BR",name:"Valor Econômico",     lang:"pt",flag:"🇧🇷",url:GN("site:valor.globo.com economia financas","pt-BR","BR","BR:pt")},
+  {id:"reuters_br",   tier:1,country:"BR",name:"Reuters Brazil",      lang:"en",flag:"🇧🇷",url:GN("site:reuters.com Brazil Bovespa real currency economy")},
+  {id:"bnnlatam",     tier:2,country:"BR",name:"BNN LatAm",           lang:"en",flag:"🌎",url:GN("Latin America Brazil Mexico economy markets Reuters Bloomberg")},
+  {id:"elfinanciero_mx",tier:2,country:"MX",name:"El Financiero",     lang:"es",flag:"🇲🇽",url:GN("site:elfinanciero.com.mx economia finanzas mercados","es-MX","MX","MX:es")},
+  {id:"reuters_mx",   tier:1,country:"MX",name:"Reuters Mexico",      lang:"en",flag:"🇲🇽",url:GN("site:reuters.com Mexico economy Banxico peso markets")},
+  {id:"ambito",       tier:2,country:"AR",name:"Ámbito Financiero",   lang:"es",flag:"🇦🇷",url:GN("site:ambito.com economia finanzas mercados","es-AR","AR","AR:es")},
+  {id:"reuters_ar",   tier:1,country:"AR",name:"Reuters Argentina",   lang:"en",flag:"🇦🇷",url:GN("site:reuters.com Argentina economy peso Milei IMF bonds")},
+  {id:"df_cl",        tier:2,country:"CL",name:"Diario Financiero",   lang:"es",flag:"🇨🇱",url:GN("site:df.cl economia finanzas mercados","es-CL","CL","CL:es")},
+  {id:"reuters_cl",   tier:1,country:"CL",name:"Reuters Chile",       lang:"en",flag:"🇨🇱",url:GN("site:reuters.com Chile economy copper peso Boric markets")},
+  {id:"la_republica_co",tier:2,country:"CO",name:"La República",      lang:"es",flag:"🇨🇴",url:GN("site:larepublica.co economia finanzas negocios","es-CO","CO","CO:es")},
+  {id:"reuters_co",   tier:1,country:"CO",name:"Reuters Colombia",    lang:"en",flag:"🇨🇴",url:GN("site:reuters.com Colombia economy peso Petro markets")},
+  {id:"gestion_pe",   tier:2,country:"PE",name:"Gestión",             lang:"es",flag:"🇵🇪",url:GN("site:gestion.pe economia negocios finanzas","es-PE","PE","PE:es")},
+  {id:"reuters_pe",   tier:1,country:"PE",name:"Reuters Peru",        lang:"en",flag:"🇵🇪",url:GN("site:reuters.com Peru economy copper sol markets")},
+  // ── Central & Eastern Europe ──────────────────────────────────────────────
+  {id:"reuters_cee",  tier:1,country:"PL",name:"Reuters CEE",         lang:"en",flag:"🌍",url:GN("site:reuters.com Poland Turkey Hungary Czech Romania Greece economy markets")},
+  {id:"emerging_europe",tier:2,country:"PL",name:"Emerging Europe",   lang:"en",flag:"🌍",url:"https://emerging-europe.com/feed/",limit:10},
+  {id:"parkiet_pl",   tier:2,country:"PL",name:"Parkiet",             lang:"pl",flag:"🇵🇱",url:GN("site:parkiet.com rynki gospodarka finanse","pl","PL","PL:pl")},
+  {id:"reuters_pl",   tier:1,country:"PL",name:"Reuters Poland",      lang:"en",flag:"🇵🇱",url:GN("site:reuters.com Poland economy Warsaw zloty NBP markets")},
+  {id:"daily_sabah_biz",tier:2,country:"TR",name:"Daily Sabah Business",lang:"en",flag:"🇹🇷",url:"https://www.dailysabah.com/rss/business"},
+  {id:"hurriyet_biz", tier:2,country:"TR",name:"Hürriyet Daily News", lang:"en",flag:"🇹🇷",url:"https://www.hurriyetdailynews.com/rss.aspx?pageID=438&cat=14"},
+  {id:"reuters_tr",   tier:1,country:"TR",name:"Reuters Turkey",      lang:"en",flag:"🇹🇷",url:GN("site:reuters.com Turkey economy lira CBRT inflation markets")},
+  {id:"reuters_hu",   tier:1,country:"HU",name:"Reuters Hungary",     lang:"en",flag:"🇭🇺",url:GN("site:reuters.com Hungary economy forint NBH markets")},
+  {id:"reuters_cz",   tier:1,country:"CZ",name:"Reuters Czech Rep.",  lang:"en",flag:"🇨🇿",url:GN("site:reuters.com Czech Republic economy koruna CNB markets")},
+  {id:"reuters_ro",   tier:1,country:"RO",name:"Reuters Romania",     lang:"en",flag:"🇷🇴",url:GN("site:reuters.com Romania economy leu BNR markets")},
+  {id:"ekathimerini", tier:2,country:"GR",name:"Ekathimerini",        lang:"en",flag:"🇬🇷",url:GN("site:ekathimerini.com economy business markets finance")},
+  {id:"reuters_gr",   tier:1,country:"GR",name:"Reuters Greece",      lang:"en",flag:"🇬🇷",url:GN("site:reuters.com Greece economy Athens bonds markets")},
+  // ── Africa ────────────────────────────────────────────────────────────────
+  {id:"reuters_africa",tier:1,country:"ZA",name:"Reuters Africa",     lang:"en",flag:"🌍",url:GN("site:reuters.com Africa \"South Africa\" Nigeria Kenya Egypt Morocco economy")},
+  {id:"african_business",tier:2,country:"ZA",name:"African Business", lang:"en",flag:"🌍",url:"https://african.business/feed",limit:10},
+  {id:"fin24_za",     tier:2,country:"ZA",name:"Fin24",               lang:"en",flag:"🇿🇦",url:"https://www.fin24.com/rss/rss.aspx"},
+  {id:"businessday_za",tier:2,country:"ZA",name:"Business Day SA",    lang:"en",flag:"🇿🇦",url:GN("site:businesslive.co.za economy business markets JSE")},
+  {id:"reuters_za",   tier:1,country:"ZA",name:"Reuters South Africa",lang:"en",flag:"🇿🇦",url:GN("site:reuters.com \"South Africa\" economy rand JSE markets")},
+  {id:"businessday_ng",tier:2,country:"NG",name:"BusinessDay Nigeria",lang:"en",flag:"🇳🇬",url:"https://businessday.ng/feed/"},
+  {id:"punch_biz_ng", tier:2,country:"NG",name:"Punch Nigeria",       lang:"en",flag:"🇳🇬",url:"https://punchng.com/feed/"},
+  {id:"reuters_ng",   tier:1,country:"NG",name:"Reuters Nigeria",     lang:"en",flag:"🇳🇬",url:GN("site:reuters.com Nigeria economy naira CBN oil markets")},
+  {id:"businessdailyafrica",tier:2,country:"KE",name:"Business Daily Africa",lang:"en",flag:"🇰🇪",url:"https://www.businessdailyafrica.com/rss"},
+  {id:"reuters_ke",   tier:1,country:"KE",name:"Reuters Kenya",       lang:"en",flag:"🇰🇪",url:GN("site:reuters.com Kenya economy shilling CBK markets")},
+  {id:"egypt_independent",tier:2,country:"EG",name:"Egypt Independent",lang:"en",flag:"🇪🇬",url:GN("site:egyptindependent.com economy business finance")},
+  {id:"reuters_eg",   tier:1,country:"EG",name:"Reuters Egypt",       lang:"en",flag:"🇪🇬",url:GN("site:reuters.com Egypt economy pound IMF markets")},
+  {id:"reuters_ma",   tier:1,country:"MA",name:"Reuters Morocco",     lang:"en",flag:"🇲🇦",url:GN("site:reuters.com Morocco economy dirham BAM markets")},
+  // ── EM Asia ───────────────────────────────────────────────────────────────
+  {id:"reuters_emasia",tier:1,country:"ID",name:"Reuters SEA",        lang:"en",flag:"🌏",url:GN("site:reuters.com Indonesia Thailand Malaysia Philippines Vietnam economy markets")},
+  {id:"nikkei_sea",   tier:2,country:"ID",name:"Nikkei Asia SEA",     lang:"en",flag:"🌏",url:GN("site:asia.nikkei.com Indonesia Thailand Malaysia Philippines Vietnam"),paywall:true},
+  {id:"bisnis_id",    tier:2,country:"ID",name:"Bisnis Indonesia",    lang:"id",flag:"🇮🇩",url:GN("site:bisnis.com ekonomi pasar keuangan","id","ID","ID:id")},
+  {id:"reuters_id",   tier:1,country:"ID",name:"Reuters Indonesia",   lang:"en",flag:"🇮🇩",url:GN("site:reuters.com Indonesia economy rupiah BI JCI markets")},
+  {id:"bangkokpost_biz",tier:2,country:"TH",name:"Bangkok Post Business",lang:"en",flag:"🇹🇭",url:"https://www.bangkokpost.com/rss/data/business.xml"},
+  {id:"reuters_th",   tier:1,country:"TH",name:"Reuters Thailand",    lang:"en",flag:"🇹🇭",url:GN("site:reuters.com Thailand economy baht BOT SET markets")},
+  {id:"edge_my",      tier:2,country:"MY",name:"The Edge Malaysia",   lang:"en",flag:"🇲🇾",url:GN("site:theedgemarkets.com economy markets bursa"),paywall:true},
+  {id:"reuters_my",   tier:1,country:"MY",name:"Reuters Malaysia",    lang:"en",flag:"🇲🇾",url:GN("site:reuters.com Malaysia economy ringgit BNM Bursa markets")},
+  {id:"inquirer_ph",  tier:2,country:"PH",name:"Philippine Inquirer", lang:"en",flag:"🇵🇭",url:"https://business.inquirer.net/feed"},
+  {id:"reuters_ph",   tier:1,country:"PH",name:"Reuters Philippines", lang:"en",flag:"🇵🇭",url:GN("site:reuters.com Philippines economy peso BSP PSEi markets")},
+  {id:"vnexpress_biz",tier:2,country:"VN",name:"VnExpress Business",  lang:"en",flag:"🇻🇳",url:"https://e.vnexpress.net/rss/business.rss"},
+  {id:"reuters_vn",   tier:1,country:"VN",name:"Reuters Vietnam",     lang:"en",flag:"🇻🇳",url:GN("site:reuters.com Vietnam economy dong SBV VN-Index markets")},
+];
+
+// Sources used for the cross-regional Global at a Glance brief
+const GLOBAL_GLANCE_SOURCES = [
+  "reuters","bloomberg","ft",
+  "reuters_latam","mercopress",
+  "reuters_cee","emerging_europe",
+  "reuters_africa","african_business",
+  "reuters_emasia","nikkei_sea",
+  "caixin","econ_times",
+  "nikkei_asia","reuters_jp",
+  "reuters_kr",
+  "arabnews_biz",
+  "ft_alphaville","wsj_heard",
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // STORAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 const SK = {
@@ -416,6 +547,10 @@ const SK = {
   lastFetch: "gm_fetch_v4",
   watchlist: "gm_watch_v4",
   watchHits: "gm_watchhits_v4",
+};
+const EM_SK = {
+  clusterState: "gm_em_cluster_v1",
+  lastFetch:    "gm_em_fetch_v1",
 };
 async function sGet(k) {
   try {
@@ -684,9 +819,12 @@ ${withTranslations.map((a,i)=>`${i}. ${a._preTranslated}`).join("\n")}`;
 // ═══════════════════════════════════════════════════════════════════════════════
 // UNLIMITED SUMMARY — splits into chunks, summarises each, then synthesises
 // ═══════════════════════════════════════════════════════════════════════════════
-async function generateBriefUnlimited(articles, label) {
+async function generateBriefUnlimited(articles, label, coveragePriority=null) {
   if (!articles.length) return {text:"", articles:[]};
   const sourceArticles = articles;
+
+  const DEFAULT_PRIORITY = "COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Within US coverage, prioritise WSJ, Washington Post, NY Times, and Financial Times — give these sources the most weight. Then Europe (UK, Germany, France, Italy, Switzerland, pan-European), then HK, Korea, Taiwan, Australia, Israel, Middle East (including Al Jazeera), Iran. Then Singapore and Canada. Indian stories should be mentioned briefly unless they have clear global market impact.";
+  const effectivePriority = coveragePriority || DEFAULT_PRIORITY;
 
   const CHUNK = 25;
   const chunks = [];
@@ -721,7 +859,7 @@ Rules:
 - Each bullet must be 1-2 sentences with real detail and investor perspective
 - Name EVERY company mentioned in the headlines
 - End each bullet with [REF:N] citing the article number(s)
-- COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Within US coverage, prioritise WSJ, Washington Post, NY Times, and Financial Times — give these sources the most weight. Then Europe (UK, Germany, France, Italy, Switzerland, pan-European), then HK, Korea, Taiwan, Australia, Israel, Middle East (including Al Jazeera), Iran. Then Singapore and Canada. Indian stories should be mentioned briefly unless they have clear global market impact.
+- ${effectivePriority}
 - COMPANY BALANCE: At least one full section dedicated to company-specific events. Name every company with ticker where known.
 - INDUSTRY TRENDS: When multiple companies in the same sector report similar themes, call out the sector-level pattern explicitly.
 - STRICT FACTUAL RULE: You may ONLY state facts that are EXPLICITLY present in the headline text. Do NOT infer, extrapolate, or add ANY figures, percentages, names, deal sizes, earnings amounts, or details that are not literally in the headline. Violation of this rule is unacceptable.
@@ -765,7 +903,7 @@ Rules:
 - ALWAYS open with macro/geopolitical big picture BEFORE company detail
 - Name every company, be specific with figures/percentages
 - EVERY bullet must end with [REF:N] or [REF:N,M]
-- COVERAGE PRIORITY: US and China first, then HK/Korea/Taiwan/India/Australia/Israel/ME/Iran, then Singapore/Canada
+- ${effectivePriority}
 - STRICT FACTUAL RULE: Only state facts explicitly in the headline text. Never add figures, percentages, names, or details not literally present in the headlines.
 
 Article index (use N in [REF:N]):
@@ -1291,7 +1429,8 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
 // ═══════════════════════════════════════════════════════════════════════════════
 function OverflowMenu({allArticles, enrichedCount, dupeCount, showDupes, setShowDupes,
                        isLoading, enriching, runEnrichment, setAllArticles,
-                       setBriefs, setLastFetch, setStatusMsg, SK}) {
+                       setBriefs, setLastFetch, setStatusMsg, SK,
+                       setEmClusterState, setEmLastFetch}) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -1358,7 +1497,10 @@ function OverflowMenu({allArticles, enrichedCount, dupeCount, showDupes, setShow
             () => {
               if (!window.confirm("Clear all cached headlines and summaries? The app will re-fetch everything from scratch.")) return;
               Object.values(SK).forEach(k => localStorage.removeItem(k));
+              Object.values(EM_SK).forEach(k => localStorage.removeItem(k));
               setAllArticles([]); setBriefs({}); setLastFetch({});
+              setEmClusterState({LATAM:"idle",CEE:"idle",AFRICA:"idle",EMASIA:"idle"});
+              setEmLastFetch({});
               setStatusMsg("Cache cleared — reloading…");
               setTimeout(() => window.location.reload(), 800);
             },
@@ -1849,6 +1991,29 @@ const SOURCE_RANK = {
   ME: ["aljazeera","aljazeera_biz","reuters_me","bloom_me","arabnews","arabnews_biz","national_ae","gulfnews","arabianbiz","agbi","tradearabia","alarabiya","zawya","gulfbiz","gulftimes","khaleej","saudigazette","menafn_sa","menafn_uae","menafn_qa","menafn_kw","menafn_bh","menafn_om","alarabiya_ar"],
   IR: ["iranintl","reuters_ir","bloom_ir","tehrantimes","fin_trib","irna_en","tasnim","ifpnews","mehrnews","entekhab","tabnak"],
   JP: ["reuters_jp","nikkei_asia","nikkei_biz_spotlight","jp_analyst_calls"],
+  // Emerging Markets
+  BR: ["reuters_br","infomoney","valor_br","reuters_latam","mercopress","bnnlatam"],
+  MX: ["reuters_mx","elfinanciero_mx","reuters_latam"],
+  AR: ["reuters_ar","ambito","mercopress","reuters_latam"],
+  CL: ["reuters_cl","df_cl","reuters_latam"],
+  CO: ["reuters_co","la_republica_co","reuters_latam"],
+  PE: ["reuters_pe","gestion_pe","reuters_latam"],
+  PL: ["reuters_pl","parkiet_pl","emerging_europe","reuters_cee"],
+  TR: ["reuters_tr","daily_sabah_biz","hurriyet_biz","reuters_cee"],
+  HU: ["reuters_hu","reuters_cee","emerging_europe"],
+  CZ: ["reuters_cz","reuters_cee","emerging_europe"],
+  RO: ["reuters_ro","reuters_cee","emerging_europe"],
+  GR: ["reuters_gr","ekathimerini","reuters_cee"],
+  ZA: ["reuters_za","fin24_za","businessday_za","reuters_africa","african_business"],
+  NG: ["reuters_ng","businessday_ng","punch_biz_ng","reuters_africa"],
+  KE: ["reuters_ke","businessdailyafrica","reuters_africa"],
+  EG: ["reuters_eg","egypt_independent","reuters_africa"],
+  MA: ["reuters_ma","reuters_africa"],
+  ID: ["reuters_id","bisnis_id","reuters_emasia","nikkei_sea"],
+  TH: ["reuters_th","bangkokpost_biz","reuters_emasia"],
+  MY: ["reuters_my","edge_my","reuters_emasia"],
+  PH: ["reuters_ph","inquirer_ph","reuters_emasia"],
+  VN: ["reuters_vn","vnexpress_biz","reuters_emasia"],
 };
 
 function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
@@ -1858,9 +2023,10 @@ function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
   const [briefLoading,    setBriefLoading]    = useState({});
   const TIER_COLORS = {1:"#2e7d32", 2:"#1565c0", 3:"#6a1b9a"};
 
-  const countryObj   = COUNTRIES.find(c => c.code === selectedCountry);
+  const ALL_SOURCES = [...SOURCES, ...EM_SOURCES];
+  const countryObj   = COUNTRIES.find(c => c.code === selectedCountry) || EM_COUNTRIES.find(c => c.code === selectedCountry);
   const rankOrder    = SOURCE_RANK[selectedCountry] || [];
-  const allCountrySources = SOURCES.filter(s => s.country === selectedCountry);
+  const allCountrySources = ALL_SOURCES.filter(s => s.country === selectedCountry);
   const rankedSources = [
     ...rankOrder.map(id => allCountrySources.find(s => s.id === id)).filter(Boolean),
     ...allCountrySources.filter(s => !rankOrder.includes(s.id)),
@@ -1880,7 +2046,12 @@ function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
         <div style={{position:"relative"}}>
           <select value={selectedCountry} onChange={e=>{setSelectedCountry(e.target.value);setSelectedSource("ALL");}}
             style={{appearance:"none",background:"#fff",border:"1px solid #c0392b",borderRadius:6,padding:"7px 32px 7px 12px",fontFamily:"'Spectral',serif",fontSize:14,color:"#1a1a1a",cursor:"pointer",outline:"none",minWidth:180}}>
-            {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>(<option key={c.code} value={c.code}>{c.flag} {c.label}</option>))}
+            <optgroup label="Developed Markets">
+              {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>(<option key={c.code} value={c.code}>{c.flag} {c.label}</option>))}
+            </optgroup>
+            <optgroup label="Emerging Markets">
+              {EM_COUNTRIES.map(c=>(<option key={c.code} value={c.code}>{c.flag} {c.label}</option>))}
+            </optgroup>
           </select>
           <span style={{position:"absolute",right:9,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",color:"#c0392b",fontSize:10}}>▼</span>
         </div>
@@ -1960,6 +2131,251 @@ function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EMERGING MARKETS TAB
+// ═══════════════════════════════════════════════════════════════════════════════
+function EMTab({canonical, emClusterState, emLastFetch, fetchEmCluster, briefs, setBriefs}) {
+  const mono = {fontFamily:"'DM Mono',monospace"};
+  const [activeCluster,    setActiveCluster]    = useState(null);
+  const [activeEmCountry,  setActiveEmCountry]  = useState("ALL");
+  const [emBriefLoading,   setEmBriefLoading]   = useState({});
+  const [globalBriefLoading,setGlobalBriefLoading]=useState(false);
+
+  const emCountryCodes = new Set(EM_COUNTRIES.map(c=>c.code));
+  const emCanonical = canonical.filter(a => emCountryCodes.has(a.country));
+
+  const timeAgo = ts => {
+    if (!ts) return "never";
+    const m = Math.floor((Date.now()-ts)/60000);
+    if (m < 1) return "just now";
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m/60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h/24)}d ago`;
+  };
+
+  // Global at a Glance brief
+  const glanceBriefKey = "em_global_glance";
+  const glanceArts = canonical.filter(a => GLOBAL_GLANCE_SOURCES.includes(a.sourceId) && !a.duplicateOf);
+  const glanceBriefData = briefs[glanceBriefKey];
+  const glanceBrief = glanceBriefData?.text ?? (typeof glanceBriefData==="string" ? glanceBriefData : null);
+
+  const runGlobalBrief = async () => {
+    if (!glanceArts.length) return;
+    setGlobalBriefLoading(true);
+    const priority = "COVERAGE PRIORITY: Open with the single most significant global macro development. Then cover all regions proportionally — do not neglect EM stories; the purpose of this brief is specifically to include Emerging Markets alongside developed markets.";
+    const b = await generateBriefUnlimited(glanceArts, "🌐 Global Markets — Full Picture", priority);
+    setBriefs(p=>{const n={...p,[glanceBriefKey]:b};sSet(SK.summaries,n);return n;});
+    setGlobalBriefLoading(false);
+  };
+
+  return (
+    <div style={{animation:"fadeIn 0.3s ease"}}>
+
+      {/* GLOBAL AT A GLANCE */}
+      <div style={{background:"#fff",border:"2px solid #1a1a1a",borderRadius:10,padding:"18px 22px",marginBottom:24}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:glanceBrief?12:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:22}}>🌐</span>
+            <div>
+              <div style={{...mono,fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>
+                GLOBAL AT A GLANCE · {glanceArts.length} articles · {GLOBAL_GLANCE_SOURCES.length} curated sources
+                {glanceBriefData?.generatedAt ? ` · generated ${new Date(glanceBriefData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}
+              </div>
+              <div style={{fontFamily:"'Spectral',serif",fontSize:16,fontWeight:700,color:"#1a1a1a"}}>Global Markets — Full Picture</div>
+              <div style={{...mono,fontSize:8,color:"#aaa",marginTop:2}}>
+                Synthesises developed + emerging markets · load EM clusters below to expand coverage
+              </div>
+            </div>
+          </div>
+          <button onClick={runGlobalBrief} disabled={globalBriefLoading||!glanceArts.length}
+            style={{...mono,fontSize:11,padding:"7px 16px",borderRadius:5,border:"1px solid #bbb",background:"none",color:"#1a1a1a",cursor:globalBriefLoading||!glanceArts.length?"not-allowed":"pointer",transition:"all 0.2s",opacity:!glanceArts.length?0.4:1}}
+            onMouseOver={e=>e.currentTarget.style.background="#fdecea"}
+            onMouseOut={e=>e.currentTarget.style.background="none"}>
+            {globalBriefLoading?<><Dots/> generating…</>:glanceBrief?"↺ refresh brief":"✦ generate global brief"}
+          </button>
+        </div>
+        {glanceBrief && <BriefRenderer text={glanceBrief} articles={glanceBriefData?.articles||glanceArts}/>}
+        {!glanceBrief && !glanceArts.length && (
+          <div style={{...mono,fontSize:10,color:"#bbb",textAlign:"center",padding:"16px 0"}}>
+            No articles from global sources yet — refresh feeds or load an EM cluster below
+          </div>
+        )}
+      </div>
+
+      {/* CLUSTER GRID */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:16,marginBottom:28}}>
+        {EM_CLUSTERS.map(cluster => {
+          const state = emClusterState[cluster.id] || "idle";
+          const clusterArts = emCanonical.filter(a => cluster.countries.includes(a.country));
+          const clusterSources = EM_SOURCES.filter(s => cluster.countries.includes(s.country));
+          const lastFetchTimes = clusterSources.map(s=>emLastFetch[s.id]).filter(Boolean);
+          const lastFetched = lastFetchTimes.length ? Math.max(...lastFetchTimes) : 0;
+          const isStale = !lastFetched || (Date.now()-lastFetched) > EM_STALE_MS;
+          const briefKey = `em_cluster_${cluster.id}`;
+          const clusterBriefData = briefs[briefKey];
+          const clusterBrief = clusterBriefData?.text ?? (typeof clusterBriefData==="string" ? clusterBriefData : null);
+
+          return (
+            <div key={cluster.id} style={{background:"#fff",border:`1px solid ${cluster.color}22`,borderRadius:10,padding:"16px 18px",borderTop:`3px solid ${cluster.color}`}}>
+
+              {/* cluster header */}
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
+                <div>
+                  <div style={{...mono,fontSize:9,color:cluster.color,letterSpacing:"0.08em",fontWeight:600}}>
+                    {cluster.flag} {cluster.label.toUpperCase()}
+                  </div>
+                  {state==="loaded" && (
+                    <div style={{...mono,fontSize:8,color:"#aaa",marginTop:2}}>
+                      {clusterArts.length} articles · {timeAgo(lastFetched)}{isStale?" · stale":""}
+                    </div>
+                  )}
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0,marginLeft:8}}>
+                  {state==="loaded" && (
+                    <button
+                      onClick={async()=>{
+                        setEmBriefLoading(p=>({...p,[briefKey]:true}));
+                        const toUse = clusterArts.length ? clusterArts : [];
+                        const priority = `COVERAGE PRIORITY: Focus on ${cluster.label}. Lead with macro/central bank/currency developments, then corporate actions, then geopolitical context.`;
+                        const b = await generateBriefUnlimited(toUse, `${cluster.flag} ${cluster.label}`, priority);
+                        setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
+                        setEmBriefLoading(p=>({...p,[briefKey]:false}));
+                      }}
+                      disabled={emBriefLoading[briefKey]||!clusterArts.length}
+                      style={{...mono,fontSize:8,padding:"3px 8px",border:`1px solid ${cluster.color}44`,borderRadius:3,background:"none",color:cluster.color,cursor:"pointer",opacity:!clusterArts.length?0.4:1}}>
+                      {emBriefLoading[briefKey]?<Dots color={cluster.color}/>:"✦ brief"}
+                    </button>
+                  )}
+                  <button
+                    onClick={()=>fetchEmCluster(cluster.id)}
+                    disabled={state==="loading"}
+                    style={{...mono,fontSize:9,padding:"5px 12px",borderRadius:4,cursor:state==="loading"?"not-allowed":"pointer",
+                      border:`1px solid ${cluster.color}`,
+                      background:state==="loaded"&&!isStale?"none":cluster.color,
+                      color:state==="loaded"&&!isStale?cluster.color:"#fff",
+                      opacity:state==="loading"?0.6:1}}>
+                    {state==="loading"?<><Dots color={state==="loaded"&&!isStale?cluster.color:"#fff"}/> loading…</>
+                      :state==="loaded"?"↺ refresh"
+                      :state==="error"?"⚠ retry"
+                      :"⊕ load"}
+                  </button>
+                </div>
+              </div>
+
+              {/* country pills */}
+              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
+                {cluster.countries.map(code=>{
+                  const c = EM_COUNTRIES.find(x=>x.code===code);
+                  const cnt = clusterArts.filter(a=>a.country===code).length;
+                  return (
+                    <span key={code} style={{...mono,fontSize:9,padding:"2px 8px",borderRadius:10,
+                      background:cnt>0?`${cluster.color}18`:"#f5f5f5",
+                      color:cnt>0?cluster.color:"#aaa",
+                      border:`1px solid ${cnt>0?cluster.color+"44":"#e0e0e0"}`}}>
+                      {c?.flag} {c?.label}{cnt>0?` (${cnt})`:""}
+                    </span>
+                  );
+                })}
+              </div>
+
+              {/* cluster brief */}
+              {clusterBrief && (
+                <div style={{borderBottom:"1px solid #e8e2d6",paddingBottom:10,marginBottom:10}}>
+                  <BriefRenderer text={clusterBrief} articles={clusterBriefData?.articles||clusterArts}/>
+                </div>
+              )}
+
+              {/* state-dependent body */}
+              {state==="idle" && (
+                <div style={{...mono,fontSize:10,color:"#bbb",padding:"20px 0",textAlign:"center"}}>
+                  Click "⊕ load" to fetch {cluster.label} feeds
+                </div>
+              )}
+              {state==="error" && (
+                <div style={{...mono,fontSize:10,color:"#c0392b",padding:"16px 0",textAlign:"center"}}>
+                  Fetch failed — check network and retry
+                </div>
+              )}
+              {state==="loaded" && clusterArts.length===0 && (
+                <div style={{...mono,fontSize:10,color:"#bbb",padding:"16px 0",textAlign:"center"}}>
+                  No articles — feeds may be temporarily unavailable
+                </div>
+              )}
+              {state==="loaded" && clusterArts.length>0 && (
+                <>
+                  <button onClick={()=>{setActiveCluster(cluster.id);setActiveEmCountry("ALL");}}
+                    style={{...mono,fontSize:9,padding:"4px 10px",border:`1px solid ${cluster.color}44`,borderRadius:4,background:"none",color:cluster.color,cursor:"pointer",marginBottom:10}}>
+                    View all {clusterArts.length} articles →
+                  </button>
+                  {clusterArts.slice(0,3).map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
+                  {clusterArts.length>3 && (
+                    <div style={{...mono,fontSize:9,color:"#aaa",marginTop:6}}>+{clusterArts.length-3} more</div>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* EXPANDED CLUSTER VIEW */}
+      {activeCluster && (()=>{
+        const cluster = EM_CLUSTERS.find(c=>c.id===activeCluster);
+        const clusterArts = emCanonical.filter(a=>cluster.countries.includes(a.country));
+        const filtered = activeEmCountry==="ALL" ? clusterArts : clusterArts.filter(a=>a.country===activeEmCountry);
+        const bySource = {};
+        filtered.forEach(a=>{
+          if(!bySource[a.sourceId]) bySource[a.sourceId]={src:EM_SOURCES.find(s=>s.id===a.sourceId),arts:[]};
+          bySource[a.sourceId].arts.push(a);
+        });
+        return (
+          <div style={{marginTop:4}}>
+            {/* sub-nav */}
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",background:"#fff",padding:"10px 16px",borderRadius:8,border:"1px solid #e0e0e0",marginBottom:16}}>
+              <button onClick={()=>setActiveCluster(null)}
+                style={{...mono,fontSize:10,color:"#888",background:"none",border:"none",cursor:"pointer",padding:"2px 6px"}}>
+                ← back
+              </button>
+              <span style={{...mono,fontSize:11,color:cluster.color,fontWeight:600}}>
+                {cluster.flag} {cluster.label}
+              </span>
+              {[{code:"ALL",label:"All",flag:""},...cluster.countries.map(code=>EM_COUNTRIES.find(c=>c.code===code))].map(c=>{
+                const cnt = c.code==="ALL" ? clusterArts.length : clusterArts.filter(a=>a.country===c.code).length;
+                if(!cnt && c.code!=="ALL") return null;
+                const active = activeEmCountry===c.code;
+                return (
+                  <button key={c.code} onClick={()=>setActiveEmCountry(c.code)}
+                    style={{...mono,fontSize:10,padding:"4px 10px",borderRadius:16,
+                      border:active?`1px solid ${cluster.color}`:"1px solid #ddd",
+                      background:active?cluster.color:"#fff",
+                      color:active?"#fff":"#555",cursor:"pointer"}}>
+                    {c.flag} {c.label} ({cnt})
+                  </button>
+                );
+              })}
+            </div>
+            {/* articles by source */}
+            <div style={{columns:"2 520px",columnGap:24}}>
+              {Object.entries(bySource).map(([sid,{src,arts}])=>(
+                <div key={sid} style={{breakInside:"avoid",marginBottom:4}}>
+                  <div style={{display:"flex",alignItems:"center",gap:7,padding:"9px 0 7px",borderBottom:"1px solid #e8e2d6",marginBottom:1}}>
+                    <span style={{...mono,fontSize:10,color:cluster.color,fontWeight:600}}>
+                      {src?.flag||""} {(src?.name||sid).toUpperCase()}
+                    </span>
+                    <span style={{...mono,fontSize:9,color:"#888"}}>{arts.length}</span>
+                  </div>
+                  {arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -2112,13 +2528,17 @@ export default function App() {
   const [enriching,     setEnriching]     = useState(false);
   const [showDupes,     setShowDupes]     = useState(false);
   const [storageReady,  setStorageReady]  = useState(false);
+  const [emClusterState,setEmClusterState]= useState({LATAM:"idle",CEE:"idle",AFRICA:"idle",EMASIA:"idle"});
+  const [emLastFetch,   setEmLastFetch]   = useState({});
 
   useEffect(()=>{
     (async()=>{
-      const [arts,bfs,lf]=await Promise.all([sGet(SK.articles),sGet(SK.summaries),sGet(SK.lastFetch)]);
+      const [arts,bfs,lf,emLf,emCs]=await Promise.all([sGet(SK.articles),sGet(SK.summaries),sGet(SK.lastFetch),sGet(EM_SK.lastFetch),sGet(EM_SK.clusterState)]);
       if(arts?.length) setAllArticles(arts);
       if(bfs) setBriefs(bfs);
       if(lf)  setLastFetch(lf);
+      if(emLf) setEmLastFetch(emLf);
+      if(emCs) setEmClusterState(prev=>({...prev,...emCs}));
       setStatusMsg(""); setStorageReady(true);
     })();
   },[]);
@@ -2151,6 +2571,37 @@ export default function App() {
       else setStatusMsg("");
       return merged;
     });
+  },[]);
+
+  const fetchEmCluster = useCallback(async(clusterId)=>{
+    const cluster = EM_CLUSTERS.find(c=>c.id===clusterId);
+    if(!cluster) return;
+    const clusterSources = EM_SOURCES.filter(s=>cluster.countries.includes(s.country));
+    setEmClusterState(prev=>{const n={...prev,[clusterId]:"loading"};sSet(EM_SK.clusterState,n);return n;});
+    setStatusMsg(`Loading ${cluster.label} feeds…`);
+    try {
+      const results=await Promise.all(clusterSources.map(async s=>{
+        const items=await fetchFeed(s);
+        return {sourceId:s.id,items};
+      }));
+      const now=Date.now();
+      setEmLastFetch(prev=>{const u={...prev,...Object.fromEntries(results.map(r=>[r.sourceId,now]))};sSet(EM_SK.lastFetch,u);return u;});
+      const fresh=results.flatMap(r=>r.items);
+      setAllArticles(prev=>{
+        const kept=prev.filter(a=>!clusterSources.some(s=>s.id===a.sourceId));
+        const merged=localDedup([...kept,...fresh]);
+        sSet(SK.articles,merged);
+        const toTranslate=fresh.filter(a=>a.lang!=="en"&&!a.translatedTitle);
+        if(toTranslate.length) runAutoTranslate(merged,toTranslate);
+        else setStatusMsg("");
+        return merged;
+      });
+      setEmClusterState(prev=>{const n={...prev,[clusterId]:"loaded"};sSet(EM_SK.clusterState,n);return n;});
+    } catch(e) {
+      console.warn("EM cluster fetch error:",clusterId,e);
+      setEmClusterState(prev=>{const n={...prev,[clusterId]:"error"};sSet(EM_SK.clusterState,n);return n;});
+      setStatusMsg("");
+    }
   },[]);
 
   const runAutoTranslate=useCallback(async(currentArticles,toTranslate)=>{
@@ -2265,6 +2716,7 @@ export default function App() {
     {id:"sources",  label:"◫ Sources"},
     {id:"watchlist",label:`◎ Watchlist${watchlistHits>0?` (${watchlistHits})`:""}`},
     {id:"filings",  label:"📋 Filings"},
+    {id:"em",       label:"🌍 EM"},
   ];
 
   return (
@@ -2324,6 +2776,8 @@ export default function App() {
               setLastFetch={setLastFetch}
               setStatusMsg={setStatusMsg}
               SK={SK}
+              setEmClusterState={setEmClusterState}
+              setEmLastFetch={setEmLastFetch}
             />
           </div>
         </div>
@@ -2351,7 +2805,7 @@ export default function App() {
       </header>
 
       {/* SUB-NAV */}
-      {mainTab!=="watchlist"&&mainTab!=="sources"&&mainTab!=="breaking"&&mainTab!=="newsbriefs"&&mainTab!=="filings"&&(
+      {mainTab!=="watchlist"&&mainTab!=="sources"&&mainTab!=="breaking"&&mainTab!=="newsbriefs"&&mainTab!=="filings"&&mainTab!=="em"&&(
         <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:88,zIndex:199,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
           <div style={{maxWidth:1500,margin:"0 auto",padding:"0 24px",display:"flex",width:"max-content",minWidth:"100%"}}>
             {mainTab==="region"?(
@@ -2398,6 +2852,7 @@ export default function App() {
         {mainTab==="watchlist"&&<WatchlistTab allArticles={allArticles} setAllArticles={setAllArticles}/>}
         {mainTab==="filings"&&<FilingsTab />}
         {mainTab==="newsbriefs"&&<NewsBriefsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs}/>}
+        {mainTab==="em"&&<EMTab canonical={canonical} emClusterState={emClusterState} emLastFetch={emLastFetch} fetchEmCluster={fetchEmCluster} briefs={briefs} setBriefs={setBriefs}/>}
 
         {/* REGION */}
         {mainTab==="region"&&(
@@ -2623,7 +3078,7 @@ export default function App() {
       )}
 
       <footer style={{borderTop:"1px solid #ddd",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#182535"}}>{SOURCES.length} sources · {COUNTRIES.length-1} markets · {MSCI_SECTORS.length} GICS sectors</span>
+        <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#182535"}}>{SOURCES.length + EM_SOURCES.length} sources · {COUNTRIES.length - 1 + EM_COUNTRIES.length} markets · {MSCI_SECTORS.length} GICS sectors</span>
         <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#182535"}}>persisted locally · stale threshold 45 min</span>
       </footer>
     </div>
