@@ -466,62 +466,62 @@ const EM_STALE_MS = 2 * 60 * 60 * 1000; // 2 hours for on-demand clusters
 
 const EM_SOURCES = [
   // ── Latin America ─────────────────────────────────────────────────────────
-  {id:"reuters_latam",tier:1,country:"BR",name:"Reuters LatAm",       lang:"en",flag:"🌎",url:GN("site:reuters.com Brazil Mexico Argentina Chile Colombia Peru economy markets")},
+  {id:"reuters_latam",tier:1,country:"BR",name:"Reuters LatAm",       lang:"en",flag:"🌎",url:GN("site:reuters.com \"Latin America\" economy markets")},
   {id:"mercopress",   tier:2,country:"AR",name:"MercoPress",          lang:"en",flag:"🌎",url:"https://en.mercopress.com/rss.xml",limit:10},
   {id:"infomoney",    tier:2,country:"BR",name:"InfoMoney",           lang:"pt",flag:"🇧🇷",url:"https://www.infomoney.com.br/feed/rss/"},
   {id:"valor_br",     tier:2,country:"BR",name:"Valor Econômico",     lang:"pt",flag:"🇧🇷",url:GN("site:valor.globo.com economia financas","pt-BR","BR","BR:pt")},
   {id:"reuters_br",   tier:1,country:"BR",name:"Reuters Brazil",      lang:"en",flag:"🇧🇷",url:GN("site:reuters.com Brazil Bovespa real currency economy")},
-  {id:"bnnlatam",     tier:2,country:"BR",name:"BNN LatAm",           lang:"en",flag:"🌎",url:GN("Latin America Brazil Mexico economy markets Reuters Bloomberg")},
+  {id:"bnnlatam",     tier:2,country:"BR",name:"BNN LatAm",           lang:"en",flag:"🌎",url:GN("\"Latin America\" economy markets Reuters Bloomberg")},
   {id:"elfinanciero_mx",tier:2,country:"MX",name:"El Financiero",     lang:"es",flag:"🇲🇽",url:GN("site:elfinanciero.com.mx economia finanzas mercados","es-MX","MX","MX:es")},
-  {id:"reuters_mx",   tier:1,country:"MX",name:"Reuters Mexico",      lang:"en",flag:"🇲🇽",url:GN("site:reuters.com Mexico economy Banxico peso markets")},
+  {id:"reuters_mx",   tier:1,country:"MX",name:"Reuters Mexico",      lang:"en",flag:"🇲🇽",url:GN("site:reuters.com Mexico economy business")},
   {id:"ambito",       tier:2,country:"AR",name:"Ámbito Financiero",   lang:"es",flag:"🇦🇷",url:GN("site:ambito.com economia finanzas mercados","es-AR","AR","AR:es")},
-  {id:"reuters_ar",   tier:1,country:"AR",name:"Reuters Argentina",   lang:"en",flag:"🇦🇷",url:GN("site:reuters.com Argentina economy peso Milei IMF bonds")},
+  {id:"reuters_ar",   tier:1,country:"AR",name:"Reuters Argentina",   lang:"en",flag:"🇦🇷",url:GN("site:reuters.com Argentina economy business")},
   {id:"df_cl",        tier:2,country:"CL",name:"Diario Financiero",   lang:"es",flag:"🇨🇱",url:GN("site:df.cl economia finanzas mercados","es-CL","CL","CL:es")},
-  {id:"reuters_cl",   tier:1,country:"CL",name:"Reuters Chile",       lang:"en",flag:"🇨🇱",url:GN("site:reuters.com Chile economy copper peso Boric markets")},
+  {id:"reuters_cl",   tier:1,country:"CL",name:"Reuters Chile",       lang:"en",flag:"🇨🇱",url:GN("site:reuters.com Chile economy business")},
   {id:"la_republica_co",tier:2,country:"CO",name:"La República",      lang:"es",flag:"🇨🇴",url:GN("site:larepublica.co economia finanzas negocios","es-CO","CO","CO:es")},
-  {id:"reuters_co",   tier:1,country:"CO",name:"Reuters Colombia",    lang:"en",flag:"🇨🇴",url:GN("site:reuters.com Colombia economy peso Petro markets")},
+  {id:"reuters_co",   tier:1,country:"CO",name:"Reuters Colombia",    lang:"en",flag:"🇨🇴",url:GN("site:reuters.com Colombia economy business")},
   {id:"gestion_pe",   tier:2,country:"PE",name:"Gestión",             lang:"es",flag:"🇵🇪",url:GN("site:gestion.pe economia negocios finanzas","es-PE","PE","PE:es")},
-  {id:"reuters_pe",   tier:1,country:"PE",name:"Reuters Peru",        lang:"en",flag:"🇵🇪",url:GN("site:reuters.com Peru economy copper sol markets")},
+  {id:"reuters_pe",   tier:1,country:"PE",name:"Reuters Peru",        lang:"en",flag:"🇵🇪",url:GN("site:reuters.com Peru economy business")},
   // ── Central & Eastern Europe ──────────────────────────────────────────────
-  {id:"reuters_cee",  tier:1,country:"PL",name:"Reuters CEE",         lang:"en",flag:"🌍",url:GN("site:reuters.com Poland Turkey Hungary Czech Romania Greece economy markets")},
+  {id:"reuters_cee",  tier:1,country:"PL",name:"Reuters CEE",         lang:"en",flag:"🌍",url:GN("site:reuters.com \"Eastern Europe\" economy business")},
   {id:"emerging_europe",tier:2,country:"PL",name:"Emerging Europe",   lang:"en",flag:"🌍",url:"https://emerging-europe.com/feed/",limit:10},
   {id:"parkiet_pl",   tier:2,country:"PL",name:"Parkiet",             lang:"pl",flag:"🇵🇱",url:GN("site:parkiet.com rynki gospodarka finanse","pl","PL","PL:pl")},
-  {id:"reuters_pl",   tier:1,country:"PL",name:"Reuters Poland",      lang:"en",flag:"🇵🇱",url:GN("site:reuters.com Poland economy Warsaw zloty NBP markets")},
+  {id:"reuters_pl",   tier:1,country:"PL",name:"Reuters Poland",      lang:"en",flag:"🇵🇱",url:GN("site:reuters.com Poland economy business")},
   {id:"daily_sabah_biz",tier:2,country:"TR",name:"Daily Sabah Business",lang:"en",flag:"🇹🇷",url:"https://www.dailysabah.com/rss/business"},
   {id:"hurriyet_biz", tier:2,country:"TR",name:"Hürriyet Daily News", lang:"en",flag:"🇹🇷",url:"https://www.hurriyetdailynews.com/rss.aspx?pageID=438&cat=14"},
-  {id:"reuters_tr",   tier:1,country:"TR",name:"Reuters Turkey",      lang:"en",flag:"🇹🇷",url:GN("site:reuters.com Turkey economy lira CBRT inflation markets")},
-  {id:"reuters_hu",   tier:1,country:"HU",name:"Reuters Hungary",     lang:"en",flag:"🇭🇺",url:GN("site:reuters.com Hungary economy forint NBH markets")},
-  {id:"reuters_cz",   tier:1,country:"CZ",name:"Reuters Czech Rep.",  lang:"en",flag:"🇨🇿",url:GN("site:reuters.com Czech Republic economy koruna CNB markets")},
-  {id:"reuters_ro",   tier:1,country:"RO",name:"Reuters Romania",     lang:"en",flag:"🇷🇴",url:GN("site:reuters.com Romania economy leu BNR markets")},
+  {id:"reuters_tr",   tier:1,country:"TR",name:"Reuters Turkey",      lang:"en",flag:"🇹🇷",url:GN("site:reuters.com Turkey economy business")},
+  {id:"reuters_hu",   tier:1,country:"HU",name:"Reuters Hungary",     lang:"en",flag:"🇭🇺",url:GN("site:reuters.com Hungary economy business")},
+  {id:"reuters_cz",   tier:1,country:"CZ",name:"Reuters Czech Rep.",  lang:"en",flag:"🇨🇿",url:GN("site:reuters.com \"Czech Republic\" economy business")},
+  {id:"reuters_ro",   tier:1,country:"RO",name:"Reuters Romania",     lang:"en",flag:"🇷🇴",url:GN("site:reuters.com Romania economy business")},
   {id:"ekathimerini", tier:2,country:"GR",name:"Ekathimerini",        lang:"en",flag:"🇬🇷",url:GN("site:ekathimerini.com economy business markets finance")},
-  {id:"reuters_gr",   tier:1,country:"GR",name:"Reuters Greece",      lang:"en",flag:"🇬🇷",url:GN("site:reuters.com Greece economy Athens bonds markets")},
+  {id:"reuters_gr",   tier:1,country:"GR",name:"Reuters Greece",      lang:"en",flag:"🇬🇷",url:GN("site:reuters.com Greece economy business")},
   // ── Africa ────────────────────────────────────────────────────────────────
-  {id:"reuters_africa",tier:1,country:"ZA",name:"Reuters Africa",     lang:"en",flag:"🌍",url:GN("site:reuters.com Africa \"South Africa\" Nigeria Kenya Egypt Morocco economy")},
+  {id:"reuters_africa",tier:1,country:"ZA",name:"Reuters Africa",     lang:"en",flag:"🌍",url:GN("site:reuters.com Africa economy business markets")},
   {id:"african_business",tier:2,country:"ZA",name:"African Business", lang:"en",flag:"🌍",url:"https://african.business/feed",limit:10},
   {id:"fin24_za",     tier:2,country:"ZA",name:"Fin24",               lang:"en",flag:"🇿🇦",url:"https://www.fin24.com/rss/rss.aspx"},
   {id:"businessday_za",tier:2,country:"ZA",name:"Business Day SA",    lang:"en",flag:"🇿🇦",url:GN("site:businesslive.co.za economy business markets JSE")},
-  {id:"reuters_za",   tier:1,country:"ZA",name:"Reuters South Africa",lang:"en",flag:"🇿🇦",url:GN("site:reuters.com \"South Africa\" economy rand JSE markets")},
+  {id:"reuters_za",   tier:1,country:"ZA",name:"Reuters South Africa",lang:"en",flag:"🇿🇦",url:GN("site:reuters.com \"South Africa\" economy business")},
   {id:"businessday_ng",tier:2,country:"NG",name:"BusinessDay Nigeria",lang:"en",flag:"🇳🇬",url:"https://businessday.ng/feed/"},
   {id:"punch_biz_ng", tier:2,country:"NG",name:"Punch Nigeria",       lang:"en",flag:"🇳🇬",url:"https://punchng.com/feed/"},
-  {id:"reuters_ng",   tier:1,country:"NG",name:"Reuters Nigeria",     lang:"en",flag:"🇳🇬",url:GN("site:reuters.com Nigeria economy naira CBN oil markets")},
+  {id:"reuters_ng",   tier:1,country:"NG",name:"Reuters Nigeria",     lang:"en",flag:"🇳🇬",url:GN("site:reuters.com Nigeria economy business")},
   {id:"businessdailyafrica",tier:2,country:"KE",name:"Business Daily Africa",lang:"en",flag:"🇰🇪",url:"https://www.businessdailyafrica.com/rss"},
-  {id:"reuters_ke",   tier:1,country:"KE",name:"Reuters Kenya",       lang:"en",flag:"🇰🇪",url:GN("site:reuters.com Kenya economy shilling CBK markets")},
+  {id:"reuters_ke",   tier:1,country:"KE",name:"Reuters Kenya",       lang:"en",flag:"🇰🇪",url:GN("site:reuters.com Kenya economy business")},
   {id:"egypt_independent",tier:2,country:"EG",name:"Egypt Independent",lang:"en",flag:"🇪🇬",url:GN("site:egyptindependent.com economy business finance")},
-  {id:"reuters_eg",   tier:1,country:"EG",name:"Reuters Egypt",       lang:"en",flag:"🇪🇬",url:GN("site:reuters.com Egypt economy pound IMF markets")},
-  {id:"reuters_ma",   tier:1,country:"MA",name:"Reuters Morocco",     lang:"en",flag:"🇲🇦",url:GN("site:reuters.com Morocco economy dirham BAM markets")},
+  {id:"reuters_eg",   tier:1,country:"EG",name:"Reuters Egypt",       lang:"en",flag:"🇪🇬",url:GN("site:reuters.com Egypt economy business")},
+  {id:"reuters_ma",   tier:1,country:"MA",name:"Reuters Morocco",     lang:"en",flag:"🇲🇦",url:GN("site:reuters.com Morocco economy business")},
   // ── EM Asia ───────────────────────────────────────────────────────────────
-  {id:"reuters_emasia",tier:1,country:"ID",name:"Reuters SEA",        lang:"en",flag:"🌏",url:GN("site:reuters.com Indonesia Thailand Malaysia Philippines Vietnam economy markets")},
+  {id:"reuters_emasia",tier:1,country:"ID",name:"Reuters SEA",        lang:"en",flag:"🌏",url:GN("site:reuters.com \"Southeast Asia\" economy business")},
   {id:"nikkei_sea",   tier:2,country:"ID",name:"Nikkei Asia SEA",     lang:"en",flag:"🌏",url:GN("site:asia.nikkei.com Indonesia Thailand Malaysia Philippines Vietnam"),paywall:true},
   {id:"bisnis_id",    tier:2,country:"ID",name:"Bisnis Indonesia",    lang:"id",flag:"🇮🇩",url:GN("site:bisnis.com ekonomi pasar keuangan","id","ID","ID:id")},
-  {id:"reuters_id",   tier:1,country:"ID",name:"Reuters Indonesia",   lang:"en",flag:"🇮🇩",url:GN("site:reuters.com Indonesia economy rupiah BI JCI markets")},
+  {id:"reuters_id",   tier:1,country:"ID",name:"Reuters Indonesia",   lang:"en",flag:"🇮🇩",url:GN("site:reuters.com Indonesia economy business")},
   {id:"bangkokpost_biz",tier:2,country:"TH",name:"Bangkok Post Business",lang:"en",flag:"🇹🇭",url:"https://www.bangkokpost.com/rss/data/business.xml"},
-  {id:"reuters_th",   tier:1,country:"TH",name:"Reuters Thailand",    lang:"en",flag:"🇹🇭",url:GN("site:reuters.com Thailand economy baht BOT SET markets")},
+  {id:"reuters_th",   tier:1,country:"TH",name:"Reuters Thailand",    lang:"en",flag:"🇹🇭",url:GN("site:reuters.com Thailand economy business")},
   {id:"edge_my",      tier:2,country:"MY",name:"The Edge Malaysia",   lang:"en",flag:"🇲🇾",url:GN("site:theedgemarkets.com economy markets bursa"),paywall:true},
-  {id:"reuters_my",   tier:1,country:"MY",name:"Reuters Malaysia",    lang:"en",flag:"🇲🇾",url:GN("site:reuters.com Malaysia economy ringgit BNM Bursa markets")},
+  {id:"reuters_my",   tier:1,country:"MY",name:"Reuters Malaysia",    lang:"en",flag:"🇲🇾",url:GN("site:reuters.com Malaysia economy business")},
   {id:"inquirer_ph",  tier:2,country:"PH",name:"Philippine Inquirer", lang:"en",flag:"🇵🇭",url:"https://business.inquirer.net/feed"},
-  {id:"reuters_ph",   tier:1,country:"PH",name:"Reuters Philippines", lang:"en",flag:"🇵🇭",url:GN("site:reuters.com Philippines economy peso BSP PSEi markets")},
+  {id:"reuters_ph",   tier:1,country:"PH",name:"Reuters Philippines", lang:"en",flag:"🇵🇭",url:GN("site:reuters.com Philippines economy business")},
   {id:"vnexpress_biz",tier:2,country:"VN",name:"VnExpress Business",  lang:"en",flag:"🇻🇳",url:"https://e.vnexpress.net/rss/business.rss"},
-  {id:"reuters_vn",   tier:1,country:"VN",name:"Reuters Vietnam",     lang:"en",flag:"🇻🇳",url:GN("site:reuters.com Vietnam economy dong SBV VN-Index markets")},
+  {id:"reuters_vn",   tier:1,country:"VN",name:"Reuters Vietnam",     lang:"en",flag:"🇻🇳",url:GN("site:reuters.com Vietnam economy business")},
 ];
 
 // Sources used for the cross-regional Global at a Glance brief
@@ -2438,11 +2438,24 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
         {masterBrief&&<div style={{borderTop:"1px solid #e8e2d6",paddingTop:12}}><BriefRenderer text={masterBrief} articles={masterBriefData?.articles||allBriefArts}/></div>}
       </div>
 
-      {/* Per-market group columns */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:16}}>
-        {NEWS_BRIEF_GROUPS.map(group => {
-          const arts = groupArts(group);
-          const key = `newsbriefs_${group.market}`;
+      {/* Per-market group columns — sectioned by type */}
+      {[
+        { heading:"ANALYST ACTIONS",  color:"#7b1fa2", markets:["Broker Calls & Analyst Actions","Asia Broker Calls & Analyst Actions"] },
+        { heading:"IDEAS",            color:"#1565c0", markets:["Ideas & Commentary"] },
+        { heading:"REGIONAL MARKETS", color:"#c0392b", markets:["United States","Canada","United Kingdom","Singapore","Australia","Hong Kong / China","Japan","Korea / Taiwan"] },
+        { heading:"GLOBAL",           color:"#1a1a1a", markets:["🌐 Global Overview"] },
+      ].map(section => {
+        const sectionGroups = section.markets.map(m => NEWS_BRIEF_GROUPS.find(g => g.market === m)).filter(Boolean);
+        if (!sectionGroups.length) return null;
+        return (
+          <div key={section.heading} style={{marginBottom:28}}>
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:section.color,letterSpacing:"0.12em",fontWeight:700,marginBottom:12,paddingBottom:6,borderBottom:`2px solid ${section.color}22`}}>
+              {section.heading}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:16}}>
+              {sectionGroups.map(group => {
+                const arts = groupArts(group);
+                const key = `newsbriefs_${group.market}`;
           const briefData = briefs[key];
           const brief = briefData?.text ?? (typeof briefData==="string" ? briefData : null);
 
@@ -2504,8 +2517,11 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
               )}
             </div>
           );
-        })}
-      </div>
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -2516,7 +2532,8 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
 const STALE_MS = 45*60*1000;
 
 export default function App() {
-  const [mainTab,       setMainTab]       = useState("region");
+  const [mainTab,       setMainTab]       = useState("breaking");
+  const [marketsView,   setMarketsView]   = useState("developed");
   const [activeCountry, setActiveCountry] = useState("ALL");
   const [activeSector,  setActiveSector]  = useState("ALL");
   const [allArticles,   setAllArticles]   = useState([]);
@@ -2709,14 +2726,11 @@ export default function App() {
   const briefsTabCount = briefsTabArts.length;
 
   const MAIN_TABS=[
-    {id:"breaking", label:`⚡ Breaking${breakingArts.length>0?` (${breakingArts.length})`:""}`},
-    {id:"newsbriefs",label:`📰 News Briefs${briefsTabCount>0?` (${briefsTabCount})`:""}`},
-    {id:"region",   label:"⊕ Regions"},
-    {id:"sector",   label:"▦ Sectors"},
-    {id:"sources",  label:"◫ Sources"},
-    {id:"watchlist",label:`◎ Watchlist${watchlistHits>0?` (${watchlistHits})`:""}`},
-    {id:"filings",  label:"📋 Filings"},
-    {id:"em",       label:"🌍 EM"},
+    {id:"breaking",  label:`⚡ Today${breakingArts.length>0?` (${breakingArts.length})`:""}`},
+    {id:"newsbriefs",label:`📰 Intel${briefsTabCount>0?` (${briefsTabCount})`:""}`},
+    {id:"markets",   label:"🌍 Markets"},
+    {id:"watchlist", label:`◎ Watchlist${watchlistHits>0?` (${watchlistHits})`:""}`},
+    {id:"filings",   label:"📋 Filings"},
   ];
 
   return (
@@ -2805,10 +2819,10 @@ export default function App() {
       </header>
 
       {/* SUB-NAV */}
-      {mainTab!=="watchlist"&&mainTab!=="sources"&&mainTab!=="breaking"&&mainTab!=="newsbriefs"&&mainTab!=="filings"&&mainTab!=="em"&&(
+      {mainTab==="markets"&&(marketsView==="developed"||marketsView==="sectors")&&(
         <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:88,zIndex:199,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
           <div style={{maxWidth:1500,margin:"0 auto",padding:"0 24px",display:"flex",width:"max-content",minWidth:"100%"}}>
-            {mainTab==="region"?(
+            {marketsView==="developed"?(
               COUNTRIES.map(c=>{
                 const cnt=c.code==="ALL"?canonical.length:canonical.filter(a=>a.country===c.code).length;
                 const active=activeCountry===c.code;
@@ -2852,55 +2866,7 @@ export default function App() {
         {mainTab==="watchlist"&&<WatchlistTab allArticles={allArticles} setAllArticles={setAllArticles}/>}
         {mainTab==="filings"&&<FilingsTab />}
         {mainTab==="newsbriefs"&&<NewsBriefsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs}/>}
-        {mainTab==="em"&&<EMTab canonical={canonical} emClusterState={emClusterState} emLastFetch={emLastFetch} fetchEmCluster={fetchEmCluster} briefs={briefs} setBriefs={setBriefs}/>}
-
-        {/* REGION */}
-        {mainTab==="region"&&(
-          <>
-            {activeCountry!=="ALL"&&(
-              <>
-                <BriefBox label={`${COUNTRIES.find(c=>c.code===activeCountry)?.flag} ${COUNTRIES.find(c=>c.code===activeCountry)?.label} Market Overview`}
-                  icon={COUNTRIES.find(c=>c.code===activeCountry)?.flag}
-                  briefKey={`country_${activeCountry}`} briefs={briefs} setBriefs={setBriefs} articles={countryArts}
-                  loading={briefLoading} setLoading={setBriefLoading}/>
-                {Object.keys(sectorCountsForCountry).length>0&&(
-                  <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:20}}>
-                    {MSCI_SECTORS.filter(s=>sectorCountsForCountry[s.code]).map(sec=>(
-                      <button key={sec.code} onClick={()=>{setMainTab("sector");setActiveSector(sec.code);}}
-                        style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:5,border:`1px solid ${sec.color}44`,background:`${sec.color}0d`,color:sec.color,cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:10}}
-                        onMouseOver={e=>e.currentTarget.style.background=`${sec.color}22`}
-                        onMouseOut={e=>e.currentTarget.style.background=`${sec.color}0d`}>
-                        {sec.icon} {sec.label} ({sectorCountsForCountry[sec.code]})
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-            {countryArts.length===0?(
-              <div style={{textAlign:"center",padding:"80px 0",fontFamily:"'DM Mono',monospace",color:"#1a2a38",fontSize:13}}>
-                {isLoading?<><Dots/> fetching feeds…</>:"no articles — hit refresh"}
-              </div>
-            ):activeCountry==="ALL"?(
-              <div style={{maxWidth:860,margin:"0 auto"}}>{countryArts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}</div>
-            ):(
-              <div style={{columns:"2 520px",columnGap:24}}>
-                {sourceGroups.map(({s,arts})=>(
-                  <div key={s.id} style={{breakInside:"avoid",marginBottom:4}}>
-                    <div style={{display:"flex",alignItems:"center",gap:7,padding:"9px 0 7px",borderBottom:"1px solid #e8e2d6",marginBottom:1}}>
-                      <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c0392b",fontWeight:600,letterSpacing:"0.06em"}}>{s.flag} {s.name.toUpperCase()}</span>
-                      <span style={{fontSize:9,color:"#888",fontFamily:"'DM Mono',monospace"}}>{arts.length}</span>
-                      {lastFetch[s.id]&&<span style={{fontSize:8,color:"#aaa",fontFamily:"'DM Mono',monospace",marginLeft:"auto"}}>{timeAgo(lastFetch[s.id])}</span>}
-                    </div>
-                    {arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* BREAKING NEWS */}
+        {/* BREAKING / TODAY */}
         {mainTab==="breaking"&&(()=>{
           const briefKey="breaking";
           return (
@@ -2997,85 +2963,154 @@ export default function App() {
           );
         })()}
 
-        {/* SECTOR */}
-        {mainTab==="sector"&&(
+        {/* MARKETS — Developed · Emerging · Sectors · Sources */}
+        {mainTab==="markets"&&(
           <>
-            {activeSector==="ALL"?(
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(420px,1fr))",gap:16}}>
-                {sectorGroups.map(({sec,arts})=>{
-                  const briefKey=`sector_${sec.code}`;
-                  return (
-                    <div key={sec.code} style={{background:"#ffffff",border:`1px solid ${sec.color}22`,borderRadius:10,padding:"16px 18px",animation:"fadeIn 0.4s ease"}}>
-                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <span style={{fontSize:20,color:sec.color}}>{sec.icon}</span>
-                          <div>
-                            <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:sec.color,letterSpacing:"0.1em",fontWeight:600}}>{sec.code} · {arts.length} stories{briefs[briefKey]?.generatedAt ? ` · generated ${new Date(briefs[briefKey].generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
-                            <div style={{fontFamily:"'Spectral',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>{sec.label}</div>
-                          </div>
-                        </div>
-                        <div style={{display:"flex",gap:6}}>
-                          <button onClick={()=>setActiveSector(sec.code)}
-                            style={{fontSize:9,padding:"3px 9px",border:`1px solid ${sec.color}33`,borderRadius:4,background:"none",color:sec.color,cursor:"pointer",fontFamily:"'DM Mono',monospace"}}
-                            onMouseOver={e=>e.currentTarget.style.background=`${sec.color}11`}
-                            onMouseOut={e=>e.currentTarget.style.background="none"}>view all →</button>
-                          <button onClick={async()=>{
-                              setBriefLoading(p=>({...p,[briefKey]:true}));
-                              const b=await generateBriefUnlimited(arts,sec.label);
-                              setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
-                              setBriefLoading(p=>({...p,[briefKey]:false}));
-                            }}
-                            disabled={briefLoading[briefKey]}
-                            style={{fontSize:9,padding:"3px 9px",border:`1px solid ${sec.color}44`,borderRadius:4,background:"none",color:sec.color,cursor:"pointer",fontFamily:"'DM Mono',monospace"}}
-                            onMouseOver={e=>e.currentTarget.style.background=`${sec.color}11`}
-                            onMouseOut={e=>e.currentTarget.style.background="none"}>
-                            {briefLoading[briefKey]?<Dots color={sec.color}/>:"✦ brief"}
-                          </button>
-                        </div>
-                      </div>
-                      {briefs[briefKey]&&<div style={{marginBottom:10,borderBottom:"1px solid #e8e2d6",paddingBottom:10}}><BriefRenderer text={typeof briefs[briefKey]==="string"?briefs[briefKey]:briefs[briefKey]?.text} articles={typeof briefs[briefKey]==="string"?arts:briefs[briefKey]?.articles||arts}/></div>}
-                      <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
-                        {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{const n=arts.filter(a=>a.country===c.code).length;return n?<span key={c.code} style={{fontSize:9,color:"#3a6080",fontFamily:"'DM Mono',monospace"}}>{c.flag}{n}</span>:null;})}
-                      </div>
-                      {arts.slice(0,4).map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
-                      {arts.length>4&&<button onClick={()=>setActiveSector(sec.code)} style={{fontSize:10,color:"#2a5a7a",background:"none",border:"none",cursor:"pointer",paddingTop:8,fontFamily:"'DM Mono',monospace"}}>+{arts.length-4} more →</button>}
-                    </div>
-                  );
-                })}
-              </div>
-            ):(
+            {/* Markets segmented control */}
+            <div style={{display:"flex",marginBottom:18,background:"#fff",border:"1px solid #e8e2d6",borderRadius:8,overflow:"hidden"}}>
+              {[
+                {id:"developed", label:"Developed Markets"},
+                {id:"emerging",  label:"Emerging Markets"},
+                {id:"sectors",   label:"Sectors"},
+                {id:"sources",   label:"Sources"},
+              ].map(v=>(
+                <button key={v.id} onClick={()=>setMarketsView(v.id)}
+                  style={{fontFamily:"'DM Mono',monospace",fontSize:11,padding:"9px 18px",border:"none",flex:1,
+                    borderBottom:marketsView===v.id?"2px solid #c0392b":"2px solid transparent",
+                    background:marketsView===v.id?"#fdecea":"none",
+                    color:marketsView===v.id?"#c0392b":"#555",
+                    fontWeight:marketsView===v.id?600:400,cursor:"pointer",transition:"all 0.15s"}}>
+                  {v.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Developed Markets */}
+            {marketsView==="developed"&&(
               <>
-                <BriefBox label={`${sectorForActive?.icon} ${sectorForActive?.label} — Global Sector View`} icon={sectorForActive?.icon}
-                  briefKey={`sector_${activeSector}`} briefs={briefs} setBriefs={setBriefs} articles={sectorArts}
-                  loading={briefLoading} setLoading={setBriefLoading}/>
-                <div style={{columns:"2 520px",columnGap:24}}>
-                  {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{
-                    const arts=sectorArts.filter(a=>a.country===c.code);
-                    if(!arts.length) return null;
-                    const col=sectorForActive?.color||"#c0392b";
-                    return (
-                      <div key={c.code} style={{breakInside:"avoid",marginBottom:4}}>
-                        <div style={{display:"flex",alignItems:"center",gap:7,padding:"9px 0 7px",borderBottom:`1px solid ${col}22`,marginBottom:1}}>
-                          <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:col,fontWeight:600}}>{c.flag} {c.label.toUpperCase()}</span>
-                          <span style={{fontSize:9,color:"#1e2e3e",fontFamily:"'DM Mono',monospace"}}>{arts.length}</span>
+                {activeCountry!=="ALL"&&(
+                  <>
+                    <BriefBox label={`${COUNTRIES.find(c=>c.code===activeCountry)?.flag} ${COUNTRIES.find(c=>c.code===activeCountry)?.label} Market Overview`}
+                      icon={COUNTRIES.find(c=>c.code===activeCountry)?.flag}
+                      briefKey={`country_${activeCountry}`} briefs={briefs} setBriefs={setBriefs} articles={countryArts}
+                      loading={briefLoading} setLoading={setBriefLoading}/>
+                    {Object.keys(sectorCountsForCountry).length>0&&(
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:20}}>
+                        {MSCI_SECTORS.filter(s=>sectorCountsForCountry[s.code]).map(sec=>(
+                          <button key={sec.code} onClick={()=>{setMarketsView("sectors");setActiveSector(sec.code);}}
+                            style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:5,border:`1px solid ${sec.color}44`,background:`${sec.color}0d`,color:sec.color,cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:10}}
+                            onMouseOver={e=>e.currentTarget.style.background=`${sec.color}22`}
+                            onMouseOut={e=>e.currentTarget.style.background=`${sec.color}0d`}>
+                            {sec.icon} {sec.label} ({sectorCountsForCountry[sec.code]})
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+                {countryArts.length===0?(
+                  <div style={{textAlign:"center",padding:"80px 0",fontFamily:"'DM Mono',monospace",color:"#1a2a38",fontSize:13}}>
+                    {isLoading?<><Dots/> fetching feeds…</>:"no articles — hit refresh"}
+                  </div>
+                ):activeCountry==="ALL"?(
+                  <div style={{maxWidth:860,margin:"0 auto"}}>{countryArts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}</div>
+                ):(
+                  <div style={{columns:"2 520px",columnGap:24}}>
+                    {sourceGroups.map(({s,arts})=>(
+                      <div key={s.id} style={{breakInside:"avoid",marginBottom:4}}>
+                        <div style={{display:"flex",alignItems:"center",gap:7,padding:"9px 0 7px",borderBottom:"1px solid #e8e2d6",marginBottom:1}}>
+                          <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c0392b",fontWeight:600,letterSpacing:"0.06em"}}>{s.flag} {s.name.toUpperCase()}</span>
+                          <span style={{fontSize:9,color:"#888",fontFamily:"'DM Mono',monospace"}}>{arts.length}</span>
+                          {lastFetch[s.id]&&<span style={{fontSize:8,color:"#aaa",fontFamily:"'DM Mono',monospace",marginLeft:"auto"}}>{timeAgo(lastFetch[s.id])}</span>}
                         </div>
                         {arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
+
+            {/* Emerging Markets */}
+            {marketsView==="emerging"&&<EMTab canonical={canonical} emClusterState={emClusterState} emLastFetch={emLastFetch} fetchEmCluster={fetchEmCluster} briefs={briefs} setBriefs={setBriefs}/>}
+
+            {/* Sectors */}
+            {marketsView==="sectors"&&(
+              <>
+                {activeSector==="ALL"?(
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(420px,1fr))",gap:16}}>
+                    {sectorGroups.map(({sec,arts})=>{
+                      const briefKey=`sector_${sec.code}`;
+                      return (
+                        <div key={sec.code} style={{background:"#ffffff",border:`1px solid ${sec.color}22`,borderRadius:10,padding:"16px 18px",animation:"fadeIn 0.4s ease"}}>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              <span style={{fontSize:20,color:sec.color}}>{sec.icon}</span>
+                              <div>
+                                <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:sec.color,letterSpacing:"0.1em",fontWeight:600}}>{sec.code} · {arts.length} stories{briefs[briefKey]?.generatedAt ? ` · generated ${new Date(briefs[briefKey].generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
+                                <div style={{fontFamily:"'Spectral',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>{sec.label}</div>
+                              </div>
+                            </div>
+                            <div style={{display:"flex",gap:6}}>
+                              <button onClick={()=>setActiveSector(sec.code)}
+                                style={{fontSize:9,padding:"3px 9px",border:`1px solid ${sec.color}33`,borderRadius:4,background:"none",color:sec.color,cursor:"pointer",fontFamily:"'DM Mono',monospace"}}
+                                onMouseOver={e=>e.currentTarget.style.background=`${sec.color}11`}
+                                onMouseOut={e=>e.currentTarget.style.background="none"}>view all →</button>
+                              <button onClick={async()=>{
+                                  setBriefLoading(p=>({...p,[briefKey]:true}));
+                                  const b=await generateBriefUnlimited(arts,sec.label);
+                                  setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
+                                  setBriefLoading(p=>({...p,[briefKey]:false}));
+                                }}
+                                disabled={briefLoading[briefKey]}
+                                style={{fontSize:9,padding:"3px 9px",border:`1px solid ${sec.color}44`,borderRadius:4,background:"none",color:sec.color,cursor:"pointer",fontFamily:"'DM Mono',monospace"}}
+                                onMouseOver={e=>e.currentTarget.style.background=`${sec.color}11`}
+                                onMouseOut={e=>e.currentTarget.style.background="none"}>
+                                {briefLoading[briefKey]?<Dots color={sec.color}/>:"✦ brief"}
+                              </button>
+                            </div>
+                          </div>
+                          {briefs[briefKey]&&<div style={{marginBottom:10,borderBottom:"1px solid #e8e2d6",paddingBottom:10}}><BriefRenderer text={typeof briefs[briefKey]==="string"?briefs[briefKey]:briefs[briefKey]?.text} articles={typeof briefs[briefKey]==="string"?arts:briefs[briefKey]?.articles||arts}/></div>}
+                          <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
+                            {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{const n=arts.filter(a=>a.country===c.code).length;return n?<span key={c.code} style={{fontSize:9,color:"#3a6080",fontFamily:"'DM Mono',monospace"}}>{c.flag}{n}</span>:null;})}
+                          </div>
+                          {arts.slice(0,4).map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
+                          {arts.length>4&&<button onClick={()=>setActiveSector(sec.code)} style={{fontSize:10,color:"#2a5a7a",background:"none",border:"none",cursor:"pointer",paddingTop:8,fontFamily:"'DM Mono',monospace"}}>+{arts.length-4} more →</button>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ):(
+                  <>
+                    <BriefBox label={`${sectorForActive?.icon} ${sectorForActive?.label} — Global Sector View`} icon={sectorForActive?.icon}
+                      briefKey={`sector_${activeSector}`} briefs={briefs} setBriefs={setBriefs} articles={sectorArts}
+                      loading={briefLoading} setLoading={setBriefLoading}/>
+                    <div style={{columns:"2 520px",columnGap:24}}>
+                      {COUNTRIES.filter(c=>c.code!=="ALL").map(c=>{
+                        const arts=sectorArts.filter(a=>a.country===c.code);
+                        if(!arts.length) return null;
+                        const col=sectorForActive?.color||"#c0392b";
+                        return (
+                          <div key={c.code} style={{breakInside:"avoid",marginBottom:4}}>
+                            <div style={{display:"flex",alignItems:"center",gap:7,padding:"9px 0 7px",borderBottom:`1px solid ${col}22`,marginBottom:1}}>
+                              <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:col,fontWeight:600}}>{c.flag} {c.label.toUpperCase()}</span>
+                              <span style={{fontSize:9,color:"#1e2e3e",fontFamily:"'DM Mono',monospace"}}>{arts.length}</span>
+                            </div>
+                            {arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {/* Sources */}
+            {marketsView==="sources"&&<SourcesTab canonical={canonical} lastFetch={lastFetch} briefs={briefs} setBriefs={setBriefs}/>}
           </>
         )}
       </div>
-
-      {/* SOURCES — rendered outside padding div so it spans full width */}
-      {mainTab==="sources"&&(
-        <div style={{maxWidth:1500,margin:"0 auto",padding:"22px 24px"}}>
-          <SourcesTab canonical={canonical} lastFetch={lastFetch} briefs={briefs} setBriefs={setBriefs}/>
-        </div>
-      )}
 
       <footer style={{borderTop:"1px solid #ddd",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#182535"}}>{SOURCES.length + EM_SOURCES.length} sources · {COUNTRIES.length - 1 + EM_COUNTRIES.length} markets · {MSCI_SECTORS.length} GICS sectors</span>
