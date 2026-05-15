@@ -1,4 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
+
+const FontScaleCtx = createContext(1);
+const FONT_SCALES = [
+  { id:"compact", label:"A", scale:0.85 },
+  { id:"normal",  label:"A", scale:1.0  },
+  { id:"large",   label:"A", scale:1.2  },
+];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MSCI GICS SECTORS
@@ -547,6 +554,7 @@ const SK = {
   lastFetch: "gm_fetch_v4",
   watchlist: "gm_watch_v4",
   watchHits: "gm_watchhits_v4",
+  fontScale: "gm_fontscale_v1",
 };
 const EM_SK = {
   clusterState: "gm_em_cluster_v1",
@@ -1034,6 +1042,7 @@ function Tag({children,color="#c0392b",onClick}) {
 }
 
 function ArticleCard({art, highlightKeyword=null}) {
+  const fontScale = useContext(FontScaleCtx);
   const sec = art.sector ? SECTOR_MAP[art.sector] : null;
   const sigMeta   = art.signal ? SIGNAL_META[art.signal] : null;
   const catMeta   = art.signalCategory ? SIGNAL_CATEGORIES[art.signalCategory] : null;
@@ -1120,7 +1129,7 @@ function ArticleCard({art, highlightKeyword=null}) {
       </div>
       <a href={art.link} target="_blank" rel="noopener noreferrer"
         style={{color:"#1a1a1a",fontFamily:"'Spectral',Georgia,serif",
-          fontSize:14,lineHeight:1.5,fontWeight:600,textDecoration:"none",
+          fontSize:Math.round(14*fontScale),lineHeight:1.5,fontWeight:600,textDecoration:"none",
           display:"block",marginBottom:4,transition:"color 0.15s"}}
         onMouseOver={e=>e.target.style.color="#c0392b"}
         onMouseOut={e=>e.target.style.color="#1a1a1a"}>
@@ -1133,7 +1142,7 @@ function ArticleCard({art, highlightKeyword=null}) {
         </div>
       )}
       {art.insight&&(
-        <div style={{fontSize:12,color:"#666",lineHeight:1.65,
+        <div style={{fontSize:Math.round(12*fontScale),color:"#666",lineHeight:1.65,
           borderLeft:"2px solid #c9a84c33",paddingLeft:9,
           fontStyle:"italic",fontFamily:"'Spectral',Georgia,serif"}}>
           {art.insight}
@@ -1271,6 +1280,7 @@ function renderInline(text, quotes, baseKey = "") {
 }
 
 function BriefRenderer({text, articles=[]}) {
+  const fontScale = useContext(FontScaleCtx);
   const [quotes, setQuotes] = useState(null);
   useEffect(() => {
     if (!text) return;
@@ -1304,7 +1314,7 @@ function BriefRenderer({text, articles=[]}) {
         if (!trimmed) return <div key={i} style={{height:6}}/>;
         if (trimmed.startsWith("## ")) {
           return (
-            <div key={i} style={{fontFamily:"'Spectral',Georgia,serif",fontSize:13,
+            <div key={i} style={{fontFamily:"'Spectral',Georgia,serif",fontSize:Math.round(13*fontScale),
               fontWeight:700,color:"#8B4513",margin:"22px 0 10px",
               textTransform:"uppercase",letterSpacing:"0.1em",
               borderBottom:"2px solid #e0d8cc",paddingBottom:6}}>
@@ -1314,7 +1324,7 @@ function BriefRenderer({text, articles=[]}) {
         }
         if (trimmed.startsWith("# ")) {
           return (
-            <div key={i} style={{fontFamily:"'Spectral',Georgia,serif",fontSize:16,
+            <div key={i} style={{fontFamily:"'Spectral',Georgia,serif",fontSize:Math.round(16*fontScale),
               fontWeight:700,color:"#1a1a1a",margin:"4px 0 14px",lineHeight:1.3}}>
               {trimmed.replace(/^# /,"")}
             </div>
@@ -1327,8 +1337,8 @@ function BriefRenderer({text, articles=[]}) {
           const links = findLinksForBullet(txt, articles);
           return (
             <div key={i} style={{display:"flex",gap:8,margin:"8px 0",paddingLeft:8,alignItems:"flex-start"}}>
-              <span style={{color:"#c0392b",fontWeight:700,marginTop:2,flexShrink:0,fontSize:16}}>•</span>
-              <span style={{fontFamily:"'Spectral',Georgia,serif",fontSize:14,color:"#1a1a1a",lineHeight:1.7}}>
+              <span style={{color:"#c0392b",fontWeight:700,marginTop:2,flexShrink:0,fontSize:Math.round(16*fontScale)}}>•</span>
+              <span style={{fontFamily:"'Spectral',Georgia,serif",fontSize:Math.round(14*fontScale),color:"#1a1a1a",lineHeight:1.7}}>
                 {boldMatch
                   ? <><strong style={{color:"#1a1a1a"}}>{renderTickers(boldMatch[1], quotes, `${i}-b`)}</strong>{boldMatch[2] ? <>{": "}{renderInline(boldMatch[2], quotes, `${i}-r`)}</> : ""}</>
                   : renderInline(cleanTxt, quotes, `${i}-t`)}
@@ -1362,7 +1372,7 @@ function BriefRenderer({text, articles=[]}) {
         // Strip [REF:N] citation markers from plain paragraphs (exec summary, risk sections)
         const cleanPara = trimmed.replace(/\[REF:[\d,\s]+\]/g, "").trim();
         return (
-          <p key={i} style={{fontFamily:"'Spectral',Georgia,serif",fontSize:14,
+          <p key={i} style={{fontFamily:"'Spectral',Georgia,serif",fontSize:Math.round(14*fontScale),
             color:"#1a1a1a",lineHeight:1.7,margin:"10px 0",
             background:"#f0ece4",padding:"14px 18px",borderRadius:4}}>
             {mergedMatch
@@ -1430,7 +1440,8 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
 function OverflowMenu({allArticles, enrichedCount, dupeCount, showDupes, setShowDupes,
                        isLoading, enriching, runEnrichment, setAllArticles,
                        setBriefs, setLastFetch, setStatusMsg, SK,
-                       setEmClusterState, setEmLastFetch}) {
+                       setEmClusterState, setEmLastFetch,
+                       fontScale, setFontScale}) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -1470,6 +1481,22 @@ function OverflowMenu({allArticles, enrichedCount, dupeCount, showDupes, setShow
         <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",
           background:"#fff",border:"1px solid #e0e0e0",borderRadius:8,
           boxShadow:"0 4px 20px rgba(0,0,0,0.12)",zIndex:300,minWidth:230,overflow:"hidden"}}>
+
+          {/* Text size */}
+          <div style={{padding:"8px 14px 8px",borderBottom:"1px solid #f0ece4"}}>
+            <div style={{...mono,fontSize:9,color:"#aaa",letterSpacing:"0.1em",marginBottom:6}}>TEXT SIZE</div>
+            <div style={{display:"flex",gap:4}}>
+              {FONT_SCALES.map(({id,label,scale})=>(
+                <button key={id} onClick={()=>{setFontScale(scale);sSet(SK.fontScale,scale);}}
+                  style={{...mono,fontSize:id==="compact"?9:id==="normal"?11:14,padding:"4px 0",flex:1,
+                    border:`1px solid ${fontScale===scale?"#c0392b":"#ddd"}`,borderRadius:4,
+                    background:fontScale===scale?"#fdecea":"#fafafa",
+                    color:fontScale===scale?"#c0392b":"#888",cursor:"pointer",transition:"all 0.15s"}}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Stats */}
           <div style={{padding:"8px 16px",borderBottom:"1px solid #f0ece4",...mono,fontSize:9,color:"#888",display:"flex",gap:14}}>
@@ -2547,15 +2574,17 @@ export default function App() {
   const [storageReady,  setStorageReady]  = useState(false);
   const [emClusterState,setEmClusterState]= useState({LATAM:"idle",CEE:"idle",AFRICA:"idle",EMASIA:"idle"});
   const [emLastFetch,   setEmLastFetch]   = useState({});
+  const [fontScale,     setFontScale]     = useState(1.0);
 
   useEffect(()=>{
     (async()=>{
-      const [arts,bfs,lf,emLf,emCs]=await Promise.all([sGet(SK.articles),sGet(SK.summaries),sGet(SK.lastFetch),sGet(EM_SK.lastFetch),sGet(EM_SK.clusterState)]);
+      const [arts,bfs,lf,emLf,emCs,fs]=await Promise.all([sGet(SK.articles),sGet(SK.summaries),sGet(SK.lastFetch),sGet(EM_SK.lastFetch),sGet(EM_SK.clusterState),sGet(SK.fontScale)]);
       if(arts?.length) setAllArticles(arts);
       if(bfs) setBriefs(bfs);
       if(lf)  setLastFetch(lf);
       if(emLf) setEmLastFetch(emLf);
       if(emCs) setEmClusterState(prev=>({...prev,...emCs}));
+      if(typeof fs==="number") setFontScale(fs);
       setStatusMsg(""); setStorageReady(true);
     })();
   },[]);
@@ -2734,6 +2763,7 @@ export default function App() {
   ];
 
   return (
+    <FontScaleCtx.Provider value={fontScale}>
     <div style={{minHeight:"100vh",background:"#f5f0e8",color:"#1a1a1a",fontFamily:"'Spectral',Georgia,serif"}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Mono:wght@400;500;600&display=swap');
@@ -2792,6 +2822,8 @@ export default function App() {
               SK={SK}
               setEmClusterState={setEmClusterState}
               setEmLastFetch={setEmLastFetch}
+              fontScale={fontScale}
+              setFontScale={setFontScale}
             />
           </div>
         </div>
@@ -3117,5 +3149,6 @@ export default function App() {
         <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#182535"}}>persisted locally · stale threshold 45 min</span>
       </footer>
     </div>
+    </FontScaleCtx.Provider>
   );
 }
