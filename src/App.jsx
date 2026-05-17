@@ -78,6 +78,8 @@ const SIGNAL_CATEGORIES = {
   RATING_DOWN:       { label:"Analyst Downgrade",    signal:"SN1", mgmt:false },
   IPO:               { label:"IPO / Listing",        signal:"SP1", mgmt:false },
   DELISTING:         { label:"Delisting",            signal:"SN2", mgmt:false },
+  BIZ_FEATURE:       { label:"Business Feature",     signal:"N",   mgmt:false },
+  MARKET_OUTLOOK:    { label:"Market Outlook",       signal:"N",   mgmt:false },
   MACRO:             { label:"Macro / Policy",       signal:"N",   mgmt:false },
   OTHER:             { label:"Other",                signal:"N",   mgmt:false },
 };
@@ -808,6 +810,9 @@ MGMT_BUY = director/insider buying own stock (signal=SP2)
 MGMT_SELL = director/insider selling own stock (signal=SN1)
 ACTIVIST_INVESTOR = activist fund takes stake or pushes for change (signal=SP1)
 
+BIZ_FEATURE = substantive long-form business feature, in-depth company profile, or investigative piece about a company's strategy, operations, competitive dynamics, business model change, or industry transformation — not a routine earnings headline or press release; use signal=N unless the feature reveals a clear positive or negative strategic shift (SP1/SN1)
+MARKET_OUTLOOK = interview with or commentary from a fund manager, portfolio manager, investment strategist, sell-side analyst, or expert panel discussing market direction, sector rotation, valuations, or macro fundamentals from an investment perspective — includes "roundtable", "where is the market headed", "outlook" discussions; signal=N
+
 weaknessContext: set to TRUE if the headline mentions or implies the event follows a period of poor results, execution failure, strategic miss, investor pressure, or calls for change. Otherwise false.
 
 STRICT FACTUAL RULE: Only classify based on what is EXPLICITLY in the headline. Do not infer figures or details not present. When uncertain between two categories, pick the more conservative signal strength.
@@ -859,6 +864,10 @@ Use this exact format:
 - [Earnings beat/miss: company, amount, implication. [REF:N]]
 - [M&A, dividend change, CEO appointment, analyst upgrade/downgrade: company, details, implication. [REF:N]]
 
+## Business Features & Strategic Outlook
+- [In-depth feature article or executive interview: what strategic shift, competitive dynamic, or business model change is being signalled, and what does it mean for valuation? [REF:N]]
+- [Fund manager, strategist, or analyst panel commentary on market direction, sector fundamentals, or valuation — what is their key call and the reasoning? [REF:N]]
+
 ## Risks & Outlook
 - [Specific risk with context and what to watch for]
 
@@ -870,6 +879,7 @@ Rules:
 - ${effectivePriority}
 - COMPANY BALANCE: At least one full section dedicated to company-specific events. Name every company with ticker where known.
 - INDUSTRY TRENDS: When multiple companies in the same sector report similar themes, call out the sector-level pattern explicitly.
+- FEATURES & DEPTH: Always include in-depth business features, executive interviews, and fund manager/strategist commentary in the "Business Features & Strategic Outlook" section, even when they lack a near-term price catalyst — these provide essential research context. Business model changes, competitive shifts, and long-term strategic pivots that affect valuation belong here. Articles from Barron's, IBD, WSJ, FT, and Nikkei that are clearly features or expert interviews must be included.
 - STRICT FACTUAL RULE: You may ONLY state facts that are EXPLICITLY present in the headline text. Do NOT infer, extrapolate, or add ANY figures, percentages, names, deal sizes, earnings amounts, or details that are not literally in the headline. Violation of this rule is unacceptable.
 
 Articles (cite using [REF:N] at end of each bullet, N = article number):
@@ -880,7 +890,7 @@ ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).joi
 
   const summaries = await Promise.all(chunks.map((chunk, ci) => {
     const offset = ci * CHUNK;
-    const prompt = `Summarise these headlines for ${label}. For each story, name the company, what happened, and the investor implication in 1 sentence. Include the article number in parentheses at the end of each sentence so it can be cited, e.g. "(article 3)".
+    const prompt = `Summarise these headlines for ${label}. For each story, name the company or subject, what happened, and the investor implication in 1 sentence. Include the article number in parentheses at the end of each sentence, e.g. "(article 3)". For in-depth feature articles, executive interviews, or fund manager/strategist commentary, prefix with [FEATURE] so they are flagged for the Business Features & Strategic Outlook section.
 ${chunk.map((a,i)=>`${offset+i}. ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
     return callClaude(prompt, 800);
   }));
@@ -904,6 +914,10 @@ Format:
 ## Company-Specific Actions
 - [Earnings/M&A/dividend/executive change with company name, details, implication. [REF:N]]
 
+## Business Features & Strategic Outlook
+- [In-depth feature or executive interview: strategic shift, business model change, or competitive dynamic and its valuation implication. [REF:N]]
+- [Fund manager, strategist, or analyst panel view on market direction, sector fundamentals, or valuation. [REF:N]]
+
 ## Risks & Outlook
 - [Specific risk or opportunity. [REF:N]]
 
@@ -912,6 +926,7 @@ Rules:
 - Name every company, be specific with figures/percentages
 - EVERY bullet must end with [REF:N] or [REF:N,M]
 - ${effectivePriority}
+- FEATURES & DEPTH: Always include in-depth business features, executive interviews, and fund manager/strategist commentary in the "Business Features & Strategic Outlook" section even without a near-term price catalyst. Business model changes, competitive shifts, and strategic pivots that affect long-term valuation are high priority. Expert panel discussions and outlook interviews from Barron's, WSJ, FT, IBD, and regional equivalents must be included.
 - STRICT FACTUAL RULE: Only state facts explicitly in the headline text. Never add figures, percentages, names, or details not literally present in the headlines.
 
 Article index (use N in [REF:N]):
@@ -993,11 +1008,13 @@ async function generateKeywordBrief(keyword, articles) {
 
 You have ${direct.length} direct mentions and ${related.length} related/indirect stories from global news sources.
 Synthesise ALL of them into a complete picture:
-(1) What is happening directly with ${keyword} right now
+(1) What is happening directly with ${keyword} right now — breaking news, earnings, corporate events
 (2) The broader ecosystem: competitors, suppliers, customers, regulators, macro factors — what are they signalling
-(3) Overall investment assessment: risks, opportunities, and what to watch
+(3) Strategic depth: any in-depth business features, executive interviews, or long-form analysis that reveal business model changes, competitive dynamics, or strategic pivots affecting valuation — include these even if they carry no immediate price catalyst
+(4) Expert views: fund manager, investment strategist, or analyst panel commentary on ${keyword} or its sector — what are experienced investors saying about direction, fundamentals, or valuation?
+(5) Overall investment assessment: risks, opportunities, and what to watch
 
-Name specific companies, figures, and events. Flowing prose, no bullets. Be thorough — cover everything.
+Name specific companies, figures, and events. Flowing prose, no bullets. Be thorough — cover everything, prioritising depth and context as much as breaking news.
 
 DIRECT MENTIONS (${direct.length}):
 ${direct.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")||"(none)"}
