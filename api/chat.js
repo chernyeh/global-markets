@@ -9,18 +9,46 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") { res.status(200).end(); return; }
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const { stream: wantsStream, ...anthropicBody } = req.body;
+
+    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": process.env.ANTHROPIC_KEY,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(wantsStream ? { ...anthropicBody, stream: true } : anthropicBody),
     });
-    const data = await response.json();
-    res.status(response.status).json(data);
+
+    if (!wantsStream) {
+      const data = await upstream.json();
+      res.status(upstream.status).json(data);
+      return;
+    }
+
+    // Non-200 upstream means an error JSON body, not a stream
+    if (!upstream.ok) {
+      const errData = await upstream.json();
+      res.status(upstream.status).json(errData);
+      return;
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.status(200);
+
+    const reader = upstream.body.getReader();
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      res.write(decoder.decode(value, { stream: true }));
+    }
+    res.end();
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (!res.headersSent) res.status(500).json({ error: error.message });
+    else res.end();
   }
 }

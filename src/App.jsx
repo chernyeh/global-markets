@@ -759,6 +759,48 @@ async function callClaude(prompt, maxTokens=2000) {
   return data.content?.[0]?.text || "";
 }
 
+async function callClaudeStream(prompt, maxTokens, onChunk, signal = null) {
+  const res = await fetch("/api/chat", {
+    signal,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      stream: true,
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data?.error?.message || `HTTP ${res.status}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let fullText = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const jsonStr = line.slice(6).trim();
+      if (jsonStr === "[DONE]") continue;
+      try {
+        const evt = JSON.parse(jsonStr);
+        if (evt.type === "content_block_delta" && evt.delta?.type === "text_delta") {
+          fullText += evt.delta.text;
+          onChunk(evt.delta.text, fullText);
+        }
+      } catch {}
+    }
+  }
+  return fullText;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ENRICHMENT — translate + insight + sector + signal
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -832,7 +874,7 @@ ${withTranslations.map((a,i)=>`${i}. ${a._preTranslated}`).join("\n")}`;
 // ═══════════════════════════════════════════════════════════════════════════════
 // UNLIMITED SUMMARY — splits into chunks, summarises each, then synthesises
 // ═══════════════════════════════════════════════════════════════════════════════
-async function generateBriefUnlimited(articles, label, coveragePriority=null) {
+async function generateBriefUnlimited(articles, label, coveragePriority=null, onChunk=null) {
   if (!articles.length) return {text:"", articles:[]};
   const sourceArticles = articles;
 
@@ -884,7 +926,7 @@ Rules:
 
 Articles (cite using [REF:N] at end of each bullet, N = article number):
 ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n")}`;
-    const text = await callClaude(prompt, 6000);
+    const text = onChunk ? await callClaudeStream(prompt, 6000, onChunk) : await callClaude(prompt, 6000);
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
@@ -934,7 +976,7 @@ ${articleIndex}
 
 Summaries to synthesise:
 ${summaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, 6000);
+  const text = onChunk ? await callClaudeStream(synthPrompt, 6000, onChunk) : await callClaude(synthPrompt, 6000);
   return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 
@@ -973,34 +1015,37 @@ ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} [${a.source}, ${a.cou
 }
 
 async function runWatchlistAnalysis(keywords, articles, onProgress) {
-  let working = articles.map(a => ({ ...a, watchMatches: [] }));
-  for (let ki = 0; ki < keywords.length; ki++) {
-    const kw = keywords[ki].trim();
-    if (!kw) continue;
-    onProgress(`Analysing keyword ${ki+1}/${keywords.length}: "${kw}"…`);
-    const BATCH = 50;
-    for (let i = 0; i < working.length; i += BATCH) {
-      const batch = working.slice(i, i + BATCH);
-      const results = await intelligentMatch(kw, batch);
-      results.forEach(r => {
-        const art = batch[r.idx];
-        if (!art) return;
-        const globalIdx = working.findIndex(a => a.id === art.id);
-        if (globalIdx === -1) return;
-        const existing = working[globalIdx].watchMatches || [];
-        if (!existing.find(m => m.keyword === kw)) {
-          working[globalIdx] = {
-            ...working[globalIdx],
-            watchMatches: [...existing, { keyword: kw, matchType: r.matchType, reason: r.reason }]
-          };
-        }
-      });
-    }
+  const CONCURRENCY = 3;
+  const BATCH = 50;
+
+  const matchMap = {};
+  articles.forEach(a => { matchMap[a.id] = [...(a.watchMatches || [])]; });
+
+  const activeKws = keywords.map(k => k.trim()).filter(Boolean);
+
+  for (let w = 0; w < activeKws.length; w += CONCURRENCY) {
+    const kwGroup = activeKws.slice(w, w + CONCURRENCY);
+    onProgress(`Analysing keywords ${w + 1}–${Math.min(w + CONCURRENCY, activeKws.length)} of ${activeKws.length}…`);
+
+    await Promise.all(kwGroup.map(async (kw) => {
+      for (let i = 0; i < articles.length; i += BATCH) {
+        const batch = articles.slice(i, i + BATCH);
+        const results = await intelligentMatch(kw, batch);
+        results.forEach(r => {
+          const art = batch[r.idx];
+          if (!art) return;
+          const existing = matchMap[art.id] || [];
+          if (!existing.find(m => m.keyword === kw))
+            matchMap[art.id] = [...existing, { keyword: kw, matchType: r.matchType, reason: r.reason }];
+        });
+      }
+    }));
   }
-  return working;
+
+  return articles.map(a => ({ ...a, watchMatches: matchMap[a.id] || [] }));
 }
 
-async function generateKeywordBrief(keyword, articles) {
+async function generateKeywordBrief(keyword, articles, onChunk=null) {
   if (!articles.length) return "";
   const direct = articles.filter(a => a.watchMatches?.find(m=>m.keyword===keyword&&m.matchType==="direct"));
   const related = articles.filter(a => a.watchMatches?.find(m=>m.keyword===keyword&&m.matchType==="related"));
@@ -1021,8 +1066,7 @@ ${direct.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")||"
 
 RELATED/INDIRECT (${related.length}):
 ${related.map(a=>`• ${a.translatedTitle||a.title} [${a.source}] — ${a.watchMatches?.find(m=>m.keyword===keyword)?.reason||""}`).join("\n")||"(none)"}`;
-  const text = await callClaude(prompt, 3000);
-  return text;
+  return onChunk ? await callClaudeStream(prompt, 3000, onChunk) : await callClaude(prompt, 3000);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1410,17 +1454,40 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
   const briefArts = briefData?.articles ?? articles;
   const generatedAt = briefData?.generatedAt ?? null;
   const isLoading=loading[briefKey];
+
+  const [streamingText, setStreamingText] = useState("");
+  const abortRef = useRef(null);
+  useEffect(() => () => abortRef.current?.abort(), []);
+
   const run=async()=>{
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     setLoading(p=>({...p,[briefKey]:true}));
-    const b=await generateBriefUnlimited(articles,label);
-    setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
-    setLoading(p=>({...p,[briefKey]:false}));
+    setStreamingText("");
+    const onChunk = (_, full) => {
+      if (ctrl.signal.aborted) return;
+      setStreamingText(full);
+    };
+    try {
+      const b=await generateBriefUnlimited(articles, label, null, onChunk);
+      if (!ctrl.signal.aborted) {
+        setStreamingText("");
+        setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
+      }
+    } catch(e) {
+      if (!ctrl.signal.aborted) console.warn("BriefBox:",e);
+    } finally {
+      if (!ctrl.signal.aborted) setLoading(p=>({...p,[briefKey]:false}));
+    }
   };
   const formatTime = (ms) => {
     try {
       return new Date(ms).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
     } catch { return ""; }
   };
+  const displayText = isLoading && streamingText ? streamingText : brief;
+  const displayArts = isLoading && streamingText ? articles : briefArts;
   return (
     <div style={{background:"#fff",borderLeft:"3px solid #c0392b",border:"1px solid #e0e0e0",borderRadius:10,
       padding:"18px 22px",marginBottom:20,animation:"fadeIn 0.4s ease"}}>
@@ -1445,7 +1512,7 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
           {isLoading?<><Dots/> generating…</>:brief?"↺ refresh":"✦ generate brief"}
         </button>
       </div>
-      {brief && <BriefRenderer text={brief} articles={briefArts}/>}
+      {displayText && <BriefRenderer text={displayText} articles={displayArts}/>}
     </div>
   );
 }
@@ -1850,8 +1917,10 @@ function WatchlistTab({allArticles, setAllArticles}) {
   const [analysing,    setAnalysing]    = useState(false);
   const [statusMsg,    setStatusMsg]    = useState("");
   const [activeKw,     setActiveKw]     = useState(null);
-  const [kwBriefs,     setKwBriefs]     = useState({});
-  const [kwBriefLoad,  setKwBriefLoad]  = useState({});
+  const [kwBriefs,       setKwBriefs]       = useState({});
+  const [kwBriefLoad,    setKwBriefLoad]    = useState({});
+  const [kwStreamText,   setKwStreamText]   = useState({});
+  const kwAbortRefs = useRef({});
   const [lastAnalysed, setLastAnalysed] = useState(null);
 
   useEffect(()=>{
@@ -1968,10 +2037,27 @@ function WatchlistTab({allArticles, setAllArticles}) {
                 <div style={{fontFamily:"'Spectral',serif",fontSize:15,color:"#1a1a1a",fontWeight:600}}>"{activeKw}" — Full Picture</div>
               </div>
               <button onClick={async()=>{
+                  kwAbortRefs.current[activeKw]?.abort();
+                  const ctrl = new AbortController();
+                  kwAbortRefs.current[activeKw] = ctrl;
                   setKwBriefLoad(p=>({...p,[activeKw]:true}));
-                  const b=await generateKeywordBrief(activeKw,kwArticles);
-                  setKwBriefs(p=>({...p,[activeKw]:b}));
-                  setKwBriefLoad(p=>({...p,[activeKw]:false}));
+                  setKwStreamText(p=>({...p,[activeKw]:""}));
+                  const kw = activeKw;
+                  const onChunk = (_,full) => {
+                    if (ctrl.signal.aborted) return;
+                    setKwStreamText(p=>({...p,[kw]:full}));
+                  };
+                  try {
+                    const b=await generateKeywordBrief(kw,kwArticles,onChunk);
+                    if (!ctrl.signal.aborted) {
+                      setKwStreamText(p=>({...p,[kw]:""}));
+                      setKwBriefs(p=>({...p,[kw]:b}));
+                    }
+                  } catch(e) {
+                    if (!ctrl.signal.aborted) console.warn("kwBrief:",e);
+                  } finally {
+                    if (!ctrl.signal.aborted) setKwBriefLoad(p=>({...p,[kw]:false}));
+                  }
                 }}
                 disabled={kwBriefLoad[activeKw]||!kwArticles.length}
                 style={{background:"none",border:"1px solid #bbb",color:"#333",padding:"6px 14px",borderRadius:5,cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:11,transition:"all 0.2s",opacity:!kwArticles.length?0.4:1}}
@@ -1980,7 +2066,8 @@ function WatchlistTab({allArticles, setAllArticles}) {
                 {kwBriefLoad[activeKw]?<><Dots/> generating…</>:kwBriefs[activeKw]?"↺ refresh brief":"✦ generate intelligence brief"}
               </button>
             </div>
-            {kwBriefs[activeKw]&&<BriefRenderer text={kwBriefs[activeKw]} articles={kwArticles}/>}
+            {(kwBriefs[activeKw]||(kwBriefLoad[activeKw]&&kwStreamText[activeKw]))&&
+              <BriefRenderer text={kwBriefLoad[activeKw]&&kwStreamText[activeKw]?kwStreamText[activeKw]:kwBriefs[activeKw]} articles={kwArticles}/>}
           </div>
           {kwArticles.length===0 ? (
             <div style={{textAlign:"center",padding:"40px",fontFamily:"'DM Mono',monospace",color:"#1e2a38",fontSize:12}}>No matches yet — run analysis first</div>
@@ -2429,6 +2516,8 @@ function EMTab({canonical, emClusterState, emLastFetch, fetchEmCluster, briefs, 
 // ═══════════════════════════════════════════════════════════════════════════════
 function NewsBriefsTab({canonical, briefs, setBriefs}) {
   const [briefLoading, setBriefLoading] = useState({});
+  const [briefStream,  setBriefStream]  = useState({});
+  const briefAbortRefs = useRef({});
   const mono = { fontFamily:"'DM Mono',monospace" };
 
   // Compute articles for each market group
@@ -2438,22 +2527,39 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
   const allBriefArts = NEWS_BRIEF_GROUPS.flatMap(g => groupArts(g));
   const masterBriefKey = "newsbriefs_master";
 
+  const runBriefWithStream = async (key, arts, label) => {
+    briefAbortRefs.current[key]?.abort();
+    const ctrl = new AbortController();
+    briefAbortRefs.current[key] = ctrl;
+    setBriefLoading(p=>({...p,[key]:true}));
+    setBriefStream(p=>({...p,[key]:""}));
+    const onChunk = (_,full) => {
+      if (ctrl.signal.aborted) return;
+      setBriefStream(p=>({...p,[key]:full}));
+    };
+    try {
+      const b = await generateBriefUnlimited(arts, label, null, onChunk);
+      if (!ctrl.signal.aborted) {
+        setBriefStream(p=>({...p,[key]:""}));
+        setBriefs(p=>{const n={...p,[key]:b};sSet(SK.summaries,n);return n;});
+      }
+    } catch(e) {
+      if (!ctrl.signal.aborted) console.warn("NewsBriefsTab:",e);
+    } finally {
+      if (!ctrl.signal.aborted) setBriefLoading(p=>({...p,[key]:false}));
+    }
+  };
+
   const generateGroupBrief = async (group) => {
     const key = `newsbriefs_${group.market}`;
-    setBriefLoading(p=>({...p,[key]:true}));
     const arts = groupArts(group);
-    if (!arts.length) { setBriefLoading(p=>({...p,[key]:false})); return; }
-    const b = await generateBriefUnlimited(arts, `${group.flag} ${group.market} Company News`);
-    setBriefs(p=>{const n={...p,[key]:b};sSet(SK.summaries,n);return n;});
-    setBriefLoading(p=>({...p,[key]:false}));
+    if (!arts.length) return;
+    await runBriefWithStream(key, arts, `${group.flag} ${group.market} Company News`);
   };
 
   const generateMasterBrief = async () => {
-    setBriefLoading(p=>({...p,[masterBriefKey]:true}));
-    if (!allBriefArts.length) { setBriefLoading(p=>({...p,[masterBriefKey]:false})); return; }
-    const b = await generateBriefUnlimited(allBriefArts, "Global Company News Briefs");
-    setBriefs(p=>{const n={...p,[masterBriefKey]:b};sSet(SK.summaries,n);return n;});
-    setBriefLoading(p=>({...p,[masterBriefKey]:false}));
+    if (!allBriefArts.length) return;
+    await runBriefWithStream(masterBriefKey, allBriefArts, "Global Company News Briefs");
   };
 
   const masterBriefData = briefs[masterBriefKey];
@@ -2479,7 +2585,7 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
             {briefLoading[masterBriefKey]?<Dots color="#c0392b"/>:"✦ brief all"}
           </button>
         </div>
-        {masterBrief&&<div style={{borderTop:"1px solid #e8e2d6",paddingTop:12}}><BriefRenderer text={masterBrief} articles={masterBriefData?.articles||allBriefArts}/></div>}
+        {(masterBrief||(briefLoading[masterBriefKey]&&briefStream[masterBriefKey]))&&<div style={{borderTop:"1px solid #e8e2d6",paddingTop:12}}><BriefRenderer text={briefLoading[masterBriefKey]&&briefStream[masterBriefKey]?briefStream[masterBriefKey]:masterBrief} articles={masterBriefData?.articles||allBriefArts}/></div>}
       </div>
 
       {/* Per-market group columns — sectioned by type */}
@@ -2541,7 +2647,7 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
                 </div>
               </div>
 
-              {brief && <div style={{borderBottom:"1px solid #e8e2d6",paddingBottom:10,marginBottom:10}}><BriefRenderer text={brief} articles={briefData?.articles||arts}/></div>}
+              {(brief||(briefLoading[key]&&briefStream[key])) && <div style={{borderBottom:"1px solid #e8e2d6",paddingBottom:10,marginBottom:10}}><BriefRenderer text={briefLoading[key]&&briefStream[key]?briefStream[key]:brief} articles={briefData?.articles||arts}/></div>}
 
               {arts.length===0 ? (
                 <div style={{...mono,fontSize:10,color:"#bbb",padding:"16px 0",textAlign:"center"}}>no articles — refresh feeds</div>
@@ -2684,29 +2790,41 @@ export default function App() {
   const runEnrichment=useCallback(async(currentArticles,toEnrich)=>{
     setEnriching(true);
     const BATCH=15;
+    const CONCURRENCY=3;
     let working=[...currentArticles];
-    for(let i=0;i<toEnrich.length;i+=BATCH){
-      const batch=toEnrich.slice(i,i+BATCH);
-      setStatusMsg(`Enriching ${i+1}–${Math.min(i+BATCH,toEnrich.length)} of ${toEnrich.length}…`);
-      const results=await enrichBatch(batch);
-      working=working.map(a=>{
-        const idx=batch.findIndex(b=>b.id===a.id);
-        if(idx===-1||!results[idx]) return a;
-        const r=results[idx];
-        const isCJK = s => s && (s.match(/[\u4e00-\u9fff\uac00-\ud7ff\u3040-\u309f]/g)||[]).length / s.length > 0.2;
-        const translationOk = a.lang !== "en" && r.translated && !isCJK(r.translated);
-        const shouldStore = translationOk ? r.translated : a.lang === "en" && r.translated && r.translated !== a.title ? r.translated : null;
-        let resolvedSignal = r.signal || a.signal || "N";
-        const cat = r.signalCategory || a.signalCategory || "OTHER";
-        const isWeakness = r.weaknessContext === true || a.weaknessContext;
-        const catMeta = SIGNAL_CATEGORIES[cat];
-        if (catMeta?.mgmt && isWeakness) {
-          const upgrade = { SP1:"SP2", N:"SN1", SN1:"SN2" };
-          resolvedSignal = upgrade[resolvedSignal] || resolvedSignal;
-        }
-        return {...a, translatedTitle:shouldStore||a.translatedTitle, insight:r.insight||a.insight, sector:r.sector||a.sector, signal:resolvedSignal, signalCategory:cat, weaknessContext:isWeakness};
+
+    const batches=[];
+    for(let i=0;i<toEnrich.length;i+=BATCH) batches.push({start:i,items:toEnrich.slice(i,i+BATCH)});
+
+    for(let w=0;w<batches.length;w+=CONCURRENCY){
+      const win=batches.slice(w,w+CONCURRENCY);
+      const first=win[0].start+1;
+      const last=Math.min(win[win.length-1].start+BATCH,toEnrich.length);
+      setStatusMsg(`Enriching ${first}–${last} of ${toEnrich.length}…`);
+
+      const batchResults=await Promise.all(win.map(({items})=>enrichBatch(items)));
+
+      win.forEach(({items},wi)=>{
+        const results=batchResults[wi];
+        working=working.map(a=>{
+          const idx=items.findIndex(b=>b.id===a.id);
+          if(idx===-1||!results[idx]) return a;
+          const r=results[idx];
+          const isCJK = s => s && (s.match(/[\u4e00-\u9fff\uac00-\ud7ff\u3040-\u309f]/g)||[]).length / s.length > 0.2;
+          const translationOk = a.lang !== "en" && r.translated && !isCJK(r.translated);
+          const shouldStore = translationOk ? r.translated : a.lang === "en" && r.translated && r.translated !== a.title ? r.translated : null;
+          let resolvedSignal = r.signal || a.signal || "N";
+          const cat = r.signalCategory || a.signalCategory || "OTHER";
+          const isWeakness = r.weaknessContext === true || a.weaknessContext;
+          const catMeta = SIGNAL_CATEGORIES[cat];
+          if (catMeta?.mgmt && isWeakness) {
+            const upgrade = { SP1:"SP2", N:"SN1", SN1:"SN2" };
+            resolvedSignal = upgrade[resolvedSignal] || resolvedSignal;
+          }
+          return {...a, translatedTitle:shouldStore||a.translatedTitle, insight:r.insight||a.insight, sector:r.sector||a.sector, signal:resolvedSignal, signalCategory:cat, weaknessContext:isWeakness};
+        });
       });
-      setAllArticles(working);
+      setAllArticles([...working]);
     }
     setStatusMsg("Cross-language dedup…");
     working=localDedup(working);
