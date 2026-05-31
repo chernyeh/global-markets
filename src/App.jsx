@@ -1079,7 +1079,98 @@ ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// WATCHLIST INTELLIGENCE ENGINE
+// WORLD NEWS BRIEFING — for Breaking News Intelligence. A cross-country/segment
+// news roundup led by the big macro/geopolitical picture. Unlike the Company
+// brief it does NOT filter to company signals — macro and general news are the point.
+// ═══════════════════════════════════════════════════════════════════════════════
+function fmtWorldArticle(a, n) {
+  const m = MARKET_MAP[a.country];
+  const geo = m ? `[${m.flag} ${m.label}] ` : (a.country ? `[${a.country}] ` : "");
+  const title = a.translatedTitle || a.title;
+  const desc = a.description ? ` :: ${a.description.slice(0, 180)}` : "";
+  return `${n}. ${geo}${title} — ${a.source}${desc}`;
+}
+
+const WORLD_FORMAT = `## [Headline capturing the dominant global story right now]
+
+[3-4 sentence big-picture summary: the dominant macro/geopolitical force shaping markets, the most significant development of the day, and the overall risk-on/risk-off tone.]
+
+## Macro & Policy
+- [Central banks, rates, inflation, growth, fiscal, trade/tariffs — the development and its market implication. [REF:N]]
+
+## Geopolitics & Global Events
+- [Conflicts, elections, diplomacy, energy/commodity shocks and their cross-border impact. [REF:N]]
+
+## Regional Roundup
+- [Most important development by region/country, grouped across the world — Americas, Europe, Asia-Pacific, Middle East, Latin America, Africa. Cover breadth, not just one country. [REF:N]]
+
+## Markets & Corporates
+- [Notable index/sector moves and the biggest corporate headlines worth knowing. [REF:N]]
+
+## What to Watch
+- [Upcoming catalysts, events, or risks over the next few days.]`;
+
+const WORLD_RULES = `Rules:
+- This is a WORLD NEWS briefing, not a stock-picking note: lead with the big picture and cover what is happening across the world.
+- Cover BREADTH across regions and segments — do not over-concentrate on a single country. In the Regional Roundup, group bullets by region and span as many regions as the headlines support.
+- Each bullet is 1-2 sentences with real detail and a clear "why it matters", ending with [REF:N] (or [REF:N,M]).
+- Use the [Country] tag on each item to organise coverage geographically.
+- OMIT any section that has no genuine content — do not pad.
+- FACTUAL RULE: Use only what is in the headline and the description snippet provided (text after "::"). Do NOT invent figures, names, percentages, or details not present.`;
+
+async function generateWorldBriefing(articles, label, maxArticles=null) {
+  if (!articles.length) return {text:"", articles:[]};
+  // Preserve the caller's ordering (recency + cross-country breadth); do not
+  // re-rank by company signal — macro/general news must stay in.
+  let arts = articles;
+  if (maxArticles && arts.length > maxArticles) arts = arts.slice(0, maxArticles);
+  const sourceArticles = arts;
+
+  const CHUNK = 25;
+  const chunks = [];
+  for (let i = 0; i < arts.length; i += CHUNK) chunks.push(arts.slice(i, i + CHUNK));
+
+  if (chunks.length === 1) {
+    const prompt = `You are a global markets editor writing a ${label} briefing — a concise roundup of what is happening across the world's markets and economies.
+
+Each item below is tagged with its [Country] and may include a description snippet after "::".
+
+Write in this exact format:
+
+${WORLD_FORMAT}
+
+${WORLD_RULES}
+
+Items (cite using [REF:N] at end of each bullet, N = item number):
+${arts.map((a,i)=>fmtWorldArticle(a,i)).join("\n")}`;
+    const text = await callClaude(prompt, 4000, {throwOnError:true, timeoutMs:50000});
+    return {text, articles: sourceArticles, generatedAt: Date.now()};
+  }
+
+  const summaries = await mapLimit(chunks, 4, (chunk, ci) => {
+    const offset = ci * CHUNK;
+    const prompt = `You are a global markets editor. For each tagged item below, write ONE sentence: the country/region, what happened, and why it matters for markets or the world. Keep the [Country] tag at the front of each line and end with the item number in parentheses, e.g. "(item 3)". Cover macro, policy, geopolitics, regional and corporate news alike.
+${chunk.map((a,i)=>fmtWorldArticle(a, offset+i)).join("\n")}`;
+    return callClaude(prompt, 800, {throwOnError:false});
+  });
+
+  const goodSummaries = summaries.filter(s => s && s.trim());
+  if (!goodSummaries.length) throw new Error("empty_response");
+
+  const synthPrompt = `You are a global markets editor writing a ${label} briefing from the tagged summaries below — a concise roundup of what is happening across the world.
+
+Write in this exact format:
+
+${WORLD_FORMAT}
+
+${WORLD_RULES}
+- The summaries carry [Country] tags and item numbers in parentheses, e.g. "(item 3)" — use those numbers for [REF:N] citations.
+
+Summaries to synthesise:
+${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
+  const text = await callClaude(synthPrompt, 3500, {throwOnError:true, timeoutMs:50000});
+  return {text, articles: sourceArticles, generatedAt: Date.now()};
+}
 // ═══════════════════════════════════════════════════════════════════════════════
 function directMatch(art, keyword) {
   const kw = keyword.toLowerCase();
@@ -2898,15 +2989,11 @@ export default function App() {
                   </div>
                   <button onClick={async()=>{
                       setBriefLoading(p=>({...p,[briefKey]:true}));
-                      const BRIEF_COUNTRY_ORDER = ["US","CN","DE","HK","KR","TW","IN","AU","IL","ME","IR","SG","CA"];
-                      const prioritisedArts = [...breakingArts].sort((a,b)=>{
-                        const ra=BRIEF_COUNTRY_ORDER.indexOf(a.country), rb=BRIEF_COUNTRY_ORDER.indexOf(b.country);
-                        const sa=ra===-1?999:ra, sb=rb===-1?999:rb;
-                        return sa!==sb?sa-sb:0;
-                      });
-                      const b=await generateBriefUnlimited(prioritisedArts,"Breaking News");
-                      setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
-                      setBriefLoading(p=>({...p,[briefKey]:false}));
+                      try {
+                        const b=await generateWorldBriefing(breakingArts,"Breaking News");
+                        if(b.text) setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
+                      } catch(e){ console.warn("breaking brief failed:",e); }
+                      finally { setBriefLoading(p=>({...p,[briefKey]:false})); }
                     }}
                     disabled={briefLoading[briefKey]||breakingArts.length===0}
                     style={{fontSize:9,padding:"4px 12px",border:"1px solid #c0392b44",borderRadius:4,background:"none",color:"#c0392b",cursor:briefLoading[briefKey]||breakingArts.length===0?"not-allowed":"pointer",fontFamily:"'DM Mono',monospace",opacity:breakingArts.length===0?0.4:1}}
