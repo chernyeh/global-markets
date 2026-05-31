@@ -459,22 +459,64 @@ const EM_COUNTRIES = [
   {code:"VN",label:"Vietnam",     flag:"🇻🇳",cluster:"EMASIA"},
 ];
 
-const EM_CLUSTERS = [
-  {id:"LATAM",  label:"Latin America",           flag:"🌎",color:"#1b7a3e",
-   countries:["BR","MX","AR","CL","CO","PE"],
-   panSources:["reuters_latam","mercopress","bnnlatam"]},
-  {id:"CEE",    label:"Central & Eastern Europe", flag:"🌍",color:"#1565c0",
-   countries:["PL","TR","HU","CZ","RO","GR"],
-   panSources:["reuters_cee","emerging_europe","daily_sabah_biz"]},
-  {id:"AFRICA", label:"Africa",                   flag:"🌍",color:"#7b1fa2",
-   countries:["ZA","NG","KE","EG","MA"],
-   panSources:["reuters_africa","african_business","businessday_ng"]},
-  {id:"EMASIA", label:"EM Asia",                  flag:"🌏",color:"#e65100",
-   countries:["ID","TH","MY","PH","VN"],
-   panSources:["reuters_emasia","bangkokpost_biz","inquirer_ph"]},
+// ─────────────────────────────────────────────────────────────────────────────
+// UNIFIED MARKETS — every market in one taxonomy, tagged by tier (MSCI-style
+// Developed vs Emerging) and region. Drives the unified Markets tab filter so a
+// user can view everything, or narrow by tier, region, or country.
+// ─────────────────────────────────────────────────────────────────────────────
+const MARKET_REGIONS = ["North America","Europe","Asia-Pacific","Middle East","Latin America","Africa"];
+const MARKETS = [
+  // North America
+  {code:"US", label:"United States", flag:"🇺🇸", tier:"DM", region:"North America"},
+  {code:"CA", label:"Canada",        flag:"🇨🇦", tier:"DM", region:"North America"},
+  // Europe — Developed
+  {code:"GB", label:"United Kingdom",flag:"🇬🇧", tier:"DM", region:"Europe"},
+  {code:"DE", label:"Germany",       flag:"🇩🇪", tier:"DM", region:"Europe"},
+  {code:"FR", label:"France",        flag:"🇫🇷", tier:"DM", region:"Europe"},
+  {code:"IT", label:"Italy",         flag:"🇮🇹", tier:"DM", region:"Europe"},
+  {code:"CH", label:"Switzerland",   flag:"🇨🇭", tier:"DM", region:"Europe"},
+  {code:"EU", label:"Pan-European",  flag:"🇪🇺", tier:"DM", region:"Europe"},
+  // Europe — Emerging (CEE)
+  {code:"PL", label:"Poland",        flag:"🇵🇱", tier:"EM", region:"Europe"},
+  {code:"TR", label:"Turkey",        flag:"🇹🇷", tier:"EM", region:"Europe"},
+  {code:"HU", label:"Hungary",       flag:"🇭🇺", tier:"EM", region:"Europe"},
+  {code:"CZ", label:"Czech Rep.",    flag:"🇨🇿", tier:"EM", region:"Europe"},
+  {code:"RO", label:"Romania",       flag:"🇷🇴", tier:"EM", region:"Europe"},
+  {code:"GR", label:"Greece",        flag:"🇬🇷", tier:"EM", region:"Europe"},
+  // Asia-Pacific — Developed
+  {code:"JP", label:"Japan",         flag:"🇯🇵", tier:"DM", region:"Asia-Pacific"},
+  {code:"SG", label:"Singapore",     flag:"🇸🇬", tier:"DM", region:"Asia-Pacific"},
+  {code:"HK", label:"Hong Kong",     flag:"🇭🇰", tier:"DM", region:"Asia-Pacific"},
+  {code:"AU", label:"Australia",     flag:"🇦🇺", tier:"DM", region:"Asia-Pacific"},
+  // Asia-Pacific — Emerging
+  {code:"CN", label:"China",         flag:"🇨🇳", tier:"EM", region:"Asia-Pacific"},
+  {code:"IN", label:"India",         flag:"🇮🇳", tier:"EM", region:"Asia-Pacific"},
+  {code:"KR", label:"Korea",         flag:"🇰🇷", tier:"EM", region:"Asia-Pacific"},
+  {code:"TW", label:"Taiwan",        flag:"🇹🇼", tier:"EM", region:"Asia-Pacific"},
+  {code:"ID", label:"Indonesia",     flag:"🇮🇩", tier:"EM", region:"Asia-Pacific"},
+  {code:"TH", label:"Thailand",      flag:"🇹🇭", tier:"EM", region:"Asia-Pacific"},
+  {code:"MY", label:"Malaysia",      flag:"🇲🇾", tier:"EM", region:"Asia-Pacific"},
+  {code:"PH", label:"Philippines",   flag:"🇵🇭", tier:"EM", region:"Asia-Pacific"},
+  {code:"VN", label:"Vietnam",       flag:"🇻🇳", tier:"EM", region:"Asia-Pacific"},
+  // Middle East
+  {code:"IL", label:"Israel",        flag:"🇮🇱", tier:"DM", region:"Middle East"},
+  {code:"ME", label:"Gulf / MENA",   flag:"🌍", tier:"EM", region:"Middle East"},
+  {code:"IR", label:"Iran",          flag:"🇮🇷", tier:"EM", region:"Middle East"},
+  // Latin America
+  {code:"BR", label:"Brazil",        flag:"🇧🇷", tier:"EM", region:"Latin America"},
+  {code:"MX", label:"Mexico",        flag:"🇲🇽", tier:"EM", region:"Latin America"},
+  {code:"AR", label:"Argentina",     flag:"🇦🇷", tier:"EM", region:"Latin America"},
+  {code:"CL", label:"Chile",         flag:"🇨🇱", tier:"EM", region:"Latin America"},
+  {code:"CO", label:"Colombia",      flag:"🇨🇴", tier:"EM", region:"Latin America"},
+  {code:"PE", label:"Peru",          flag:"🇵🇪", tier:"EM", region:"Latin America"},
+  // Africa
+  {code:"ZA", label:"South Africa",  flag:"🇿🇦", tier:"EM", region:"Africa"},
+  {code:"NG", label:"Nigeria",       flag:"🇳🇬", tier:"EM", region:"Africa"},
+  {code:"KE", label:"Kenya",         flag:"🇰🇪", tier:"EM", region:"Africa"},
+  {code:"EG", label:"Egypt",         flag:"🇪🇬", tier:"EM", region:"Africa"},
+  {code:"MA", label:"Morocco",       flag:"🇲🇦", tier:"EM", region:"Africa"},
 ];
-
-const EM_STALE_MS = 2 * 60 * 60 * 1000; // 2 hours for on-demand clusters
+const MARKET_MAP = Object.fromEntries(MARKETS.map(m => [m.code, m]));
 
 const EM_SOURCES = [
   // ── Latin America ─────────────────────────────────────────────────────────
@@ -536,19 +578,8 @@ const EM_SOURCES = [
   {id:"reuters_vn",   tier:1,country:"VN",name:"Reuters Vietnam",     lang:"en",flag:"🇻🇳",url:GN("site:reuters.com Vietnam economy business")},
 ];
 
-// Sources used for the cross-regional Global at a Glance brief
-const GLOBAL_GLANCE_SOURCES = [
-  "reuters","bloomberg","ft",
-  "reuters_latam","mercopress",
-  "reuters_cee","emerging_europe",
-  "reuters_africa","african_business",
-  "reuters_emasia","nikkei_sea",
-  "caixin","econ_times",
-  "nikkei_asia","reuters_jp",
-  "reuters_kr",
-  "arabnews_biz",
-  "ft_alphaville","wsj_heard",
-];
+// Unified fetch list — developed + emerging feeds are now refreshed together.
+const ALL_MARKET_SOURCES = [...SOURCES, ...EM_SOURCES];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORAGE
@@ -1521,9 +1552,14 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
   const isLoading=loading[briefKey];
   const run=async()=>{
     setLoading(p=>({...p,[briefKey]:true}));
-    const b=await generateBriefUnlimited(articles,label);
-    setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
-    setLoading(p=>({...p,[briefKey]:false}));
+    try {
+      const b=await generateBriefUnlimited(articles,label,null,150);
+      if(b.text) setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
+    } catch(e) {
+      console.warn("brief generation failed:",e);
+    } finally {
+      setLoading(p=>({...p,[briefKey]:false}));
+    }
   };
   const formatTime = (ms) => {
     try {
@@ -1566,7 +1602,6 @@ function BriefBox({label, icon, briefKey, briefs, setBriefs, articles, loading, 
 function OverflowMenu({allArticles, enrichedCount, dupeCount, showDupes, setShowDupes,
                        isLoading, enriching, runEnrichment, setAllArticles,
                        setBriefs, setLastFetch, setStatusMsg, SK,
-                       setEmClusterState, setEmLastFetch,
                        fontScale, setFontScale}) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -1652,8 +1687,6 @@ function OverflowMenu({allArticles, enrichedCount, dupeCount, showDupes, setShow
               Object.values(SK).forEach(k => localStorage.removeItem(k));
               Object.values(EM_SK).forEach(k => localStorage.removeItem(k));
               setAllArticles([]); setBriefs({}); setLastFetch({});
-              setEmClusterState({LATAM:"idle",CEE:"idle",AFRICA:"idle",EMASIA:"idle"});
-              setEmLastFetch({});
               setStatusMsg("Cache cleared — reloading…");
               setTimeout(() => window.location.reload(), 800);
             },
@@ -2289,251 +2322,6 @@ function SourcesTab({canonical, lastFetch, briefs, setBriefs}) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// EMERGING MARKETS TAB
-// ═══════════════════════════════════════════════════════════════════════════════
-function EMTab({canonical, emClusterState, emLastFetch, fetchEmCluster, briefs, setBriefs}) {
-  const mono = {fontFamily:"'DM Mono',monospace"};
-  const [activeCluster,    setActiveCluster]    = useState(null);
-  const [activeEmCountry,  setActiveEmCountry]  = useState("ALL");
-  const [emBriefLoading,   setEmBriefLoading]   = useState({});
-  const [globalBriefLoading,setGlobalBriefLoading]=useState(false);
-
-  const emCountryCodes = new Set(EM_COUNTRIES.map(c=>c.code));
-  const emCanonical = canonical.filter(a => emCountryCodes.has(a.country));
-
-  const timeAgo = ts => {
-    if (!ts) return "never";
-    const m = Math.floor((Date.now()-ts)/60000);
-    if (m < 1) return "just now";
-    if (m < 60) return `${m}m ago`;
-    const h = Math.floor(m/60);
-    if (h < 24) return `${h}h ago`;
-    return `${Math.floor(h/24)}d ago`;
-  };
-
-  // Global at a Glance brief
-  const glanceBriefKey = "em_global_glance";
-  const glanceArts = canonical.filter(a => GLOBAL_GLANCE_SOURCES.includes(a.sourceId) && !a.duplicateOf);
-  const glanceBriefData = briefs[glanceBriefKey];
-  const glanceBrief = glanceBriefData?.text ?? (typeof glanceBriefData==="string" ? glanceBriefData : null);
-
-  const runGlobalBrief = async () => {
-    if (!glanceArts.length) return;
-    setGlobalBriefLoading(true);
-    const priority = "COVERAGE PRIORITY: Open with the single most significant global macro development. Then cover all regions proportionally — do not neglect EM stories; the purpose of this brief is specifically to include Emerging Markets alongside developed markets.";
-    const b = await generateBriefUnlimited(glanceArts, "🌐 Global Markets — Full Picture", priority);
-    setBriefs(p=>{const n={...p,[glanceBriefKey]:b};sSet(SK.summaries,n);return n;});
-    setGlobalBriefLoading(false);
-  };
-
-  return (
-    <div style={{animation:"fadeIn 0.3s ease"}}>
-
-      {/* GLOBAL AT A GLANCE */}
-      <div style={{background:"#fff",border:"2px solid #1a1a1a",borderRadius:10,padding:"18px 22px",marginBottom:24}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:glanceBrief?12:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:22}}>🌐</span>
-            <div>
-              <div style={{...mono,fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>
-                GLOBAL AT A GLANCE · {glanceArts.length} articles · {GLOBAL_GLANCE_SOURCES.length} curated sources
-                {glanceBriefData?.generatedAt ? ` · generated ${new Date(glanceBriefData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}
-              </div>
-              <div style={{fontFamily:"'Spectral',serif",fontSize:16,fontWeight:700,color:"#1a1a1a"}}>Global Markets — Full Picture</div>
-              <div style={{...mono,fontSize:8,color:"#aaa",marginTop:2}}>
-                Synthesises developed + emerging markets · load EM clusters below to expand coverage
-              </div>
-            </div>
-          </div>
-          <button onClick={runGlobalBrief} disabled={globalBriefLoading||!glanceArts.length}
-            style={{...mono,fontSize:11,padding:"7px 16px",borderRadius:5,border:"1px solid #bbb",background:"none",color:"#1a1a1a",cursor:globalBriefLoading||!glanceArts.length?"not-allowed":"pointer",transition:"all 0.2s",opacity:!glanceArts.length?0.4:1}}
-            onMouseOver={e=>e.currentTarget.style.background="#fdecea"}
-            onMouseOut={e=>e.currentTarget.style.background="none"}>
-            {globalBriefLoading?<><Dots/> generating…</>:glanceBrief?"↺ refresh brief":"✦ generate global brief"}
-          </button>
-        </div>
-        {glanceBrief && <BriefRenderer text={glanceBrief} articles={glanceBriefData?.articles||glanceArts}/>}
-        {!glanceBrief && !glanceArts.length && (
-          <div style={{...mono,fontSize:10,color:"#bbb",textAlign:"center",padding:"16px 0"}}>
-            No articles from global sources yet — refresh feeds or load an EM cluster below
-          </div>
-        )}
-      </div>
-
-      {/* CLUSTER GRID */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:16,marginBottom:28}}>
-        {EM_CLUSTERS.map(cluster => {
-          const state = emClusterState[cluster.id] || "idle";
-          const clusterArts = emCanonical.filter(a => cluster.countries.includes(a.country));
-          const clusterSources = EM_SOURCES.filter(s => cluster.countries.includes(s.country));
-          const lastFetchTimes = clusterSources.map(s=>emLastFetch[s.id]).filter(Boolean);
-          const lastFetched = lastFetchTimes.length ? Math.max(...lastFetchTimes) : 0;
-          const isStale = !lastFetched || (Date.now()-lastFetched) > EM_STALE_MS;
-          const briefKey = `em_cluster_${cluster.id}`;
-          const clusterBriefData = briefs[briefKey];
-          const clusterBrief = clusterBriefData?.text ?? (typeof clusterBriefData==="string" ? clusterBriefData : null);
-
-          return (
-            <div key={cluster.id} style={{background:"#fff",border:`1px solid ${cluster.color}22`,borderRadius:10,padding:"16px 18px",borderTop:`3px solid ${cluster.color}`}}>
-
-              {/* cluster header */}
-              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
-                <div>
-                  <div style={{...mono,fontSize:9,color:cluster.color,letterSpacing:"0.08em",fontWeight:600}}>
-                    {cluster.flag} {cluster.label.toUpperCase()}
-                  </div>
-                  {state==="loaded" && (
-                    <div style={{...mono,fontSize:8,color:"#aaa",marginTop:2}}>
-                      {clusterArts.length} articles · {timeAgo(lastFetched)}{isStale?" · stale":""}
-                    </div>
-                  )}
-                </div>
-                <div style={{display:"flex",gap:6,flexShrink:0,marginLeft:8}}>
-                  {state==="loaded" && (
-                    <button
-                      onClick={async()=>{
-                        setEmBriefLoading(p=>({...p,[briefKey]:true}));
-                        const toUse = clusterArts.length ? clusterArts : [];
-                        const priority = `COVERAGE PRIORITY: Focus on ${cluster.label}. Lead with macro/central bank/currency developments, then corporate actions, then geopolitical context.`;
-                        const b = await generateBriefUnlimited(toUse, `${cluster.flag} ${cluster.label}`, priority);
-                        setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
-                        setEmBriefLoading(p=>({...p,[briefKey]:false}));
-                      }}
-                      disabled={emBriefLoading[briefKey]||!clusterArts.length}
-                      style={{...mono,fontSize:8,padding:"3px 8px",border:`1px solid ${cluster.color}44`,borderRadius:3,background:"none",color:cluster.color,cursor:"pointer",opacity:!clusterArts.length?0.4:1}}>
-                      {emBriefLoading[briefKey]?<Dots color={cluster.color}/>:"✦ brief"}
-                    </button>
-                  )}
-                  <button
-                    onClick={()=>fetchEmCluster(cluster.id)}
-                    disabled={state==="loading"}
-                    style={{...mono,fontSize:9,padding:"5px 12px",borderRadius:4,cursor:state==="loading"?"not-allowed":"pointer",
-                      border:`1px solid ${cluster.color}`,
-                      background:state==="loaded"&&!isStale?"none":cluster.color,
-                      color:state==="loaded"&&!isStale?cluster.color:"#fff",
-                      opacity:state==="loading"?0.6:1}}>
-                    {state==="loading"?<><Dots color={state==="loaded"&&!isStale?cluster.color:"#fff"}/> loading…</>
-                      :state==="loaded"?"↺ refresh"
-                      :state==="error"?"⚠ retry"
-                      :"⊕ load"}
-                  </button>
-                </div>
-              </div>
-
-              {/* country pills */}
-              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
-                {cluster.countries.map(code=>{
-                  const c = EM_COUNTRIES.find(x=>x.code===code);
-                  const cnt = clusterArts.filter(a=>a.country===code).length;
-                  return (
-                    <span key={code} style={{...mono,fontSize:9,padding:"2px 8px",borderRadius:10,
-                      background:cnt>0?`${cluster.color}18`:"#f5f5f5",
-                      color:cnt>0?cluster.color:"#aaa",
-                      border:`1px solid ${cnt>0?cluster.color+"44":"#e0e0e0"}`}}>
-                      {c?.flag} {c?.label}{cnt>0?` (${cnt})`:""}
-                    </span>
-                  );
-                })}
-              </div>
-
-              {/* cluster brief */}
-              {clusterBrief && (
-                <div style={{borderBottom:"1px solid #e8e2d6",paddingBottom:10,marginBottom:10}}>
-                  <BriefRenderer text={clusterBrief} articles={clusterBriefData?.articles||clusterArts}/>
-                </div>
-              )}
-
-              {/* state-dependent body */}
-              {state==="idle" && (
-                <div style={{...mono,fontSize:10,color:"#bbb",padding:"20px 0",textAlign:"center"}}>
-                  Click "⊕ load" to fetch {cluster.label} feeds
-                </div>
-              )}
-              {state==="error" && (
-                <div style={{...mono,fontSize:10,color:"#c0392b",padding:"16px 0",textAlign:"center"}}>
-                  Fetch failed — check network and retry
-                </div>
-              )}
-              {state==="loaded" && clusterArts.length===0 && (
-                <div style={{...mono,fontSize:10,color:"#bbb",padding:"16px 0",textAlign:"center"}}>
-                  No articles — feeds may be temporarily unavailable
-                </div>
-              )}
-              {state==="loaded" && clusterArts.length>0 && (
-                <>
-                  <button onClick={()=>{setActiveCluster(cluster.id);setActiveEmCountry("ALL");}}
-                    style={{...mono,fontSize:9,padding:"4px 10px",border:`1px solid ${cluster.color}44`,borderRadius:4,background:"none",color:cluster.color,cursor:"pointer",marginBottom:10}}>
-                    View all {clusterArts.length} articles →
-                  </button>
-                  {clusterArts.slice(0,3).map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
-                  {clusterArts.length>3 && (
-                    <div style={{...mono,fontSize:9,color:"#aaa",marginTop:6}}>+{clusterArts.length-3} more</div>
-                  )}
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* EXPANDED CLUSTER VIEW */}
-      {activeCluster && (()=>{
-        const cluster = EM_CLUSTERS.find(c=>c.id===activeCluster);
-        const clusterArts = emCanonical.filter(a=>cluster.countries.includes(a.country));
-        const filtered = activeEmCountry==="ALL" ? clusterArts : clusterArts.filter(a=>a.country===activeEmCountry);
-        const bySource = {};
-        filtered.forEach(a=>{
-          if(!bySource[a.sourceId]) bySource[a.sourceId]={src:EM_SOURCES.find(s=>s.id===a.sourceId),arts:[]};
-          bySource[a.sourceId].arts.push(a);
-        });
-        return (
-          <div style={{marginTop:4}}>
-            {/* sub-nav */}
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",background:"#fff",padding:"10px 16px",borderRadius:8,border:"1px solid #e0e0e0",marginBottom:16}}>
-              <button onClick={()=>setActiveCluster(null)}
-                style={{...mono,fontSize:10,color:"#888",background:"none",border:"none",cursor:"pointer",padding:"2px 6px"}}>
-                ← back
-              </button>
-              <span style={{...mono,fontSize:11,color:cluster.color,fontWeight:600}}>
-                {cluster.flag} {cluster.label}
-              </span>
-              {[{code:"ALL",label:"All",flag:""},...cluster.countries.map(code=>EM_COUNTRIES.find(c=>c.code===code))].map(c=>{
-                const cnt = c.code==="ALL" ? clusterArts.length : clusterArts.filter(a=>a.country===c.code).length;
-                if(!cnt && c.code!=="ALL") return null;
-                const active = activeEmCountry===c.code;
-                return (
-                  <button key={c.code} onClick={()=>setActiveEmCountry(c.code)}
-                    style={{...mono,fontSize:10,padding:"4px 10px",borderRadius:16,
-                      border:active?`1px solid ${cluster.color}`:"1px solid #ddd",
-                      background:active?cluster.color:"#fff",
-                      color:active?"#fff":"#555",cursor:"pointer"}}>
-                    {c.flag} {c.label} ({cnt})
-                  </button>
-                );
-              })}
-            </div>
-            {/* articles by source */}
-            <div style={{columns:"2 520px",columnGap:24}}>
-              {Object.entries(bySource).map(([sid,{src,arts}])=>(
-                <div key={sid} style={{breakInside:"avoid",marginBottom:4}}>
-                  <div style={{display:"flex",alignItems:"center",gap:7,padding:"9px 0 7px",borderBottom:"1px solid #e8e2d6",marginBottom:1}}>
-                    <span style={{...mono,fontSize:10,color:cluster.color,fontWeight:600}}>
-                      {src?.flag||""} {(src?.name||sid).toUpperCase()}
-                    </span>
-                    <span style={{...mono,fontSize:9,color:"#888"}}>{arts.length}</span>
-                  </div>
-                  {arts.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // NEWS BRIEFS TAB
 // ═══════════════════════════════════════════════════════════════════════════════
 // Maps a generation failure to a short, human-readable message for the UI.
@@ -2559,7 +2347,10 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
   const groupArts = (group) =>
     canonical.filter(a => group.sources.includes(a.sourceId) || group.sources.includes(a.originalSourceId));
 
-  const allBriefArts = NEWS_BRIEF_GROUPS.flatMap(g => groupArts(g));
+  // Master brief spans ALL markets (developed + emerging). generateBriefUnlimited
+  // ranks by signal and keeps the top company-relevant stories, so feeding the full
+  // deduplicated pool surfaces the strongest company news across every market.
+  const allBriefArts = canonical;
   const masterBriefKey = "newsbriefs_master";
 
   const generateGroupBrief = async (group) => {
@@ -2717,7 +2508,9 @@ const STALE_MS = 45*60*1000;
 
 export default function App() {
   const [mainTab,       setMainTab]       = useState("breaking");
-  const [marketsView,   setMarketsView]   = useState("developed");
+  const [marketsView,   setMarketsView]   = useState("markets");
+  const [activeTier,    setActiveTier]    = useState("ALL"); // ALL | DM | EM
+  const [activeRegion,  setActiveRegion]  = useState("ALL");
   const [activeCountry, setActiveCountry] = useState("ALL");
   const [activeSector,  setActiveSector]  = useState("ALL");
   const [allArticles,   setAllArticles]   = useState([]);
@@ -2729,18 +2522,14 @@ export default function App() {
   const [enriching,     setEnriching]     = useState(false);
   const [showDupes,     setShowDupes]     = useState(false);
   const [storageReady,  setStorageReady]  = useState(false);
-  const [emClusterState,setEmClusterState]= useState({LATAM:"idle",CEE:"idle",AFRICA:"idle",EMASIA:"idle"});
-  const [emLastFetch,   setEmLastFetch]   = useState({});
   const [fontScale,     setFontScale]     = useState(1.0);
 
   useEffect(()=>{
     (async()=>{
-      const [arts,bfs,lf,emLf,emCs,fs]=await Promise.all([sGet(SK.articles),sGet(SK.summaries),sGet(SK.lastFetch),sGet(EM_SK.lastFetch),sGet(EM_SK.clusterState),sGet(SK.fontScale)]);
+      const [arts,bfs,lf,fs]=await Promise.all([sGet(SK.articles),sGet(SK.summaries),sGet(SK.lastFetch),sGet(SK.fontScale)]);
       if(arts?.length) setAllArticles(arts);
       if(bfs) setBriefs(bfs);
       if(lf)  setLastFetch(lf);
-      if(emLf) setEmLastFetch(emLf);
-      if(emCs) setEmClusterState(prev=>({...prev,...emCs}));
       if(typeof fs==="number") setFontScale(fs);
       setStatusMsg(""); setStorageReady(true);
     })();
@@ -2748,7 +2537,7 @@ export default function App() {
 
   useEffect(()=>{
     if(!storageReady) return;
-    const stale=SOURCES.filter(s=>!lastFetch[s.id]||(Date.now()-lastFetch[s.id])>STALE_MS);
+    const stale=ALL_MARKET_SOURCES.filter(s=>!lastFetch[s.id]||(Date.now()-lastFetch[s.id])>STALE_MS);
     if(stale.length) fetchSources(stale);
     else setStatusMsg("");
   },[storageReady]);
@@ -2776,36 +2565,6 @@ export default function App() {
     });
   },[]);
 
-  const fetchEmCluster = useCallback(async(clusterId)=>{
-    const cluster = EM_CLUSTERS.find(c=>c.id===clusterId);
-    if(!cluster) return;
-    const clusterSources = EM_SOURCES.filter(s=>cluster.countries.includes(s.country));
-    setEmClusterState(prev=>{const n={...prev,[clusterId]:"loading"};sSet(EM_SK.clusterState,n);return n;});
-    setStatusMsg(`Loading ${cluster.label} feeds…`);
-    try {
-      const results=await Promise.all(clusterSources.map(async s=>{
-        const items=await fetchFeed(s);
-        return {sourceId:s.id,items};
-      }));
-      const now=Date.now();
-      setEmLastFetch(prev=>{const u={...prev,...Object.fromEntries(results.map(r=>[r.sourceId,now]))};sSet(EM_SK.lastFetch,u);return u;});
-      const fresh=results.flatMap(r=>r.items);
-      setAllArticles(prev=>{
-        const kept=prev.filter(a=>!clusterSources.some(s=>s.id===a.sourceId));
-        const merged=localDedup([...kept,...fresh]);
-        sSet(SK.articles,merged);
-        const toTranslate=fresh.filter(a=>a.lang!=="en"&&!a.translatedTitle);
-        if(toTranslate.length) runAutoTranslate(merged,toTranslate);
-        else setStatusMsg("");
-        return merged;
-      });
-      setEmClusterState(prev=>{const n={...prev,[clusterId]:"loaded"};sSet(EM_SK.clusterState,n);return n;});
-    } catch(e) {
-      console.warn("EM cluster fetch error:",clusterId,e);
-      setEmClusterState(prev=>{const n={...prev,[clusterId]:"error"};sSet(EM_SK.clusterState,n);return n;});
-      setStatusMsg("");
-    }
-  },[]);
 
   const runAutoTranslate=useCallback(async(currentArticles,toTranslate)=>{
     setStatusMsg(`Translating ${toTranslate.length} non-English titles…`);
@@ -2866,11 +2625,30 @@ export default function App() {
     return t === 0 || (Date.now() - t) < FIVE_DAYS_MS;
   };
   const canonical = sortByDate(allArticles.filter(a => (showDupes||!a.duplicateOf) && isRecent(a)));
-  const forCountry=c=>c==="ALL"?canonical:canonical.filter(a=>a.country===c);
   const forSector=s=>s==="ALL"?canonical:canonical.filter(a=>a.sector===s);
-  const countryArts=forCountry(activeCountry);
   const sectorArts=forSector(activeSector);
-  const sourcesInView=SOURCES.filter(s=>activeCountry==="ALL"||s.country===activeCountry);
+
+  // ── Unified market scope: tier (DM/EM) → region → country ───────────────────
+  const tierMarkets = MARKETS.filter(m=>activeTier==="ALL"||m.tier===activeTier);
+  const availRegions = MARKET_REGIONS.filter(r=>tierMarkets.some(m=>m.region===r));
+  const scopeCountries = tierMarkets.filter(m=>activeRegion==="ALL"||m.region===activeRegion);
+  const scopeCodes = new Set(scopeCountries.map(m=>m.code));
+  const countryArts = activeCountry!=="ALL"
+    ? canonical.filter(a=>a.country===activeCountry)
+    : (activeTier==="ALL"&&activeRegion==="ALL")
+      ? canonical
+      : canonical.filter(a=>scopeCodes.has(a.country));
+  const scopeLabel = activeCountry!=="ALL"
+    ? `${MARKET_MAP[activeCountry]?.flag||""} ${MARKET_MAP[activeCountry]?.label||activeCountry}`
+    : activeRegion!=="ALL"
+      ? `${activeRegion}${activeTier!=="ALL"?` · ${activeTier==="DM"?"Developed":"Emerging"}`:""}`
+      : activeTier==="DM" ? "Developed Markets"
+      : activeTier==="EM" ? "Emerging Markets"
+      : "All Markets";
+  const scopeFlag = activeCountry!=="ALL" ? (MARKET_MAP[activeCountry]?.flag||"🌐") : "🌐";
+  const scopeKey = `market_${activeTier}_${activeRegion}_${activeCountry}`;
+
+  const sourcesInView=ALL_MARKET_SOURCES.filter(s=>activeCountry!=="ALL"&&s.country===activeCountry);
   const sourceGroups=sourcesInView.map(s=>({s,arts:canonical.filter(a=>a.sourceId===s.id||a.originalSourceId===s.id)})).filter(g=>g.arts.length);
   const sectorGroups=MSCI_SECTORS.map(sec=>({sec,arts:canonical.filter(a=>a.sector===sec.code)})).filter(g=>g.arts.length).sort((a,b)=>b.arts.length-a.arts.length);
   const unenrichedArts=canonical.filter(a=>!a.sector);
@@ -2952,7 +2730,7 @@ export default function App() {
             )}
 
             {/* Refresh — always visible, primary action */}
-            <button onClick={()=>fetchSources(SOURCES)} disabled={isLoading||enriching}
+            <button onClick={()=>fetchSources(ALL_MARKET_SOURCES)} disabled={isLoading||enriching}
               style={{display:"flex",alignItems:"center",gap:4,background:"none",border:"1px solid #bbb",
                 color:"#333",padding:"5px 11px",borderRadius:5,cursor:(isLoading||enriching)?"not-allowed":"pointer",
                 fontFamily:"'DM Mono',monospace",fontSize:11,opacity:(isLoading||enriching)?0.5:1,flexShrink:0}}
@@ -2977,8 +2755,6 @@ export default function App() {
               setLastFetch={setLastFetch}
               setStatusMsg={setStatusMsg}
               SK={SK}
-              setEmClusterState={setEmClusterState}
-              setEmLastFetch={setEmLastFetch}
               fontScale={fontScale}
               setFontScale={setFontScale}
             />
@@ -3008,43 +2784,84 @@ export default function App() {
       </header>
 
       {/* SUB-NAV */}
-      {mainTab==="markets"&&(marketsView==="developed"||marketsView==="sectors")&&(
-        <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:88,zIndex:199,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
-          <div style={{maxWidth:1500,margin:"0 auto",padding:"0 24px",display:"flex",width:"max-content",minWidth:"100%"}}>
-            {marketsView==="developed"?(
-              COUNTRIES.map(c=>{
-                const cnt=c.code==="ALL"?canonical.length:canonical.filter(a=>a.country===c.code).length;
+      {/* Unified markets filter — tier · region · country */}
+      {mainTab==="markets"&&marketsView==="markets"&&(
+        <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:88,zIndex:199}}>
+          <div style={{maxWidth:1500,margin:"0 auto",padding:"0 24px"}}>
+            {/* Row 1: tier toggle + region chips */}
+            <div style={{display:"flex",alignItems:"center",gap:10,overflowX:"auto",WebkitOverflowScrolling:"touch",padding:"7px 0",borderBottom:"1px solid #f0ece4"}}>
+              <div style={{display:"flex",gap:2,background:"#f5f1e8",borderRadius:6,padding:2,flexShrink:0}}>
+                {[{id:"ALL",label:"All Markets"},{id:"DM",label:"Developed"},{id:"EM",label:"Emerging"}].map(t=>{
+                  const active=activeTier===t.id;
+                  return (
+                    <button key={t.id} onClick={()=>{
+                      setActiveTier(t.id); setActiveCountry("ALL");
+                      const tm=MARKETS.filter(m=>t.id==="ALL"||m.tier===t.id);
+                      if(activeRegion!=="ALL"&&!tm.some(m=>m.region===activeRegion)) setActiveRegion("ALL");
+                    }}
+                      style={{padding:"5px 12px",border:"none",borderRadius:4,cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:11,whiteSpace:"nowrap",
+                        background:active?"#c0392b":"none",color:active?"#fff":"#666",fontWeight:active?600:400,transition:"all 0.15s"}}>
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <span style={{color:"#ddd",flexShrink:0}}>│</span>
+              {[{code:"ALL",label:"All Regions"},...availRegions.map(r=>({code:r,label:r}))].map(r=>{
+                const active=activeRegion===r.code;
+                return (
+                  <button key={r.code} onClick={()=>{setActiveRegion(r.code);setActiveCountry("ALL");}}
+                    style={{padding:"5px 10px",border:"none",background:"none",cursor:"pointer",flexShrink:0,
+                      fontFamily:"'DM Mono',monospace",fontSize:11,whiteSpace:"nowrap",transition:"all 0.15s",
+                      color:active?"#c0392b":"#8aa8bc",borderBottom:active?"2px solid #c9a84c":"2px solid transparent",fontWeight:active?600:400}}
+                    onMouseOver={e=>{if(!active)e.currentTarget.style.color="#c0392b"}}
+                    onMouseOut={e=>{if(!active)e.currentTarget.style.color="#8aa8bc"}}>
+                    {r.label}
+                  </button>
+                );
+              })}
+            </div>
+            {/* Row 2: country chips within scope */}
+            <div style={{display:"flex",width:"max-content",minWidth:"100%",overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+              {[{code:"ALL",label:`All ${activeRegion!=="ALL"?activeRegion:activeTier==="DM"?"Developed":activeTier==="EM"?"Emerging":"Markets"}`,flag:"🌐"},...scopeCountries].map(c=>{
+                const cnt=c.code==="ALL"?countryArts.length:canonical.filter(a=>a.country===c.code).length;
                 const active=activeCountry===c.code;
                 return (
                   <button key={c.code} onClick={()=>setActiveCountry(c.code)}
-                    style={{padding:"11px 14px",border:"none",background:"none",color:active?"#c0392b":"#8aa8bc",
+                    style={{padding:"10px 13px",border:"none",background:"none",color:active?"#c0392b":"#8aa8bc",
                       borderBottom:active?"2px solid #c9a84c":"2px solid transparent",cursor:"pointer",
                       fontFamily:"'DM Mono',monospace",fontSize:12,whiteSpace:"nowrap",transition:"all 0.15s",display:"flex",alignItems:"center",gap:4}}
                     onMouseOver={e=>{if(!active)e.currentTarget.style.color="#c0392b"}}
-                    onMouseOut={e=>{if(!active)e.currentTarget.style.color="#333"}}>
+                    onMouseOut={e=>{if(!active)e.currentTarget.style.color="#8aa8bc"}}>
                     {c.flag} {c.label}
                     {cnt>0&&<span style={{fontSize:8,background:active?"#fdecea":"#f0f0f0",color:active?"#c0392b":"#666",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
                   </button>
                 );
-              })
-            ):(
-              [{code:"ALL",label:"All Sectors",icon:"▤",color:"#c0392b"},...MSCI_SECTORS].map(sec=>{
-                const cnt=sec.code==="ALL"?canonical.length:canonical.filter(a=>a.sector===sec.code).length;
-                const active=activeSector===sec.code;
-                const col=sec.color||"#c0392b";
-                return (
-                  <button key={sec.code} onClick={()=>setActiveSector(sec.code)}
-                    style={{padding:"11px 13px",border:"none",background:"none",color:active?col:"#333",
-                      borderBottom:active?`2px solid ${col}`:"2px solid transparent",cursor:"pointer",
-                      fontFamily:"'DM Mono',monospace",fontSize:12,whiteSpace:"nowrap",transition:"all 0.15s",display:"flex",alignItems:"center",gap:4}}
-                    onMouseOver={e=>{if(!active)e.currentTarget.style.color="#c0392b"}}
-                    onMouseOut={e=>{if(!active)e.currentTarget.style.color="#333"}}>
-                    <span>{sec.icon||"▤"}</span> {sec.label}
-                    {cnt>0&&<span style={{fontSize:8,background:active?`${col}18`:"#f0f0f0",color:active?col:"#666",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
-                  </button>
-                );
-              })
-            )}
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mainTab==="markets"&&marketsView==="sectors"&&(
+        <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:88,zIndex:199,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+          <div style={{maxWidth:1500,margin:"0 auto",padding:"0 24px",display:"flex",width:"max-content",minWidth:"100%"}}>
+            {[{code:"ALL",label:"All Sectors",icon:"▤",color:"#c0392b"},...MSCI_SECTORS].map(sec=>{
+              const cnt=sec.code==="ALL"?canonical.length:canonical.filter(a=>a.sector===sec.code).length;
+              const active=activeSector===sec.code;
+              const col=sec.color||"#c0392b";
+              return (
+                <button key={sec.code} onClick={()=>setActiveSector(sec.code)}
+                  style={{padding:"11px 13px",border:"none",background:"none",color:active?col:"#333",
+                    borderBottom:active?`2px solid ${col}`:"2px solid transparent",cursor:"pointer",
+                    fontFamily:"'DM Mono',monospace",fontSize:12,whiteSpace:"nowrap",transition:"all 0.15s",display:"flex",alignItems:"center",gap:4}}
+                  onMouseOver={e=>{if(!active)e.currentTarget.style.color="#c0392b"}}
+                  onMouseOut={e=>{if(!active)e.currentTarget.style.color="#333"}}>
+                  <span>{sec.icon||"▤"}</span> {sec.label}
+                  {cnt>0&&<span style={{fontSize:8,background:active?`${col}18`:"#f0f0f0",color:active?col:"#666",padding:"1px 5px",borderRadius:8}}>{cnt}</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -3152,16 +2969,15 @@ export default function App() {
           );
         })()}
 
-        {/* MARKETS — Developed · Emerging · Sectors · Sources */}
+        {/* MARKETS — Markets · Sectors · Sources */}
         {mainTab==="markets"&&(
           <>
             {/* Markets segmented control */}
             <div style={{display:"flex",marginBottom:18,background:"#fff",border:"1px solid #e8e2d6",borderRadius:8,overflow:"hidden"}}>
               {[
-                {id:"developed", label:"Developed Markets"},
-                {id:"emerging",  label:"Emerging Markets"},
-                {id:"sectors",   label:"Sectors"},
-                {id:"sources",   label:"Sources"},
+                {id:"markets",  label:"Markets"},
+                {id:"sectors",  label:"Sectors"},
+                {id:"sources",  label:"Sources"},
               ].map(v=>(
                 <button key={v.id} onClick={()=>setMarketsView(v.id)}
                   style={{fontFamily:"'DM Mono',monospace",fontSize:11,padding:"9px 18px",border:"none",flex:1,
@@ -3174,28 +2990,24 @@ export default function App() {
               ))}
             </div>
 
-            {/* Developed Markets */}
-            {marketsView==="developed"&&(
+            {/* Unified Markets */}
+            {marketsView==="markets"&&(
               <>
-                {activeCountry!=="ALL"&&(
-                  <>
-                    <BriefBox label={`${COUNTRIES.find(c=>c.code===activeCountry)?.flag} ${COUNTRIES.find(c=>c.code===activeCountry)?.label} Market Overview`}
-                      icon={COUNTRIES.find(c=>c.code===activeCountry)?.flag}
-                      briefKey={`country_${activeCountry}`} briefs={briefs} setBriefs={setBriefs} articles={countryArts}
-                      loading={briefLoading} setLoading={setBriefLoading}/>
-                    {Object.keys(sectorCountsForCountry).length>0&&(
-                      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:20}}>
-                        {MSCI_SECTORS.filter(s=>sectorCountsForCountry[s.code]).map(sec=>(
-                          <button key={sec.code} onClick={()=>{setMarketsView("sectors");setActiveSector(sec.code);}}
-                            style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:5,border:`1px solid ${sec.color}44`,background:`${sec.color}0d`,color:sec.color,cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:10}}
-                            onMouseOver={e=>e.currentTarget.style.background=`${sec.color}22`}
-                            onMouseOut={e=>e.currentTarget.style.background=`${sec.color}0d`}>
-                            {sec.icon} {sec.label} ({sectorCountsForCountry[sec.code]})
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </>
+                <BriefBox label={`${scopeFlag} ${scopeLabel} Overview`}
+                  icon={scopeFlag}
+                  briefKey={scopeKey} briefs={briefs} setBriefs={setBriefs} articles={countryArts}
+                  loading={briefLoading} setLoading={setBriefLoading}/>
+                {Object.keys(sectorCountsForCountry).length>0&&(
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:20}}>
+                    {MSCI_SECTORS.filter(s=>sectorCountsForCountry[s.code]).map(sec=>(
+                      <button key={sec.code} onClick={()=>{setMarketsView("sectors");setActiveSector(sec.code);}}
+                        style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:5,border:`1px solid ${sec.color}44`,background:`${sec.color}0d`,color:sec.color,cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:10}}
+                        onMouseOver={e=>e.currentTarget.style.background=`${sec.color}22`}
+                        onMouseOut={e=>e.currentTarget.style.background=`${sec.color}0d`}>
+                        {sec.icon} {sec.label} ({sectorCountsForCountry[sec.code]})
+                      </button>
+                    ))}
+                  </div>
                 )}
                 {countryArts.length===0?(
                   <div style={{textAlign:"center",padding:"80px 0",fontFamily:"'DM Mono',monospace",color:"#1a2a38",fontSize:13}}>
@@ -3221,7 +3033,6 @@ export default function App() {
             )}
 
             {/* Emerging Markets */}
-            {marketsView==="emerging"&&<EMTab canonical={canonical} emClusterState={emClusterState} emLastFetch={emLastFetch} fetchEmCluster={fetchEmCluster} briefs={briefs} setBriefs={setBriefs}/>}
 
             {/* Sectors */}
             {marketsView==="sectors"&&(
@@ -3302,7 +3113,7 @@ export default function App() {
       </div>
 
       <footer style={{borderTop:"1px solid #ddd",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#182535"}}>{SOURCES.length + EM_SOURCES.length} sources · {COUNTRIES.length - 1 + EM_COUNTRIES.length} markets · {MSCI_SECTORS.length} GICS sectors</span>
+        <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#182535"}}>{ALL_MARKET_SOURCES.length} sources · {MARKETS.length} markets · {MSCI_SECTORS.length} GICS sectors</span>
         <span style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#182535"}}>persisted locally · stale threshold 45 min</span>
       </footer>
     </div>
