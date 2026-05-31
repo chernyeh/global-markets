@@ -2347,7 +2347,10 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
   const groupArts = (group) =>
     canonical.filter(a => group.sources.includes(a.sourceId) || group.sources.includes(a.originalSourceId));
 
-  const allBriefArts = NEWS_BRIEF_GROUPS.flatMap(g => groupArts(g));
+  // Master brief spans ALL markets (developed + emerging). generateBriefUnlimited
+  // ranks by signal and keeps the top company-relevant stories, so feeding the full
+  // deduplicated pool surfaces the strongest company news across every market.
+  const allBriefArts = canonical;
   const masterBriefKey = "newsbriefs_master";
 
   const generateGroupBrief = async (group) => {
