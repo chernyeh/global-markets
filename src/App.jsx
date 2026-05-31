@@ -103,15 +103,15 @@ const NEWS_BRIEF_GROUPS = [
     market: "Broker Calls & Analyst Actions",
     flag: "🎯",
     color: "#7b1fa2",
-    sources: ["benzinga_upgrades","benzinga_downgrades","benzinga_initiation","benzinga_pt","sa_wsb","sa_currents","investing_ratings","openinsider"],
-    desc: "Benzinga Upgrades · Benzinga Downgrades · Benzinga Initiations · Benzinga Price Targets · SA Wall St Breakfast · SA Market Currents · Investing.com Ratings · OpenInsider Buys",
+    sources: ["benzinga_upgrades","benzinga_downgrades","benzinga_initiation","benzinga_pt","estimate_revisions","sa_wsb","sa_currents","investing_ratings","openinsider"],
+    desc: "Benzinga Upgrades · Benzinga Downgrades · Benzinga Initiations · Benzinga Price Targets · Estimate & Target Revisions · SA Wall St Breakfast · SA Market Currents · Investing.com Ratings · OpenInsider Buys",
   },
   {
     market: "Ideas & Commentary",
     flag: "💡",
     color: "#1565c0",
-    sources: ["ft_alphaville","wsj_heard","wsj_mkt","barrons","ibd","semafor","benzinga_ideas","seekalpha"],
-    desc: "FT Alphaville · WSJ Heard on the Street · WSJ Markets Features · Barron's · Investors Business Daily · Semafor · Benzinga Trade Ideas · Seeking Alpha",
+    sources: ["ft_alphaville","wsj_heard","wsj_mkt","barrons","ibd","semafor","benzinga_ideas","seekalpha","analyst_roundtables","mgmt_interviews"],
+    desc: "FT Alphaville · WSJ Heard on the Street · WSJ Markets Features · Barron's · Investors Business Daily · Semafor · Benzinga Trade Ideas · Seeking Alpha · Analyst Roundtables · Management Interviews",
   },
   {
     market: "United States",
@@ -220,6 +220,9 @@ const SOURCES = [
   {id:"openinsider",tier:2,desc:"OpenInsider — SEC Form 4 insider purchases; insider buying is one of the highest-conviction investment signals. Filters to purchase transactions only, excluding options exercises.",country:"US",name:"OpenInsider Buys",lang:"en",flag:"🇺🇸",url:"https://openinsider.com/rss"},
   {id:"fierce_pharma",tier:2,desc:"Fierce Pharma — leading pharma industry trade publication; covers drug approvals, clinical trial results, FDA decisions, M&A, and pipeline news for biopharma and large-cap pharma stocks.",country:"US",name:"Fierce Pharma",lang:"en",flag:"🇺🇸",url:"https://www.fiercepharma.com/rss/xml",limit:15},
   {id:"ibd",tier:2,desc:"Investors Business Daily — IBD's flagship stock analysis using CAN SLIM methodology; IBD 50 growth stock picks, breakout alerts, sector rotation, and Big Picture market trend column. Essential for growth and momentum investors.",country:"US",name:"Investors Business Daily",lang:"en",flag:"🇺🇸",url:GN("site:investors.com stocks analysis breakout \"IBD 50\" \"CAN SLIM\" market"),limit:15},
+  {id:"analyst_roundtables",tier:2,desc:"Analyst Roundtables & Strategist Views — fund manager, strategist and CIO interviews, roundtables and outlook calls; investment views and positioning ahead of consensus.",country:"US",name:"Analyst Roundtables & Strategist Views",lang:"en",flag:"🎙️",url:GN("(\"fund manager\" OR strategist OR \"portfolio manager\" OR CIO) (interview OR roundtable OR outlook) stocks market"),limit:15},
+  {id:"mgmt_interviews",tier:2,desc:"Management Interviews — in-depth CEO/CFO interviews on strategy, turnarounds, capital allocation and outlook; surfaces management conviction and strategic shifts.",country:"US",name:"Management Interviews",lang:"en",flag:"🗣️",url:GN("(CEO OR CFO OR \"chief executive\") interview (strategy OR turnaround OR outlook OR growth OR priorities) company"),limit:15},
+  {id:"estimate_revisions",tier:2,desc:"Estimate & Target Revisions — analyst price-target, earnings-estimate and rating revisions across global equities; tracks changes in view before they become consensus.",country:"US",name:"Estimate & Target Revisions",lang:"en",flag:"📊",url:GN("stocks (\"price target\" OR \"earnings estimate\" OR rating) (raised OR cut OR lifted OR lowered OR upgraded OR downgraded OR initiated) analyst"),limit:15},
   // ── Germany ────────────────────────────────────────────────────────────────
   {id:"handelsblatt",tier:2,  desc:"Handelsblatt — Germany\'s leading financial daily; required reading for DAX, German industry and European monetary policy.",               country:"DE",name:"Handelsblatt",        lang:"de",flag:"🇩🇪",url:"https://www.handelsblatt.com/contentexport/feed/schlagzeilen",paywall:true},
   {id:"handelsblatt_en",tier:2,desc:"Handelsblatt English — curated English-language coverage of German business and European economic news.",                                 country:"DE",name:"Handelsblatt (EN)",    lang:"en",flag:"🇩🇪",url:GN("site:handelsblatt.com english economy business"),paywall:true},
@@ -899,11 +902,101 @@ ${withTranslations.map((a,i)=>`${i}. ${a._preTranslated}`).join("\n")}`;
 // ═══════════════════════════════════════════════════════════════════════════════
 // UNLIMITED SUMMARY — splits into chunks, summarises each, then synthesises
 // ═══════════════════════════════════════════════════════════════════════════════
-async function generateBriefUnlimited(articles, label, coveragePriority=null) {
+// Brief prioritisation — surface the most actionable, ahead-of-consensus signals first.
+// Highest weights are the change-in-view / management / interview / insider categories the
+// Company News Intelligence brief is built around.
+const BRIEF_CATEGORY_WEIGHT = {
+  RATING_UP:6, RATING_DOWN:6,
+  CEO_NEW:6, CEO_RESIGN:6, CFO_CHANGE:5, BOARD_CHANGE:5,
+  MGMT_STRATEGY:6, MGMT_TURNAROUND:6, MGMT_UNDER_PRESSURE:5,
+  MGMT_INTERVIEW:6, MARKET_OUTLOOK:6, BIZ_FEATURE:5,
+  MGMT_BUY:6, MGMT_SELL:5, ACTIVIST_INVESTOR:6,
+  PROFIT_WARNING:5, EARNINGS_BEAT:5, EARNINGS_MISS:5, GUIDANCE_UP:5, GUIDANCE_DOWN:5,
+  MA_TARGET:5, MA_ACQUIRER:4, ACCOUNTING_ISSUE:5, DEBT_ISSUE:4, REGULATORY_BLOCK:4,
+  SPECIAL_DIVIDEND:4, DIVIDEND_CUT:4, DIVIDEND_RAISE:3, BUYBACK:3, REGULATORY_FINE:3,
+  CONTRACT_WIN:3, CONTRACT_LOSS:3, RESTRUCTURE:3, LAYOFFS:3, REVENUE_BEAT:3, REVENUE_MISS:3,
+  DELISTING:3, LAWSUIT:2, PARTNERSHIP:2, IPO:2,
+  MACRO:1, OTHER:0,
+};
+const SIGNAL_STRENGTH = { SP2:3, SN2:3, SP1:2, SN1:2, N:0 };
+
+function briefScore(a) {
+  const w = BRIEF_CATEGORY_WEIGHT[a.signalCategory] ?? 0;
+  const s = SIGNAL_STRENGTH[a.signal] ?? 0;
+  const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt || 0);
+  const recency = t ? Math.min(0.999, t / Date.now()) : 0; // sub-1 tiebreak
+  return w * 10 + s * 2 + recency;
+}
+
+// Rank by conviction/actionability and drop classified noise (uncategorised neutral,
+// non-catalyst items). Unenriched articles (no signalCategory yet) are kept.
+function rankBriefArticles(articles) {
+  return articles
+    .filter(a => {
+      if (!a.signalCategory) return true;
+      const w = BRIEF_CATEGORY_WEIGHT[a.signalCategory] ?? 0;
+      if (w === 0 && (!a.signal || a.signal === "N") && !a.isMicro) return false;
+      return true;
+    })
+    .sort((x, y) => briefScore(y) - briefScore(x));
+}
+
+// Format one article line with its signal tag, category, insight and description snippet
+// so the model reasons over the pre-classification and content, not the bare headline.
+function fmtBriefArticle(a, n) {
+  const sig = a.signal && SIGNAL_META[a.signal] ? SIGNAL_META[a.signal].short : "";
+  const cat = a.signalCategory && SIGNAL_CATEGORIES[a.signalCategory] ? SIGNAL_CATEGORIES[a.signalCategory].label : "";
+  const tag = (sig || cat) ? `[${[sig, cat].filter(Boolean).join(" ")}] ` : "";
+  const title = a.translatedTitle || a.title;
+  const insight = a.insight ? ` :: ${a.insight}` : "";
+  const desc = a.description ? ` :: ${a.description.slice(0, 160)}` : "";
+  return `${n}. ${tag}${title} — ${a.source}${insight}${desc}`;
+}
+
+// Shared briefing structure — actionable, ahead-of-consensus, organised around the
+// signals that drive buy/trim/avoid decisions.
+const BRIEF_FORMAT = `## Bottom Line
+[2-3 sentences: the most actionable, ahead-of-consensus reads right now. For each, state the implied action.]
+
+## Changes in View — Analyst & Broker Actions
+- [Upgrade/downgrade/price-target/estimate change: who, the direction, and the non-consensus angle. **Action:** accumulate/trim/watch/avoid. [REF:N]]
+
+## Management Changes & Insider Signals
+- [CEO/CFO/board change, strategy reset, turnaround, activist stake, director buying/selling: what it signals about the company's trajectory. **Action:** … [REF:N]]
+
+## Management Interviews & Analyst Roundtables
+- [Detailed executive interview or strategist/fund-manager roundtable: the key call and what is new or contrarian. **Action:** … [REF:N]]
+
+## Strategic Shifts & Deep Dives
+- [Business-model change, competitive dynamic, or feature that changes the long-term thesis. **Action:** … [REF:N]]
+
+## Catalysts & Company Actions
+- [Earnings surprise, M&A, dividend/buyback, contract win/loss, regulatory — only items that move the thesis. **Action:** … [REF:N]]
+
+## Shifting Environment & Sentiment
+- [ONLY macro/policy/geopolitics that represents a CHANGE — a new regime, an emerging or fading trend, or a shift in sentiment — and which sectors or groups of companies it helps or hurts. **Action:** … [REF:N]]`;
+
+const BRIEF_RULES = (effectivePriority) => `Rules:
+- Lead with the most actionable, ahead-of-the-crowd items. Skip anything generic or already fully priced in.
+- Every bullet ends with a concrete **Action:** (accumulate / trim / watch / avoid, or precisely what to watch) AND a [REF:N] citation.
+- Be specific: name companies (ticker where known), the direction of the move, and magnitude when stated.
+- Weight the strongest signals (▲▲ Strong Positive / ▽▽ Strong Negative) and the highest-value categories (analyst rating changes, management changes, insider buying/selling, activist stakes, management interviews, analyst roundtables, strategic shifts) most heavily.
+- OMIT any section with no genuinely actionable content — do not pad with filler.
+- Do NOT write generic macro narration. Macro belongs in "Shifting Environment & Sentiment" ONLY when it reflects a regime change, trend inflection, or sentiment shift with clear sector/company implications.
+- ${effectivePriority}
+- FACTUAL RULE: Use only what is in the headline, the analyst insight, and the description snippet provided (text after "::"). Do NOT invent figures, names, percentages, or details not present in that material.`;
+
+async function generateBriefUnlimited(articles, label, coveragePriority=null, maxArticles=null) {
   if (!articles.length) return {text:"", articles:[]};
+
+  // Rank by conviction, drop noise, then cap (master brief) — best signals first.
+  let ranked = rankBriefArticles(articles);
+  if (!ranked.length) ranked = articles;
+  if (maxArticles && ranked.length > maxArticles) ranked = ranked.slice(0, maxArticles);
+  articles = ranked;
   const sourceArticles = articles;
 
-  const DEFAULT_PRIORITY = "COVERAGE PRIORITY: Cover US and China stories first and most thoroughly. Within US coverage, prioritise WSJ, Washington Post, NY Times, and Financial Times — give these sources the most weight. Then Europe (UK, Germany, France, Italy, Switzerland, pan-European), then HK, Korea, Taiwan, Australia, Israel, Middle East (including Al Jazeera), Iran. Then Singapore and Canada. Indian stories should be mentioned briefly unless they have clear global market impact.";
+  const DEFAULT_PRIORITY = "COVERAGE PRIORITY: When two items are equally actionable, prefer US and China, then Europe (UK, Germany, France, Italy, Switzerland, pan-European), then HK, Korea, Taiwan, Australia, Israel, Middle East, Iran, then Singapore and Canada. Mention Indian stories briefly unless they carry clear global or sector impact.";
   const effectivePriority = coveragePriority || DEFAULT_PRIORITY;
 
   const CHUNK = 25;
@@ -911,46 +1004,18 @@ async function generateBriefUnlimited(articles, label, coveragePriority=null) {
   for (let i = 0; i < articles.length; i += CHUNK) chunks.push(articles.slice(i, i + CHUNK));
 
   if (chunks.length === 1) {
-    const prompt = `You are a senior financial analyst writing a detailed investment briefing for ${label}.
+    const prompt = `You are a buy-side analyst producing an ACTIONABLE Company News Intelligence briefing for ${label}. Your job is to help decide what to BUY, TRIM, or AVOID — and to surface signals that are ahead of consensus, not generic news.
 
-Use this exact format:
+Each article below is tagged with [SIGNAL CATEGORY] and may include an analyst insight and a description snippet after "::". Use these to judge significance and placement.
 
-## [Descriptive title capturing the dominant macro theme and key risk]
+Write in this exact format:
 
-[3-4 sentence BIG PICTURE executive summary: What is the dominant macro force driving markets right now? What geopolitical or policy development is most significant? What is the overall risk-on/risk-off tone? Only after setting this context, note 1-2 of the most market-moving company developments.]
+${BRIEF_FORMAT}
 
-## Macro & Geopolitical Environment
-- [The single most important macro/geopolitical development and its broad market implications. Explain the transmission mechanism to markets and portfolios.]
-- [Second key macro development. What sectors/assets does this affect and how?]
-
-## [Regional/Sector theme]
-- [Specific development: name companies, figures, percentages. Explain WHY it matters.]
-[REF citations after each bullet]
-
-## Company-Specific Actions
-- [Earnings beat/miss: company, amount, implication. [REF:N]]
-- [M&A, dividend change, CEO appointment, analyst upgrade/downgrade: company, details, implication. [REF:N]]
-
-## Business Features & Strategic Outlook
-- [In-depth feature article or executive interview: what strategic shift, competitive dynamic, or business model change is being signalled, and what does it mean for valuation? [REF:N]]
-- [Fund manager, strategist, or analyst panel commentary on market direction, sector fundamentals, or valuation — what is their key call and the reasoning? [REF:N]]
-
-## Risks & Outlook
-- [Specific risk with context and what to watch for]
-
-Rules:
-- ALWAYS start with big-picture macro/geopolitical context before zooming into companies
-- Each bullet must be 1-2 sentences with real detail and investor perspective
-- Name EVERY company mentioned in the headlines
-- End each bullet with [REF:N] citing the article number(s)
-- ${effectivePriority}
-- COMPANY BALANCE: At least one full section dedicated to company-specific events. Name every company with ticker where known.
-- INDUSTRY TRENDS: When multiple companies in the same sector report similar themes, call out the sector-level pattern explicitly.
-- FEATURES & DEPTH: Always include in-depth business features, executive interviews, and fund manager/strategist commentary in the "Business Features & Strategic Outlook" section, even when they lack a near-term price catalyst — these provide essential research context. Business model changes, competitive shifts, and long-term strategic pivots that affect valuation belong here. Articles from Barron's, IBD, WSJ, FT, and Nikkei that are clearly features or expert interviews must be included.
-- STRICT FACTUAL RULE: You may ONLY state facts that are EXPLICITLY present in the headline text. Do NOT infer, extrapolate, or add ANY figures, percentages, names, deal sizes, earnings amounts, or details that are not literally in the headline. Violation of this rule is unacceptable.
+${BRIEF_RULES(effectivePriority)}
 
 Articles (cite using [REF:N] at end of each bullet, N = article number):
-${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n")}`;
+${articles.map((a,i)=>fmtBriefArticle(a,i)).join("\n")}`;
     const text = await callClaude(prompt, 4000, {throwOnError:true, timeoutMs:50000});
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
@@ -959,47 +1024,22 @@ ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).joi
   // Individual chunk failures degrade gracefully (empty string, filtered below).
   const summaries = await mapLimit(chunks, 4, (chunk, ci) => {
     const offset = ci * CHUNK;
-    const prompt = `Summarise these headlines for ${label}. For each story, name the company or subject, what happened, and the investor implication in 1 sentence. Include the article number in parentheses at the end of each sentence, e.g. "(article 3)". For in-depth feature articles, executive interviews, or fund manager/strategist commentary, prefix with [FEATURE] so they are flagged for the Business Features & Strategic Outlook section.
-${chunk.map((a,i)=>`${offset+i}. ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
+    const prompt = `You are a buy-side analyst. For each tagged item below, write ONE sentence: the company or subject, what changed, why it matters, and the implied action (accumulate/trim/watch/avoid). Keep the [CATEGORY] tag at the front of each line and end with the article number in parentheses, e.g. "(article 3)". Prioritise analyst rating changes, management changes, insider/activist signals, management interviews, analyst roundtables and strategic shifts. Flag a macro item only when it reflects a change in regime, trend, or sentiment.
+${chunk.map((a,i)=>fmtBriefArticle(a, offset+i)).join("\n")}`;
     return callClaude(prompt, 800, {throwOnError:false});
   });
 
   const goodSummaries = summaries.filter(s => s && s.trim());
   if (!goodSummaries.length) throw new Error("empty_response");
 
-  const synthPrompt = `You are a senior financial analyst. Synthesise these summaries into a detailed investment briefing for ${label}.
+  const synthPrompt = `You are a buy-side analyst producing an ACTIONABLE Company News Intelligence briefing for ${label} from the tagged summaries below. Help decide what to BUY, TRIM, or AVOID, and surface ahead-of-consensus signals rather than generic news.
 
-Format:
-## [Title capturing dominant macro theme AND key risk]
+Write in this exact format:
 
-[3-4 sentence BIG PICTURE summary: Lead with the dominant macro/geopolitical force.]
+${BRIEF_FORMAT}
 
-## Macro & Geopolitical Environment
-- [Most important macro/geopolitical development. [REF:N]]
-- [Second key macro development. [REF:N]]
-
-## [Regional/Sector theme]
-- [Development with figures and investor implication. [REF:N]]
-
-## Company-Specific Actions
-- [Earnings/M&A/dividend/executive change with company name, details, implication. [REF:N]]
-
-## Business Features & Strategic Outlook
-- [In-depth feature or executive interview: strategic shift, business model change, or competitive dynamic and its valuation implication. [REF:N]]
-- [Fund manager, strategist, or analyst panel view on market direction, sector fundamentals, or valuation. [REF:N]]
-
-## Risks & Outlook
-- [Specific risk or opportunity. [REF:N]]
-
-Rules:
-- ALWAYS open with macro/geopolitical big picture BEFORE company detail
-- Name every company, be specific with figures/percentages
-- EVERY bullet must end with [REF:N] or [REF:N,M]
-- ${effectivePriority}
-- FEATURES & DEPTH: Always include in-depth business features, executive interviews, and fund manager/strategist commentary in the "Business Features & Strategic Outlook" section even without a near-term price catalyst. Business model changes, competitive shifts, and strategic pivots that affect long-term valuation are high priority. Expert panel discussions and outlook interviews from Barron's, WSJ, FT, IBD, and regional equivalents must be included.
-- STRICT FACTUAL RULE: Only state facts explicitly in the headline text. Never add figures, percentages, names, or details not literally present in the headlines.
-
-The summaries below already carry article numbers in parentheses, e.g. "(article 3)". Use those numbers for [REF:N] citations.
+${BRIEF_RULES(effectivePriority)}
+- The summaries carry [CATEGORY] tags and article numbers in parentheses, e.g. "(article 3)" — use those numbers for [REF:N] citations.
 
 Summaries to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
@@ -2544,8 +2584,7 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
     setBriefError(p=>({...p,[masterBriefKey]:null}));
     setBriefLoading(p=>({...p,[masterBriefKey]:true}));
     try {
-      const arts = allBriefArts.slice(0, MASTER_CAP);
-      const b = await generateBriefUnlimited(arts, "Global Company News Briefs");
+      const b = await generateBriefUnlimited(allBriefArts, "Global Company News Briefs", null, MASTER_CAP);
       if (!b.text) setBriefError(p=>({...p,[masterBriefKey]:"No briefing returned. Retry."}));
       else setBriefs(p=>{const n={...p,[masterBriefKey]:b};sSet(SK.summaries,n);return n;});
     } catch (e) {
@@ -2566,7 +2605,7 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{fontSize:18}}>📰</span>
             <div>
-              <div style={{...mono,fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>GLOBAL NEWS BRIEFS · {allBriefArts.length>MASTER_CAP ? `top ${MASTER_CAP} of ${allBriefArts.length}` : `${allBriefArts.length}`} articles{masterBriefData?.generatedAt ? ` · generated ${new Date(masterBriefData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
+              <div style={{...mono,fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>GLOBAL NEWS BRIEFS · {allBriefArts.length>MASTER_CAP ? `top ${MASTER_CAP} by signal of ${allBriefArts.length}` : `${allBriefArts.length}`} articles{masterBriefData?.generatedAt ? ` · generated ${new Date(masterBriefData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
               <div style={{fontFamily:"'Spectral',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Company News Intelligence</div>
             </div>
           </div>
