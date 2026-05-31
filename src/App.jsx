@@ -745,18 +745,85 @@ ${candidates.map((a,i)=>`${i}. [${a.lang}] ${a.translatedTitle||a.title}`).join(
 // ═══════════════════════════════════════════════════════════════════════════════
 // CLAUDE API HELPER
 // ═══════════════════════════════════════════════════════════════════════════════
-async function callClaude(prompt, maxTokens=2000) {
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: maxTokens,
-      messages: [{ role: "user", content: prompt }]
-    })
-  });
-  const data = await res.json();
-  return data.content?.[0]?.text || "";
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Exponential backoff with jitter; honours a Retry-After header when present.
+function backoff(attempt, res) {
+  const base = 600 * Math.pow(2, attempt);
+  const jitter = Math.random() * 300;
+  const ra = res && Number(res.headers?.get?.("retry-after"));
+  return (ra ? ra * 1000 : 0) + base + jitter;
+}
+
+// Bounded-concurrency map that preserves input order in the result array.
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let i = 0;
+  async function worker() {
+    while (i < items.length) {
+      const idx = i++;
+      out[idx] = await fn(items[idx], idx);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+// callClaude always returns a string on success. By default it swallows errors
+// and returns "" (legacy callers JSON.parse the result and have their own
+// fallbacks). Pass { throwOnError:true } to surface failures to the UI.
+async function callClaude(prompt, maxTokens=2000, opts={}) {
+  const { timeoutMs=45000, retries=2, throwOnError=false } = opts;
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeoutMs);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: ctl.signal,
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: maxTokens,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      clearTimeout(timer);
+
+      // Retryable upstream errors: rate limit, overload, 5xx (incl. Vercel 504).
+      if (res.status === 429 || res.status === 529 || res.status >= 500) {
+        lastErr = new Error(`api_${res.status}`);
+        if (attempt < retries) { await sleep(backoff(attempt, res)); continue; }
+        if (throwOnError) throw lastErr;
+        return "";
+      }
+
+      const data = await res.json();
+      if (data?.type === "error" || data?.error) {
+        lastErr = new Error(data?.error?.message || "api_error");
+        if (attempt < retries) { await sleep(backoff(attempt)); continue; }
+        if (throwOnError) throw lastErr;
+        return "";
+      }
+
+      const text = data.content?.[0]?.text;
+      if (typeof text !== "string") {
+        if (throwOnError) throw new Error("empty_response");
+        return "";
+      }
+      return text;
+    } catch (e) {
+      clearTimeout(timer);
+      lastErr = e;
+      // Timeouts (AbortError) have already consumed the budget — don't retry.
+      if (attempt < retries && e.name !== "AbortError") { await sleep(backoff(attempt)); continue; }
+      if (throwOnError) throw lastErr;
+      return "";
+    }
+  }
+  if (throwOnError) throw lastErr;
+  return "";
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -884,18 +951,21 @@ Rules:
 
 Articles (cite using [REF:N] at end of each bullet, N = article number):
 ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n")}`;
-    const text = await callClaude(prompt, 6000);
+    const text = await callClaude(prompt, 4000, {throwOnError:true, timeoutMs:50000});
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
-  const summaries = await Promise.all(chunks.map((chunk, ci) => {
+  // Summarise chunks with bounded concurrency to avoid rate-limit/overload.
+  // Individual chunk failures degrade gracefully (empty string, filtered below).
+  const summaries = await mapLimit(chunks, 4, (chunk, ci) => {
     const offset = ci * CHUNK;
     const prompt = `Summarise these headlines for ${label}. For each story, name the company or subject, what happened, and the investor implication in 1 sentence. Include the article number in parentheses at the end of each sentence, e.g. "(article 3)". For in-depth feature articles, executive interviews, or fund manager/strategist commentary, prefix with [FEATURE] so they are flagged for the Business Features & Strategic Outlook section.
 ${chunk.map((a,i)=>`${offset+i}. ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
-    return callClaude(prompt, 800);
-  }));
+    return callClaude(prompt, 800, {throwOnError:false});
+  });
 
-  const articleIndex = articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} — ${a.source}`).join("\n");
+  const goodSummaries = summaries.filter(s => s && s.trim());
+  if (!goodSummaries.length) throw new Error("empty_response");
 
   const synthPrompt = `You are a senior financial analyst. Synthesise these summaries into a detailed investment briefing for ${label}.
 
@@ -929,12 +999,11 @@ Rules:
 - FEATURES & DEPTH: Always include in-depth business features, executive interviews, and fund manager/strategist commentary in the "Business Features & Strategic Outlook" section even without a near-term price catalyst. Business model changes, competitive shifts, and strategic pivots that affect long-term valuation are high priority. Expert panel discussions and outlook interviews from Barron's, WSJ, FT, IBD, and regional equivalents must be included.
 - STRICT FACTUAL RULE: Only state facts explicitly in the headline text. Never add figures, percentages, names, or details not literally present in the headlines.
 
-Article index (use N in [REF:N]):
-${articleIndex}
+The summaries below already carry article numbers in parentheses, e.g. "(article 3)". Use those numbers for [REF:N] citations.
 
 Summaries to synthesise:
-${summaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, 6000);
+${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
+  const text = await callClaude(synthPrompt, 3500, {throwOnError:true, timeoutMs:50000});
   return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 
@@ -2427,8 +2496,23 @@ function EMTab({canonical, emClusterState, emLastFetch, fetchEmCluster, briefs, 
 // ═══════════════════════════════════════════════════════════════════════════════
 // NEWS BRIEFS TAB
 // ═══════════════════════════════════════════════════════════════════════════════
+// Maps a generation failure to a short, human-readable message for the UI.
+function humanizeBriefError(e) {
+  const m = e?.message || "";
+  if (m === "AbortError" || e?.name === "AbortError") return "Timed out — try again.";
+  if (m.includes("429")) return "Rate limited — retry shortly.";
+  if (m.includes("529")) return "Service busy — retry shortly.";
+  if (m === "empty_response") return "No briefing returned. Retry.";
+  return "Couldn't generate briefing. Retry.";
+}
+
+// Cap the master brief so the all-articles synthesis stays fast and within the
+// upstream time budget. Articles are already ordered by recency/priority.
+const MASTER_CAP = 150;
+
 function NewsBriefsTab({canonical, briefs, setBriefs}) {
   const [briefLoading, setBriefLoading] = useState({});
+  const [briefError, setBriefError] = useState({});
   const mono = { fontFamily:"'DM Mono',monospace" };
 
   // Compute articles for each market group
@@ -2440,20 +2524,35 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
 
   const generateGroupBrief = async (group) => {
     const key = `newsbriefs_${group.market}`;
-    setBriefLoading(p=>({...p,[key]:true}));
     const arts = groupArts(group);
-    if (!arts.length) { setBriefLoading(p=>({...p,[key]:false})); return; }
-    const b = await generateBriefUnlimited(arts, `${group.flag} ${group.market} Company News`);
-    setBriefs(p=>{const n={...p,[key]:b};sSet(SK.summaries,n);return n;});
-    setBriefLoading(p=>({...p,[key]:false}));
+    if (!arts.length) return;
+    setBriefError(p=>({...p,[key]:null}));
+    setBriefLoading(p=>({...p,[key]:true}));
+    try {
+      const b = await generateBriefUnlimited(arts, `${group.flag} ${group.market} Company News`);
+      if (!b.text) setBriefError(p=>({...p,[key]:"No briefing returned. Retry."}));
+      else setBriefs(p=>{const n={...p,[key]:b};sSet(SK.summaries,n);return n;});
+    } catch (e) {
+      setBriefError(p=>({...p,[key]:humanizeBriefError(e)}));
+    } finally {
+      setBriefLoading(p=>({...p,[key]:false}));
+    }
   };
 
   const generateMasterBrief = async () => {
+    if (!allBriefArts.length) return;
+    setBriefError(p=>({...p,[masterBriefKey]:null}));
     setBriefLoading(p=>({...p,[masterBriefKey]:true}));
-    if (!allBriefArts.length) { setBriefLoading(p=>({...p,[masterBriefKey]:false})); return; }
-    const b = await generateBriefUnlimited(allBriefArts, "Global Company News Briefs");
-    setBriefs(p=>{const n={...p,[masterBriefKey]:b};sSet(SK.summaries,n);return n;});
-    setBriefLoading(p=>({...p,[masterBriefKey]:false}));
+    try {
+      const arts = allBriefArts.slice(0, MASTER_CAP);
+      const b = await generateBriefUnlimited(arts, "Global Company News Briefs");
+      if (!b.text) setBriefError(p=>({...p,[masterBriefKey]:"No briefing returned. Retry."}));
+      else setBriefs(p=>{const n={...p,[masterBriefKey]:b};sSet(SK.summaries,n);return n;});
+    } catch (e) {
+      setBriefError(p=>({...p,[masterBriefKey]:humanizeBriefError(e)}));
+    } finally {
+      setBriefLoading(p=>({...p,[masterBriefKey]:false}));
+    }
   };
 
   const masterBriefData = briefs[masterBriefKey];
@@ -2467,7 +2566,7 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{fontSize:18}}>📰</span>
             <div>
-              <div style={{...mono,fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>GLOBAL NEWS BRIEFS · {allBriefArts.length} articles{masterBriefData?.generatedAt ? ` · generated ${new Date(masterBriefData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
+              <div style={{...mono,fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>GLOBAL NEWS BRIEFS · {allBriefArts.length>MASTER_CAP ? `top ${MASTER_CAP} of ${allBriefArts.length}` : `${allBriefArts.length}`} articles{masterBriefData?.generatedAt ? ` · generated ${new Date(masterBriefData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
               <div style={{fontFamily:"'Spectral',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Company News Intelligence</div>
             </div>
           </div>
@@ -2480,6 +2579,7 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
           </button>
         </div>
         {masterBrief&&<div style={{borderTop:"1px solid #e8e2d6",paddingTop:12}}><BriefRenderer text={masterBrief} articles={masterBriefData?.articles||allBriefArts}/></div>}
+        {briefError[masterBriefKey]&&!briefLoading[masterBriefKey]&&<div style={{...mono,fontSize:10,color:"#c0392b",marginTop:8}}>⚠ {briefError[masterBriefKey]}</div>}
       </div>
 
       {/* Per-market group columns — sectioned by type */}
@@ -2542,6 +2642,7 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
               </div>
 
               {brief && <div style={{borderBottom:"1px solid #e8e2d6",paddingBottom:10,marginBottom:10}}><BriefRenderer text={brief} articles={briefData?.articles||arts}/></div>}
+              {briefError[key]&&!briefLoading[key]&&<div style={{...mono,fontSize:9,color:group.color,marginBottom:8}}>⚠ {briefError[key]}</div>}
 
               {arts.length===0 ? (
                 <div style={{...mono,fontSize:10,color:"#bbb",padding:"16px 0",textAlign:"center"}}>no articles — refresh feeds</div>
