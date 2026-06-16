@@ -951,9 +951,11 @@ const BRIEF_CATEGORY_WEIGHT = {
 };
 const SIGNAL_STRENGTH = { SP2:3, SN2:3, SP1:2, SN1:2, N:0 };
 
-// Country weighting for brief selection — boosts core/liquid markets so they aren't
-// crowded out of the MASTER_CAP cut by sheer volume from smaller markets, and
-// deprioritises markets that tend to flood the pool with lower-actionability items.
+// Country weighting for the global Intel master brief only — boosts core/liquid
+// markets so they aren't crowded out of the MASTER_CAP cut by sheer volume from
+// smaller markets, and deprioritises markets that tend to flood the pool with
+// lower-actionability items. Other briefs (per-market group, sector, breaking news)
+// are unaffected.
 const BRIEF_COUNTRY_BOOST = 1.4;
 const BRIEF_COUNTRY_PENALTY = 0.5;
 const BRIEF_BOOSTED_COUNTRIES = new Set([
@@ -967,17 +969,19 @@ function briefCountryWeight(country) {
   return 1;
 }
 
-function briefScore(a) {
+function briefScore(a, weightCountries=false) {
   const w = BRIEF_CATEGORY_WEIGHT[a.signalCategory] ?? 0;
   const s = SIGNAL_STRENGTH[a.signal] ?? 0;
   const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt || 0);
   const recency = t ? Math.min(0.999, t / Date.now()) : 0; // sub-1 tiebreak
-  return (w * 10 + s * 2 + recency) * briefCountryWeight(a.country);
+  const base = w * 10 + s * 2 + recency;
+  return weightCountries ? base * briefCountryWeight(a.country) : base;
 }
 
 // Rank by conviction/actionability and drop classified noise (uncategorised neutral,
 // non-catalyst items). Unenriched articles (no signalCategory yet) are kept.
-function rankBriefArticles(articles) {
+// weightCountries is opt-in, used only for the global Intel master brief.
+function rankBriefArticles(articles, weightCountries=false) {
   return articles
     .filter(a => {
       if (!a.signalCategory) return true;
@@ -985,7 +989,7 @@ function rankBriefArticles(articles) {
       if (w === 0 && (!a.signal || a.signal === "N") && !a.isMicro) return false;
       return true;
     })
-    .sort((x, y) => briefScore(y) - briefScore(x));
+    .sort((x, y) => briefScore(y, weightCountries) - briefScore(x, weightCountries));
 }
 
 // Format one article line with its signal tag, category, insight and description snippet
@@ -1033,17 +1037,17 @@ const BRIEF_RULES = (effectivePriority) => `Rules:
 - ${effectivePriority}
 - FACTUAL RULE: Use only what is in the headline, the analyst insight, and the description snippet provided (text after "::"). Do NOT invent figures, names, percentages, or details not present in that material.`;
 
-async function generateBriefUnlimited(articles, label, coveragePriority=null, maxArticles=null) {
+async function generateBriefUnlimited(articles, label, coveragePriority=null, maxArticles=null, weightCountries=false) {
   if (!articles.length) return {text:"", articles:[]};
 
   // Rank by conviction, drop noise, then cap (master brief) — best signals first.
-  let ranked = rankBriefArticles(articles);
+  let ranked = rankBriefArticles(articles, weightCountries);
   if (!ranked.length) ranked = articles;
   if (maxArticles && ranked.length > maxArticles) ranked = ranked.slice(0, maxArticles);
   articles = ranked;
   const sourceArticles = articles;
 
-  const DEFAULT_PRIORITY = "COVERAGE PRIORITY: When two items are equally actionable, prefer US, Canada, Germany, pan-European, Singapore, Hong Kong/China, Korea, Taiwan, Israel, Latin America, and Australia. Give less weight to other markets, and mention Philippines, Nigeria, Malaysia, and Indian stories only briefly unless they carry clear global or sector impact.";
+  const DEFAULT_PRIORITY = "COVERAGE PRIORITY: When two items are equally actionable, prefer US and China, then Europe (UK, Germany, France, Italy, Switzerland, pan-European), then HK, Korea, Taiwan, Australia, Israel, Middle East, Iran, then Singapore and Canada. Mention Indian stories briefly unless they carry clear global or sector impact.";
   const effectivePriority = coveragePriority || DEFAULT_PRIORITY;
 
   const CHUNK = 25;
@@ -2482,7 +2486,8 @@ function NewsBriefsTab({canonical, briefs, setBriefs}) {
     setBriefError(p=>({...p,[masterBriefKey]:null}));
     setBriefLoading(p=>({...p,[masterBriefKey]:true}));
     try {
-      const b = await generateBriefUnlimited(allBriefArts, "Global Company News Briefs", null, MASTER_CAP);
+      const masterPriority = "COVERAGE PRIORITY: When two items are equally actionable, prefer US, Canada, Germany, pan-European, Singapore, Hong Kong/China, Korea, Taiwan, Israel, Latin America, and Australia. Give less weight to other markets, and mention Philippines, Nigeria, Malaysia, and Indian stories only briefly unless they carry clear global or sector impact.";
+      const b = await generateBriefUnlimited(allBriefArts, "Global Company News Briefs", masterPriority, MASTER_CAP, true);
       if (!b.text) setBriefError(p=>({...p,[masterBriefKey]:"No briefing returned. Retry."}));
       else setBriefs(p=>{const n={...p,[masterBriefKey]:b};sSet(SK.summaries,n);return n;});
     } catch (e) {
