@@ -951,12 +951,28 @@ const BRIEF_CATEGORY_WEIGHT = {
 };
 const SIGNAL_STRENGTH = { SP2:3, SN2:3, SP1:2, SN1:2, N:0 };
 
+// Country weighting for brief selection — boosts core/liquid markets so they aren't
+// crowded out of the MASTER_CAP cut by sheer volume from smaller markets, and
+// deprioritises markets that tend to flood the pool with lower-actionability items.
+const BRIEF_COUNTRY_BOOST = 1.4;
+const BRIEF_COUNTRY_PENALTY = 0.5;
+const BRIEF_BOOSTED_COUNTRIES = new Set([
+  "US","CA","DE","EU","SG","HK","CN","KR","TW","IL","AU",
+  "BR","MX","AR","CL","CO","PE", // LatAm cluster
+]);
+const BRIEF_PENALISED_COUNTRIES = new Set(["PH","NG","MY","IN"]);
+function briefCountryWeight(country) {
+  if (BRIEF_BOOSTED_COUNTRIES.has(country)) return BRIEF_COUNTRY_BOOST;
+  if (BRIEF_PENALISED_COUNTRIES.has(country)) return BRIEF_COUNTRY_PENALTY;
+  return 1;
+}
+
 function briefScore(a) {
   const w = BRIEF_CATEGORY_WEIGHT[a.signalCategory] ?? 0;
   const s = SIGNAL_STRENGTH[a.signal] ?? 0;
   const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt || 0);
   const recency = t ? Math.min(0.999, t / Date.now()) : 0; // sub-1 tiebreak
-  return w * 10 + s * 2 + recency;
+  return (w * 10 + s * 2 + recency) * briefCountryWeight(a.country);
 }
 
 // Rank by conviction/actionability and drop classified noise (uncategorised neutral,
@@ -1027,7 +1043,7 @@ async function generateBriefUnlimited(articles, label, coveragePriority=null, ma
   articles = ranked;
   const sourceArticles = articles;
 
-  const DEFAULT_PRIORITY = "COVERAGE PRIORITY: When two items are equally actionable, prefer US and China, then Europe (UK, Germany, France, Italy, Switzerland, pan-European), then HK, Korea, Taiwan, Australia, Israel, Middle East, Iran, then Singapore and Canada. Mention Indian stories briefly unless they carry clear global or sector impact.";
+  const DEFAULT_PRIORITY = "COVERAGE PRIORITY: When two items are equally actionable, prefer US, Canada, Germany, pan-European, Singapore, Hong Kong/China, Korea, Taiwan, Israel, Latin America, and Australia. Give less weight to other markets, and mention Philippines, Nigeria, Malaysia, and Indian stories only briefly unless they carry clear global or sector impact.";
   const effectivePriority = coveragePriority || DEFAULT_PRIORITY;
 
   const CHUNK = 25;
