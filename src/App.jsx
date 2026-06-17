@@ -117,8 +117,8 @@ const NEWS_BRIEF_GROUPS = [
     market: "United States",
     flag: "🇺🇸",
     color: "#b84a00",
-    sources: ["wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","seekalpha","wsj","barrons","marketwatch","axios_biz","fierce_pharma"],
-    desc: "WSJ Heard on the Street · WSJ Markets Features · WSJ Global Equities Roundup · WSJ Global Commodities Roundup · Seeking Alpha Earnings · Barron's · MarketWatch · Axios · Fierce Pharma",
+    sources: ["wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","seekalpha","wsj","barrons","marketwatch","axios_biz","fierce_pharma","semiwiki","eetimes"],
+    desc: "WSJ Heard on the Street · WSJ Markets Features · WSJ Global Equities Roundup · WSJ Global Commodities Roundup · Seeking Alpha Earnings · Barron's · MarketWatch · Axios · Fierce Pharma · SemiWiki · EE Times",
   },
   {
     market: "Canada",
@@ -159,8 +159,8 @@ const NEWS_BRIEF_GROUPS = [
     market: "Japan",
     flag: "🇯🇵",
     color: "#6a1b9a",
-    sources: ["jp_analyst_calls","nikkei_biz_spotlight","nikkei_asia","reuters_jp"],
-    desc: "Japan Analyst Actions · Nikkei Biz Spotlight · Nikkei Asia · Reuters Japan",
+    sources: ["jp_analyst_calls","nikkei_biz_spotlight","nikkei_asia","reuters_jp","xenospectrum"],
+    desc: "Japan Analyst Actions · Nikkei Biz Spotlight · Nikkei Asia · Reuters Japan · XenoSpectrum",
   },
   {
     market: "Asia Broker Calls & Analyst Actions",
@@ -223,6 +223,8 @@ const SOURCES = [
   {id:"analyst_roundtables",tier:2,desc:"Analyst Roundtables & Strategist Views — fund manager, strategist and CIO interviews, roundtables and outlook calls; investment views and positioning ahead of consensus.",country:"US",name:"Analyst Roundtables & Strategist Views",lang:"en",flag:"🎙️",url:GN("(\"fund manager\" OR strategist OR \"portfolio manager\" OR CIO) (interview OR roundtable OR outlook) stocks market"),limit:15},
   {id:"mgmt_interviews",tier:2,desc:"Management Interviews — in-depth CEO/CFO interviews on strategy, turnarounds, capital allocation and outlook; surfaces management conviction and strategic shifts.",country:"US",name:"Management Interviews",lang:"en",flag:"🗣️",url:GN("(CEO OR CFO OR \"chief executive\") interview (strategy OR turnaround OR outlook OR growth OR priorities) company"),limit:15},
   {id:"estimate_revisions",tier:2,desc:"Estimate & Target Revisions — analyst price-target, earnings-estimate and rating revisions across global equities; tracks changes in view before they become consensus.",country:"US",name:"Estimate & Target Revisions",lang:"en",flag:"📊",url:GN("stocks (\"price target\" OR \"earnings estimate\" OR rating) (raised OR cut OR lifted OR lowered OR upgraded OR downgraded OR initiated) analyst"),limit:15},
+  {id:"semiwiki",tier:2,   desc:"SemiWiki — semiconductor industry blog with deep dives on process nodes, chip architecture, foundry dynamics, and company strategies by engineers and analysts. Strong on TSMC, Intel, AMD, and fabless players.",country:"US",name:"SemiWiki",  lang:"en",flag:"🇺🇸",url:GN("site:semiwiki.com semiconductor chip TSMC Intel AMD Qualcomm")},
+  {id:"eetimes",tier:2,    desc:"EE Times — global electronics engineering publication; covers semiconductor design, chip technology, AI hardware, embedded systems, and industry business news.", country:"US",name:"EE Times",   lang:"en",flag:"🇺🇸",url:GN("site:eetimes.com")},
   // ── Germany ────────────────────────────────────────────────────────────────
   {id:"handelsblatt",tier:2,  desc:"Handelsblatt — Germany\'s leading financial daily; required reading for DAX, German industry and European monetary policy.",               country:"DE",name:"Handelsblatt",        lang:"de",flag:"🇩🇪",url:"https://www.handelsblatt.com/contentexport/feed/schlagzeilen",paywall:true},
   {id:"handelsblatt_en",tier:2,desc:"Handelsblatt English — curated English-language coverage of German business and European economic news.",                                 country:"DE",name:"Handelsblatt (EN)",    lang:"en",flag:"🇩🇪",url:GN("site:handelsblatt.com english economy business"),paywall:true},
@@ -246,6 +248,7 @@ const SOURCES = [
   {id:"nikkei_biz_spotlight",tier:2,desc:"Nikkei Asia Business Spotlight — company-specific deep dives; earnings, management changes, and strategic pivots for Japan and Asia-listed corporates.",country:"JP",name:"Nikkei Biz Spotlight",lang:"en",flag:"🇯🇵",url:GN("site:asia.nikkei.com business companies"),paywall:true},
   {id:"jp_analyst_calls",tier:2,desc:"Japan Analyst Actions — English-language Reuters and Bloomberg coverage of broker upgrades, downgrades, and price target changes on TSE-listed stocks.",country:"JP",name:"Japan Analyst Actions",lang:"en",flag:"🇯🇵",url:GN("Japan stocks analyst upgrade downgrade price target raises cuts initiates TSE Reuters Bloomberg"),limit:15},
   {id:"reuters_jp",tier:1,desc:"Reuters Japan — wire coverage of TSE, Bank of Japan policy decisions, and major Japanese corporates in English.",country:"JP",name:"Reuters Japan",lang:"en",flag:"🇯🇵",url:GN("site:reuters.com Japan economy business finance TSE BOJ Nikkei")},
+  {id:"xenospectrum",tier:2,desc:"XenoSpectrum — Japanese tech and science publication; detailed analysis of semiconductor process nodes, chip benchmarks, SoC performance, and consumer electronics. Strong on TSMC, Apple, Qualcomm, Samsung silicon, and AI accelerators.",country:"JP",name:"XenoSpectrum",lang:"ja",flag:"🇯🇵",url:GN("site:xenospectrum.com","ja","JP","JP:ja")},
   // ── Pan-Asia (Analyst Actions) ────────────────────────────────────────────
   {id:"asia_broker_calls",tier:2,desc:"Pan-Asia Analyst Actions — Reuters and Bloomberg English-language feed for analyst upgrades, downgrades, and price target changes across Asian equity markets (Japan, Korea, HK, Taiwan, Singapore, Australia).",country:"HK",name:"Asia Analyst Actions",lang:"en",flag:"🌏",url:GN("Asia stocks analyst upgrade downgrade price target raises cuts initiates HKEX TSE KOSPI ASX SGX Reuters Bloomberg"),limit:15},
   {id:"reuters_asia",tier:1,desc:"Reuters Asia Markets — pan-Asian wire covering trading activity, earnings, and macro moves across Japan, Korea, China, India, SEA, and Australia.",country:"HK",name:"Reuters Asia Markets",lang:"en",flag:"🌏",url:GN("site:reuters.com Asia markets economy business finance")},
