@@ -1115,7 +1115,7 @@ ${BRIEF_RULES(effectivePriority)}
 
 Articles (cite using [REF:N] at end of each bullet, N = article number):
 ${articles.map((a,i)=>fmtBriefArticle(a,i)).join("\n")}`;
-    const text = await callClaude(prompt, 4000, {throwOnError:true, timeoutMs:50000});
+    const text = await callClaude(prompt, 8000, {throwOnError:true, timeoutMs:90000});
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
@@ -1142,7 +1142,7 @@ ${BRIEF_RULES(effectivePriority)}
 
 Summaries to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, 3500, {throwOnError:true, timeoutMs:50000});
+  const text = await callClaude(synthPrompt, 8000, {throwOnError:true, timeoutMs:90000});
   return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 
@@ -1217,7 +1217,7 @@ ${WORLD_RULES}
 
 Items (cite using [REF:N] at end of each bullet, N = item number):
 ${arts.map((a,i)=>fmtWorldArticle(a,i)).join("\n")}`;
-    const text = await callClaude(prompt, 4000, {throwOnError:true, timeoutMs:50000});
+    const text = await callClaude(prompt, 8000, {throwOnError:true, timeoutMs:90000});
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
@@ -1242,7 +1242,7 @@ ${WORLD_RULES}
 
 Summaries to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, 3500, {throwOnError:true, timeoutMs:50000});
+  const text = await callClaude(synthPrompt, 8000, {throwOnError:true, timeoutMs:90000});
   return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 // ═══════════════════════════════════════════════════════════════════════════════
