@@ -95,8 +95,8 @@ const NEWS_BRIEF_GROUPS = [
     market: "🌐 Global Overview",
     flag: "🌐",
     color: "#1a1a1a",
-    sources: ["reuters","bloomberg","ft","reuters_latam","mercopress","reuters_cee","emerging_europe","reuters_africa","african_business","reuters_emasia","nikkei_sea","caixin","econ_times","nikkei_asia","reuters_jp","reuters_kr","arabnews_biz","ft_alphaville","wsj_heard"],
-    desc: "Reuters · Bloomberg · FT · Reuters LatAm · Reuters CEE · Reuters Africa · Reuters SEA · Caixin · Nikkei Asia · FT Alphaville · WSJ Heard — cross-regional synthesis from 19 curated tier-1 sources",
+    sources: ["reuters","bloomberg","ft","reuters_latam","mercopress","reuters_cee","emerging_europe","reuters_africa","african_business","reuters_emasia","nikkei_sea","caixin","econ_times","nikkei_asia","reuters_jp","reuters_kr","arabnews_biz","ft_alphaville","wsj_heard","guardian","reuters_breakingviews"],
+    desc: "Reuters · Bloomberg · FT · Reuters LatAm · Reuters CEE · Reuters Africa · Reuters SEA · Caixin · Nikkei Asia · FT Alphaville · WSJ Heard · The Guardian · Reuters Breakingviews — cross-regional synthesis from 21 curated tier-1 sources",
     isGlobal: true,
   },
   {
@@ -110,8 +110,8 @@ const NEWS_BRIEF_GROUPS = [
     market: "Ideas & Commentary",
     flag: "💡",
     color: "#1565c0",
-    sources: ["ft_alphaville","wsj_heard","wsj_mkt","barrons","ibd","semafor","benzinga_ideas","seekalpha","analyst_roundtables","mgmt_interviews"],
-    desc: "FT Alphaville · WSJ Heard on the Street · WSJ Markets Features · Barron's · Investors Business Daily · Semafor · Benzinga Trade Ideas · Seeking Alpha · Analyst Roundtables · Management Interviews",
+    sources: ["ft_alphaville","wsj_heard","wsj_mkt","barrons","ibd","semafor","benzinga_ideas","seekalpha","analyst_roundtables","mgmt_interviews","reuters_breakingviews"],
+    desc: "FT Alphaville · WSJ Heard on the Street · WSJ Markets Features · Barron's · Investors Business Daily · Semafor · Benzinga Trade Ideas · Seeking Alpha · Analyst Roundtables · Management Interviews · Reuters Breakingviews",
   },
   {
     market: "United States",
@@ -131,8 +131,8 @@ const NEWS_BRIEF_GROUPS = [
     market: "United Kingdom",
     flag: "🇬🇧",
     color: "#1a237e",
-    sources: ["investors_chron","cityam","telegraph_biz","thisismoney"],
-    desc: "Investors Chronicle · City A.M. · Telegraph Business · This is Money",
+    sources: ["investors_chron","cityam","telegraph_biz","thisismoney","guardian"],
+    desc: "Investors Chronicle · City A.M. · Telegraph Business · This is Money · The Guardian",
   },
   {
     market: "Singapore",
@@ -387,6 +387,8 @@ const SOURCES = [
   {id:"telegraph_biz",tier:2,desc:"The Telegraph Business — strong on UK corporate strategy, energy majors, and government economic policy; authoritative conservative broadsheet.",country:"GB",name:"Telegraph Business",lang:"en",flag:"🇬🇧",url:GN("site:telegraph.co.uk business economy finance"),paywall:true},
   {id:"reuters_uk",tier:1,desc:"Reuters UK — wire coverage of FTSE 100, Bank of England decisions, and British corporate and macro news.",country:"GB",name:"Reuters UK",lang:"en",flag:"🇬🇧",url:GN("site:reuters.com UK Britain economy business FTSE")},
   {id:"bloom_uk",tier:1,desc:"Bloomberg UK — authoritative on sterling, gilts, BoE policy, and major UK-listed corporates.",country:"GB",name:"Bloomberg UK",lang:"en",flag:"🇬🇧",url:GN("site:bloomberg.com UK Britain economy markets"),paywall:true},
+  {id:"guardian",tier:1,desc:"The Guardian — global news coverage; authoritative on politics, business, climate, geopolitics, and international affairs. UK-based with broad global reach.",country:"GB",name:"The Guardian",lang:"en",flag:"🇬🇧",url:GN("site:theguardian.com business economy world politics")},
+  {id:"reuters_breakingviews",tier:1,desc:"Reuters Breakingviews — Reuters's flagship opinion and analysis column; incisive views on M&A, geopolitics, banking, and market structure from senior financial journalists.",country:"US",name:"Reuters Breakingviews",lang:"en",flag:"🇺🇸",url:GN("site:reuters.com breakingviews")},
   // ── France ─────────────────────────────────────────────────────────────────
   {id:"lesechos",tier:2,desc:"Les Echos — France's equivalent of the FT; the most credible French financial daily. Essential for CAC 40, French corporates (LVMH, TotalEnergies, BNP), and ECB policy.",country:"FR",name:"Les Echos",lang:"fr",flag:"🇫🇷",url:GN("site:lesechos.fr economie finance marchés","fr","FR","FR:fr"),paywall:true},
   {id:"lesechos_en",tier:2,desc:"Les Echos (English GN) — English-language coverage of major French business and European economic news surfaced via Google News.",country:"FR",name:"Les Echos (EN)",lang:"en",flag:"🇫🇷",url:GN("site:lesechos.fr economy finance CAC40"),paywall:true},
@@ -583,6 +585,49 @@ const EM_SOURCES = [
 
 // Unified fetch list — developed + emerging feeds are now refreshed together.
 const ALL_MARKET_SOURCES = [...SOURCES, ...EM_SOURCES];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WORLD NEWS PRIORITY SCORING — Today tab sort order
+// Ranks by thematic importance and source credibility rather than pure recency.
+// Topics ranked by user priority: geopolitics → oil/energy → AI → Elon Musk.
+// Source bonus for major global publications named as tier-1 references.
+// ═══════════════════════════════════════════════════════════════════════════════
+const SOURCE_TIER_MAP = Object.fromEntries(ALL_MARKET_SOURCES.map(s => [s.id, s.tier ?? 3]));
+
+function isMarqueeSource(id) {
+  if (!id) return false;
+  const s = id.toLowerCase();
+  return s.startsWith("bloomberg") || s.startsWith("bloom_") ||
+    s.startsWith("wsj") || s.startsWith("reuters") ||
+    s === "ft" || s === "ft_alphaville" ||
+    s === "nyt" || s === "wapo" || s === "wapo_politics" || s === "semafor" ||
+    s === "scmp" || s === "scmp_markets" || s === "scmp_china" ||
+    s === "globe_mail" || s === "globe_itm" ||
+    s === "guardian" || s === "guardian_au";
+}
+
+const WORLD_TOPIC_WEIGHTS = [
+  // Geopolitics: Iran, Ukraine, Taiwan, Israel/ME, US-China/Russia trade & military
+  { score: 50, re: /\biran(ian)?\b|\bukraina?\b|\bzelensky\b|\bkyiv\b|\btaiwan\b|\bsouth china sea\b|\bpla\b|\bisrael\b|\bgaza\b|\bhamas\b|\bnetanyahu\b|\bidf\b|\bhezbollah\b|\bhouthi\b|\bwest bank\b|\bputin\b|\bkremlin\b|\brussia\b|trade war|export control|chip ban|us.china/i },
+  // Elon Musk and his companies (Tesla, SpaceX, xAI, Starlink, X, DOGE)
+  { score: 40, re: /elon musk|\bmusk\b|\btesla\b|\bspacex\b|\bstarlink\b|\bxai\b|\bgrok\b|department of government efficiency/i },
+  // Oil, energy & inflationary expectations
+  { score: 40, re: /oil price|crude oil|\bbrent\b|\bwti\b|\bopec\b|oil supply|oil demand|oil output|lng price|gas price|energy (price|crisis|shock|supply|disruption)/i },
+  // AI buildout, infrastructure, regulation (inc. China/HK)
+  { score: 35, re: /artificial intelligence|generative ai|\bai chip\b|\bai model\b|\bai regulation\b|\bai act\b|\bai infrastructure\b|large language model|\bllm\b|\bdeepseek\b|\bopenai\b|\banthropic\b|\bchatgpt\b|gpu.*data.?center|data.?center.*ai|ai.*data.?center|hyperscaler|compute cluster|foundation model/i },
+];
+
+function worldScore(a) {
+  const text = `${a.translatedTitle || a.title} ${a.description || ""}`;
+  const topicScore = WORLD_TOPIC_WEIGHTS.reduce(
+    (best, t) => t.re.test(text) ? Math.max(best, t.score) : best, 0
+  );
+  const tier = SOURCE_TIER_MAP[a.sourceId] ?? 3;
+  const sourceBonus = isMarqueeSource(a.sourceId) ? 15 : tier === 1 ? 8 : tier === 2 ? 3 : 0;
+  const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt || 0);
+  const recency = t ? Math.min(0.999, t / Date.now()) : 0;
+  return (topicScore + sourceBonus) * 10 + recency;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORAGE
@@ -1118,28 +1163,34 @@ const WORLD_FORMAT = `## [Headline capturing the dominant global story right now
 
 [3-4 sentence big-picture summary: the dominant macro/geopolitical force shaping markets, the most significant development of the day, and the overall risk-on/risk-off tone.]
 
-## Macro & Policy
-- [Central banks, rates, inflation, growth, fiscal, trade/tariffs — the development and its market implication. [REF:N]]
+## Geopolitics & Conflicts
+- [Iran (nuclear/sanctions/military), Ukraine war, Taiwan Strait tensions, Israel/Gaza/Middle East, US-China trade and military friction, Russia: what changed, who is affected, and the market or policy implication. [REF:N]]
 
-## Geopolitics & Global Events
-- [Conflicts, elections, diplomacy, energy/commodity shocks and their cross-border impact. [REF:N]]
+## Oil, Energy & Inflation
+- [OPEC decisions, supply disruptions, price moves, demand shifts — and the implication for inflation and central bank rate expectations. [REF:N]]
 
-## Regional Roundup
-- [Most important development by region/country, grouped across the world — Americas, Europe, Asia-Pacific, Middle East, Latin America, Africa. Cover breadth, not just one country. [REF:N]]
+## AI & Tech Infrastructure
+- [AI model launches, data-centre and chip buildout, AI regulation or policy changes, and what leading companies are doing — including in China and Hong Kong. [REF:N]]
 
-## Markets & Corporates
-- [Notable index/sector moves and the biggest corporate headlines worth knowing. [REF:N]]
+## Elon Musk & His Companies
+- [Tesla, SpaceX, xAI/Grok, Starlink, X, or DOGE-related developments — include only if there is genuinely new news. [REF:N]]
+
+## Company Catalysts
+- [Management changes, transformative product launches, earnings surprises, or M&A that materially shift a company's trajectory. [REF:N]]
+
+## Other Global News
+- [Significant developments from Bloomberg, WSJ, FT, Reuters, SCMP, NYT, Washington Post, Semafor, the Guardian, Globe and Mail, or Reuters Breakingviews that don't fit the above sections. [REF:N]]
 
 ## What to Watch
 - [Upcoming catalysts, events, or risks over the next few days.]`;
 
 const WORLD_RULES = `Rules:
-- This is a WORLD NEWS briefing, not a stock-picking note: lead with the big picture and cover what is happening across the world.
-- Cover BREADTH across regions and segments — do not over-concentrate on a single country. In the Regional Roundup, group bullets by region and span as many regions as the headlines support.
+- PRIORITY ORDER: Lead with Geopolitics (Iran, Ukraine, Taiwan, Israel/ME, US-China, Russia), then Oil/Energy, then AI, then Elon Musk, then company catalysts, then other important global news.
+- Source hierarchy: Bloomberg, WSJ, FT, Reuters (incl. Breakingviews), SCMP, NYT, Washington Post, Semafor, the Guardian, and Globe and Mail take precedence over regional or niche publications when covering the same event.
+- De-prioritise news from Philippines, Nigeria, Malaysia, and India unless it carries clear global market impact.
+- OMIT any section with no genuine content — do not pad with filler.
 - Each bullet is 1-2 sentences with real detail and a clear "why it matters", ending with [REF:N] (or [REF:N,M]).
-- Use the [Country] tag on each item to organise coverage geographically.
-- OMIT any section that has no genuine content — do not pad.
-- FACTUAL RULE: Use only what is in the headline and the description snippet provided (text after "::"). Do NOT invent figures, names, percentages, or details not present.`;
+- FACTUAL RULE: Use only what is in the headline and description snippet (text after "::"). Do NOT invent figures, names, percentages, or details not present.`;
 
 async function generateWorldBriefing(articles, label, maxArticles=null) {
   if (!articles.length) return {text:"", articles:[]};
@@ -2785,11 +2836,7 @@ export default function App() {
     const raw = canonical.filter(a => {
       const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
       return t > 0 && (Date.now() - t) < WINDOW_MS;
-    }).sort((a,b) => {
-      const ta = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
-      const tb = b.pubDate ? new Date(b.pubDate).getTime() : (b.fetchedAt||0);
-      return tb - ta;
-    });
+    }).sort((a,b) => worldScore(b) - worldScore(a)); // importance-first: geopolitics → oil → AI → Musk → source quality → recency
     const countPerSource = {}, countPerCountry = {};
     const MAX_PER_SOURCE = 4, MAX_PER_COUNTRY = 18;
     return raw.filter(a => {
