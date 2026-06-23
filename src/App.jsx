@@ -866,7 +866,7 @@ async function callClaude(prompt, maxTokens=2000, opts={}) {
         headers: { "Content-Type": "application/json" },
         signal: ctl.signal,
         body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
+          model: "claude-sonnet-4-6",
           max_tokens: maxTokens,
           messages: [{ role: "user", content: prompt }]
         })
