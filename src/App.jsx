@@ -3,6 +3,7 @@ import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONT
 import { GN, NEWS_BRIEF_GROUPS, SOURCES, EM_SOURCES, ALL_MARKET_SOURCES, SOURCE_TIER_MAP } from "./data/sources.js";
 import { COUNTRIES, EM_COUNTRIES, MARKET_REGIONS, MARKETS, MARKET_MAP } from "./data/markets.js";
 import { BRIEF_FORMAT, BRIEF_RULES, WORLD_FORMAT, WORLD_RULES } from "./prompts.js";
+import { mono, RED, labelSm, labelMed, pillBtn, card, HoverButton } from "./ui.jsx";
 
 const FontScaleCtx = createContext(1);
 const FONT_SCALES = [
@@ -1095,7 +1096,6 @@ function OverflowMenu({allArticles, enrichedCount, dupeCount, showDupes, setShow
     return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
   }, []);
 
-  const mono = { fontFamily:"'DM Mono',monospace" };
   const unenriched = allArticles.filter(a => !a.insight).length;
 
   const item = (label, onClick, color="#333", disabled=false) => (
@@ -1322,8 +1322,6 @@ function FilingsTab() {
     f.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
     (f.company || "").toLowerCase().includes(searchFilter.toLowerCase())
   );
-
-  const mono = { fontFamily:"'DM Mono',monospace" };
 
   const renderBrief = (text) => {
     if (!text) return null;
@@ -2209,15 +2207,11 @@ export default function App() {
             )}
 
             {/* Refresh — always visible, primary action */}
-            <button onClick={()=>fetchSources(ALL_MARKET_SOURCES)} disabled={isLoading||enriching}
-              style={{display:"flex",alignItems:"center",gap:4,background:"none",border:"1px solid #bbb",
-                color:"#333",padding:"5px 11px",borderRadius:5,cursor:(isLoading||enriching)?"not-allowed":"pointer",
-                fontFamily:"'DM Mono',monospace",fontSize:11,opacity:(isLoading||enriching)?0.5:1,flexShrink:0}}
-              onMouseOver={e=>e.currentTarget.style.background="#f5f5f5"}
-              onMouseOut={e=>e.currentTarget.style.background="none"}>
+            <HoverButton onClick={()=>fetchSources(ALL_MARKET_SOURCES)} disabled={isLoading||enriching}
+              style={{...pillBtn,cursor:(isLoading||enriching)?"not-allowed":"pointer",opacity:(isLoading||enriching)?0.5:1}}>
               <span style={{display:"inline-block",animation:isLoading?"spin 1s linear infinite":"none"}}>⟳</span>
               <span>{isLoading?"refreshing…":"refresh"}</span>
-            </button>
+            </HoverButton>
 
             {/* ··· overflow menu */}
             <OverflowMenu
