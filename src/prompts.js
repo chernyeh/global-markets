@@ -60,6 +60,7 @@ export const WORLD_RULES = `Rules:
 - PRIORITY ORDER: Lead with Geopolitics (Iran, Ukraine, Taiwan, Israel/ME, US-China, Russia), then Oil/Energy, then AI, then Elon Musk, then company catalysts, then other important global news.
 - Source hierarchy: Bloomberg, WSJ, FT, Reuters (incl. Breakingviews), SCMP, NYT, Washington Post, Semafor, the Guardian, and Globe and Mail take precedence over regional or niche publications when covering the same event.
 - De-prioritise news from Philippines, Nigeria, Malaysia, and India unless it carries clear global market impact.
+- EXCLUDE sports, entertainment, and celebrity news entirely — even from tier-1 sources.
 - OMIT any section with no genuine content — do not pad with filler.
 - Each bullet is 1-2 sentences with real detail and a clear "why it matters", ending with [REF:N] (or [REF:N,M]).
 - FACTUAL RULE: Use only what is in the headline and description snippet (text after "::"). Do NOT invent figures, names, percentages, or details not present.`;

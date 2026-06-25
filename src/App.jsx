@@ -71,6 +71,7 @@ async function fetchFeed(source) {
       const JUNK_PATTERNS = [
         /\b(award[s]?|recogni[sz]|certif|named one of|best place|top \d+ company|proud to announce|thrilled to|excited to|sponsorship|celebrate[s]?|anniversary)\b/i,
         /\b(why i (bought|sold|own|like)|my top pick|portfolio update|buy the dip|passive income|monthly dividend|drip investing|high yield|income investor|deep dive into|a closer look at|dividend king|dividend aristocrat)\b/i,
+        /\b(footballer|scored? \d+ goals?|league table|match(day| report| result)|world cup final|copa (america|libertadores|sudamericana)|AFCON|UEFA|Champions League|Europa League|semi.?final|quarter.?final|grand prix|Formula [1E])\b/i,
         /please complete.*verif/i,
         /tehrantimes pdf/i,
         /verif.*to continue/i,

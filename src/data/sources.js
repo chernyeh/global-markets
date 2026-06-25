@@ -326,7 +326,7 @@ export const SOURCES = [
 export const EM_SOURCES = [
   // ── Latin America ─────────────────────────────────────────────────────────
   {id:"reuters_latam",tier:1,country:"BR",name:"Reuters LatAm",       lang:"en",flag:"🌎",url:GN("site:reuters.com \"Latin America\" economy markets")},
-  {id:"mercopress",   tier:2,country:"AR",name:"MercoPress",          lang:"en",flag:"🌎",url:"https://en.mercopress.com/rss.xml",limit:10},
+  {id:"mercopress",   tier:2,country:"AR",name:"MercoPress",          lang:"en",flag:"🌎",url:GN("site:mercopress.com economy business oil gas mining finance"),limit:10},
   {id:"infomoney",    tier:2,country:"BR",name:"InfoMoney",           lang:"pt",flag:"🇧🇷",url:"https://www.infomoney.com.br/feed/rss/"},
   {id:"valor_br",     tier:2,country:"BR",name:"Valor Econômico",     lang:"pt",flag:"🇧🇷",url:GN("site:valor.globo.com economia financas","pt-BR","BR","BR:pt")},
   {id:"reuters_br",   tier:1,country:"BR",name:"Reuters Brazil",      lang:"en",flag:"🇧🇷",url:GN("site:reuters.com Brazil Bovespa real currency economy")},
@@ -361,7 +361,7 @@ export const EM_SOURCES = [
   {id:"businessday_za",tier:2,country:"ZA",name:"Business Day SA",    lang:"en",flag:"🇿🇦",url:GN("site:businesslive.co.za economy business markets JSE")},
   {id:"reuters_za",   tier:1,country:"ZA",name:"Reuters South Africa",lang:"en",flag:"🇿🇦",url:GN("site:reuters.com \"South Africa\" economy business")},
   {id:"businessday_ng",tier:2,country:"NG",name:"BusinessDay Nigeria",lang:"en",flag:"🇳🇬",url:"https://businessday.ng/feed/"},
-  {id:"punch_biz_ng", tier:2,country:"NG",name:"Punch Nigeria",       lang:"en",flag:"🇳🇬",url:"https://punchng.com/feed/"},
+  {id:"punch_biz_ng", tier:2,country:"NG",name:"Punch Nigeria",       lang:"en",flag:"🇳🇬",url:GN("site:punchng.com business economy finance markets Nigeria"),limit:10},
   {id:"reuters_ng",   tier:1,country:"NG",name:"Reuters Nigeria",     lang:"en",flag:"🇳🇬",url:GN("site:reuters.com Nigeria economy business")},
   {id:"businessdailyafrica",tier:2,country:"KE",name:"Business Daily Africa",lang:"en",flag:"🇰🇪",url:"https://www.businessdailyafrica.com/rss"},
   {id:"reuters_ke",   tier:1,country:"KE",name:"Reuters Kenya",       lang:"en",flag:"🇰🇪",url:GN("site:reuters.com Kenya economy business")},
