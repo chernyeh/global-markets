@@ -19,6 +19,22 @@ export const MSCI_SECTORS = [
 export const SECTOR_MAP = Object.fromEntries(MSCI_SECTORS.map(s => [s.code, s]));
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// OPINION CATEGORIES — Opinions tab
+// ═══════════════════════════════════════════════════════════════════════════════
+export const OPINION_CATEGORIES = [
+  { code:"MACRO",   label:"Macro / Economy",     icon:"⊕", color:"#c0392b" },
+  { code:"GEO",     label:"Geopolitics",         icon:"◍", color:"#8e44ad" },
+  { code:"MKT",     label:"Markets / Trading",   icon:"▦", color:"#2980b9" },
+  { code:"INVEST",  label:"Investing / Strategy",icon:"◈", color:"#1b7a3e" },
+  { code:"COMPANY", label:"Company-Specific",    icon:"◉", color:"#b84a00" },
+  { code:"SECTOR",  label:"Sector / Industry",   icon:"⬡", color:"#0f7b8a" },
+  { code:"POLICY",  label:"Policy / Regulation", icon:"§", color:"#6a1b9a" },
+  { code:"OTHER",   label:"Other",               icon:"○", color:"#5a6a7a" },
+];
+export const OPINION_MAP = Object.fromEntries(OPINION_CATEGORIES.map(c => [c.code, c]));
+export const OPINION_CODES = OPINION_CATEGORIES.map(c => c.code);
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // CORPORATE ACTION SIGNAL ENGINE
 // ═══════════════════════════════════════════════════════════════════════════════
 export const SIGNAL_META = {
