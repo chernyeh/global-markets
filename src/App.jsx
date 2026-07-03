@@ -86,10 +86,13 @@ async function fetchFeed(source) {
         /why do i have to complete a captcha/i,
       ];
       if (JUNK_PATTERNS.some(p => p.test(title))) return null;
+      const authorEl = item.getElementsByTagName("dc:creator")[0] || item.querySelector("author") || item.querySelector("creator");
+      const author = (authorEl?.textContent || "").replace(/<!\[CDATA\[|\]\]>/g,"").replace(/<[^>]+>/g,"").replace(/^\s*by\s+/i,"").trim().slice(0,80);
       return {
         id: btoa(encodeURIComponent(title.slice(0,60))).replace(/[^a-zA-Z0-9]/g,"").slice(0,20),
         title,
         description: g("description").replace(/<[^>]+>/g,"").replace(/<!\[CDATA\[|\]\]>/g,"").trim().slice(0,260),
+        author,
         link: g("link")||g("guid"),
         pubDate: g("pubDate")||g("dc:date")||"",
         source: source.name, sourceId: source.id,
