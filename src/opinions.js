@@ -12,6 +12,12 @@ export const OPINION_SOURCE_IDS = new Set([
   "ft_alphaville","wsj_heard","wsj_mkt","barrons","benzinga_ideas","semafor",
   "seekalpha","sa_wsb","ibd","stockchase","investors_chron","reuters_breakingviews",
   "analyst_roundtables","mgmt_interviews","globe_itm","scmp_markets",
+  // Dedicated opinion desks of major publications
+  "bloomberg_opinion","nyt_opinion","wsj_opinion","ft_opinion","wapo_opinion",
+  "marketwatch_opinion","wired",
+  // Emerging-market opinion desks
+  "et_opinion","mint_opinion","scmp_opinion","caixin_opinion","taipei_times_opinion",
+  "haaretz_opinion","bangkokpost_opinion","latam_opinion",
   // In-depth / features / contrarian analysis desks
   "edge_sg_focus","edge_sg","nikkei_biz_spotlight","spiegel_de",
   // Quality long-form / critique
@@ -92,10 +98,10 @@ export function resolveOpinion(art) {
 // Publications the reader has a paid subscription to — never treat as a blocked
 // paywall, and prefer them when sourcing a readable version of a paywalled story.
 export const ACCESSIBLE_SOURCE_IDS = new Set([
-  "wsj","wsj2","wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities", // WSJ
-  "nyt",                                                                             // NY Times
+  "wsj","wsj2","wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","wsj_opinion", // WSJ
+  "nyt","nyt_opinion",                                                               // NY Times
   "barrons",                                                                         // Barron's
-  "ft","ft_alphaville",                                                              // Financial Times
+  "ft","ft_alphaville","ft_opinion",                                                 // Financial Times
   "edge_sg","edge_sg_stocks_watch","edge_sg_focus",                                  // The Edge
 ]);
 export const ACCESSIBLE_DOMAINS = [
@@ -110,23 +116,32 @@ export function isUserAccessible(art) {
 export const MAJOR_SOURCE_IDS = new Set([
   // Global newswires
   "reuters","reuters_de","reuters_ca","reuters_jp","reuters_asia","reuters_sg","reuters_hk",
-  "reuters_kr","reuters_tw","reuters_in","reuters_au","reuters_cn","reuters_breakingviews",
-  "bloomberg","bloomberg2","bloom_de","bloom_ca","bloom_sg","bloom_hk","bloom_kr","bloom_tw",
-  "bloom_in","bloom_au","bloom_cn",
-  // Global majors (US/UK)
-  "wsj","wsj2","wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities",
-  "nyt","barrons","ft","ft_alphaville","semafor","guardian",
+  "reuters_kr","reuters_tw","reuters_in","reuters_au","reuters_cn","reuters_fr","reuters_it",
+  "reuters_eu","reuters_uk","reuters_breakingviews","reuters_latam","reuters_br","reuters_mx",
+  // Bloomberg — all regional editions + opinion
+  "bloomberg","bloomberg2","bloomberg_opinion","bloom_de","bloom_ca","bloom_sg","bloom_hk",
+  "bloom_kr","bloom_tw","bloom_in","bloom_au","bloom_cn","bloom_uk","bloom_it","bloom_ch",
+  "bloom_fr","bloom_eu",
+  // Global majors (US/UK) + their opinion desks
+  "wsj","wsj2","wsj_heard","wsj_mkt","wsj_global_equities","wsj_global_commodities","wsj_opinion",
+  "nyt","nyt_opinion","barrons","ft","ft_alphaville","ft_opinion","marketwatch","marketwatch_opinion",
+  "wapo","wapo_politics","wapo_opinion","semafor","guardian","wired",
   // Canada
   "globe_mail","globe_itm",
   // Asia Pacific
-  "nikkei_asia","nikkei_biz_spotlight","scmp","scmp_markets","scmp_china","bt_sg",
+  "nikkei_asia","nikkei_biz_spotlight","scmp","scmp_markets","scmp_china","scmp_opinion","bt_sg",
   "afr","afr_street_talk","smh","the_aus","edge_sg","edge_sg_focus","edge_sg_stocks_watch",
+  "taipei_t","taipei_times_opinion",
   // Europe
-  "handelsblatt","handelsblatt_en","spiegel_de",
+  "handelsblatt","handelsblatt_en","spiegel_de","nzz","nzz_en",
+  // Emerging markets
+  "econ_times","mint","mint2","mint3","et_opinion","mint_opinion","caixin","caixin_opinion",
+  "yicai","globes_il","haaretz_il","haaretz_opinion","bangkokpost_biz","bangkokpost_opinion",
+  "latam_opinion","valor_br","elfinanciero_mx",
 ]);
 
 // Prompt instruction: weight any summary toward these publications and newswires.
-export const SOURCE_WEIGHTING_NOTE = "SOURCE WEIGHTING: Give the most weight, space, and prominence to reporting and commentary from major publications and global newswires — Reuters, Bloomberg, Associated Press, AFP, the Wall Street Journal, The New York Times, Barron's, the Financial Times, Nikkei Asia, the South China Morning Post, Singapore's Business Times and The Edge, Canada's Globe and Mail, the Australian Financial Review, The Australian, the Sydney Morning Herald, and leading European papers (Handelsblatt, Der Spiegel, Semafor). Lead with what these outlets say; treat blogs, aggregators, and single-stock tip sheets as secondary or corroborating unless they carry unique, market-moving detail.";
+export const SOURCE_WEIGHTING_NOTE = "SOURCE WEIGHTING: Give the most weight, space, and prominence to reporting and commentary from major publications and global newswires — Reuters, Bloomberg (including Bloomberg Opinion and its regional editions), Associated Press, AFP, the Wall Street Journal, The New York Times, Barron's, the Financial Times, MarketWatch, The Washington Post, Wired, Nikkei Asia, the South China Morning Post, Singapore's Business Times and The Edge, Canada's Globe and Mail, the Australian Financial Review, The Australian, the Sydney Morning Herald, leading European papers (Handelsblatt, Der Spiegel, NZZ, Semafor), and major emerging-market outlets (India's Mint and Economic Times, China's Caixin, Taiwan's Taipei Times, Thailand's Bangkok Post, Israel's Haaretz and Globes, and leading Latin American business papers). Lead with what these outlets say. At the same time, actively surface unique, differentiated, and contrarian viewpoints — do not just echo the consensus; when an outlet takes a distinctive stance, give it room. Treat blogs, aggregators, and single-stock tip sheets as secondary or corroborating unless they carry unique, market-moving detail.";
 
 // Stable sort that floats major-publication/newswire pieces to the front.
 export function sortMajorFirst(articles) {
