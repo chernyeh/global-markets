@@ -32,6 +32,37 @@ export const PAYWALL_DOMAINS = [
   "telegraph.co.uk","nzz.ch","kedglobal.com","haaretz.com","investorschronicle.co.uk",
 ];
 
+// Known opinion columnists — a byline by any of these marks the piece as opinion,
+// even when it arrives via a general news feed. Matching is per-author and exact
+// (after normalisation), so it doesn't false-positive on partial name overlaps.
+const OPINION_COLUMNIST_NAMES = [
+  // Bloomberg Opinion
+  "Richard Abbey","Kathryn Anne Edwards","Marcus Ashworth","John Authers","Kristen Bellstrom",
+  "Victoria Benning","Lisa Beyer","Matthew Brooker","Aaron Brown","Ronald Brownstein","Chris Bryant",
+  "Robert Burgess","Marc Champion","Howard Chua-Eoan","Clive Crook","Paul Davies","Liam Denning",
+  "David Drucker","Andrea Felsted","David Fickling","Justin Fox","James Gibney","Mark Gilbert",
+  "Mark Gongloff","Sarah Green Carmichael","Nisid Hajari","Tobin Harshaw","Nia-Malika Henderson",
+  "James Hertling","Chris Hughes","Martin Ivens","Lisa Jarvis","Jessica Karl","Mary Ellen Klas",
+  "Andreas Kluth","Beth Kowitt","Jonathan Landman","Lionel Laurent","Timothy Lavin","Michelle Leder",
+  "Dave Lee","Jonathan Levin","Matt Levine","Beth Williams Liou","Amanda Little","Juliana Liu",
+  "Patricia Lopez","Patrick McDowell","Stephen Mihm","Adam Minter","Daniel Moss","Andy Mukherjee",
+  "Michael Newman","Daniel Niemi","Tim O'Brien","Parmy Olson","Wendy Pollack","Vonnie Quinn",
+  "Gearoid Reidy","Shuli Ren","Brooke Sample","Conor Sen","Mihir Sharma","Gary Shilling","Erika Smith",
+  "Karl Smith","Juan Spinetto","James Stavridis","Christina Sterbenz","Catherine Thorbecke","Taylor Tyson",
+  "Karishma Vaswani","Mark Whitehouse","Francis Wilkinson","Jhodie-Ann Williams","Lara Williams","Adrian Wooldridge",
+  // MarketWatch
+  "Brett Arends","Mark Hulbert","Howard Gold","Therese Poletti","Michael Brush","Jeff Reeves",
+  "Jonathan Burton","Philip van Doorn","Chuck Jaffe","Charles Passy",
+];
+const normName = s => (s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+export const OPINION_COLUMNISTS = new Set(OPINION_COLUMNIST_NAMES.map(normName));
+
+// True if any person in a byline is a known opinion columnist.
+export function byColumnist(author) {
+  if (!author) return false;
+  return author.split(/,|&|\/|\band\b|\bwith\b/i).map(normName).some(p => p && OPINION_COLUMNISTS.has(p));
+}
+
 // URL path fragments that signal an opinion / commentary piece
 const OPINION_URL_RE = /\/(opinion|opinions|commentary|column|columnist|columnists|editorial|editorials|op-ed|op_ed|views|viewpoint|perspective|perspectives|analysis|comment|breakingviews|long-?read|big-?read|the-big-read|feature|features|blogs?|voices?)\b/i;
 
@@ -82,7 +113,8 @@ export function opinionHeuristic(art) {
   const bySource = OPINION_SOURCE_IDS.has(art.sourceId) || OPINION_SOURCE_IDS.has(art.originalSourceId);
   const byUrl = art.link ? OPINION_URL_RE.test(art.link) : false;
   const byText = OPINION_TEXT_RE.test(text);
-  const isOpinion = bySource || byUrl || byText;
+  const byByline = byColumnist(art.author);
+  const isOpinion = bySource || byUrl || byText || byByline;
   return { isOpinion, category: isOpinion ? guessOpinionCategory(text) : null };
 }
 
