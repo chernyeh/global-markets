@@ -14,8 +14,18 @@ import BriefRenderer from "./BriefRenderer.jsx";
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function OpinionsTab({canonical, briefs, setBriefs, setAllArticles}) {
   const [briefLoading, setBriefLoading] = useState({});
+  const [briefError, setBriefError] = useState({});
   const [findingFree, setFindingFree] = useState({});
   const [activeCat, setActiveCat] = useState("ALL");
+
+  const humanizeBriefError = (e) => {
+    const m = e?.message || "";
+    if (m === "AbortError" || e?.name === "AbortError") return "Timed out — try again.";
+    if (m.includes("429")) return "Rate limited — retry shortly.";
+    if (m.includes("529")) return "Service busy — retry shortly.";
+    if (m === "empty_response") return "No summary returned. Retry.";
+    return "Couldn't generate the summary. Retry.";
+  };
 
   const isPaywalled = a =>
     !!(SOURCES.find(s=>s.id===a.sourceId)?.paywall || SOURCES.find(s=>s.id===a.originalSourceId)?.paywall);
@@ -37,10 +47,14 @@ export default function OpinionsTab({canonical, briefs, setBriefs, setAllArticle
 
   const runDigest = async (arts, key, label) => {
     if (!arts.length) return;
+    setBriefError(p=>({...p,[key]:null}));
     setBriefLoading(p=>({...p,[key]:true}));
     try {
       const b = await generateOpinionDigest(arts, label);
       if (b.text) setBriefs(p=>{const n={...p,[key]:b};sSet(SK.summaries,n);return n;});
+      else setBriefError(p=>({...p,[key]:"No summary returned. Retry."}));
+    } catch (e) {
+      setBriefError(p=>({...p,[key]:humanizeBriefError(e)}));
     } finally {
       setBriefLoading(p=>({...p,[key]:false}));
     }
@@ -83,6 +97,7 @@ export default function OpinionsTab({canonical, briefs, setBriefs, setAllArticle
           </button>
         </div>
         {activeBrief && <div style={{borderTop:"1px solid #e8e2d6",paddingTop:12}}><BriefRenderer text={activeBrief} articles={activeData?.articles||viewArts}/></div>}
+        {briefError[activeKey] && !briefLoading[activeKey] && <div style={{...mono,fontSize:10,color:"#c0392b",marginTop:8}}>⚠ {briefError[activeKey]}</div>}
       </div>
 
       {/* Category filter chips */}
@@ -129,6 +144,17 @@ export default function OpinionsTab({canonical, briefs, setBriefs, setAllArticle
                   {briefLoading[`opinions_${catCode}`]?<Dots color={cat.color}/>:"✦ brief"}
                 </button>
               </div>
+              {(() => {
+                const ck = `opinions_${catCode}`;
+                const cd = briefs[ck];
+                const cbrief = cd?.text ?? (typeof cd==="string" ? cd : null);
+                return (
+                  <>
+                    {cbrief && <div style={{maxWidth:900,marginBottom:10,paddingBottom:10,borderBottom:"1px solid #e8e2d6"}}><BriefRenderer text={cbrief} articles={cd?.articles||catArts}/></div>}
+                    {briefError[ck] && !briefLoading[ck] && <div style={{...mono,fontSize:10,color:"#c0392b",marginBottom:8}}>⚠ {briefError[ck]}</div>}
+                  </>
+                );
+              })()}
               <div style={{maxWidth:900}}>
                 {catArts.map((art,i)=>(
                   <ArticleCard key={art.id||i} art={art}
