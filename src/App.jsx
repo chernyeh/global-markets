@@ -84,6 +84,11 @@ async function fetchFeed(source) {
         /cloudflare/i,
         /enable javascript/i,
         /why do i have to complete a captcha/i,
+        // Section / landing pages and SEO market-research spam that leak through
+        // broad Google News queries (not real articles):
+        /latest .{0,40}news\s*(&|and|＆|–|-)\s*headlines/i,
+        /^(opinions?|editorials?)\s*,\s*(editorials?|op-?eds?|commentary)/i,
+        /\bmarket\s+(size|share)\b.{0,50}(forecast|outlook|20\d\d)/i,
       ];
       if (JUNK_PATTERNS.some(p => p.test(title))) return null;
       const authorEl = item.getElementsByTagName("dc:creator")[0] || item.querySelector("author") || item.querySelector("creator");
