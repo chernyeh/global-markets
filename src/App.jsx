@@ -9,7 +9,9 @@ import FilingsTab from "./components/FilingsTab.jsx";
 import WatchlistTab from "./components/WatchlistTab.jsx";
 import SourcesTab from "./components/SourcesTab.jsx";
 import NewsBriefsTab from "./components/NewsBriefsTab.jsx";
-import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONTEXT_PATTERNS, BRIEF_CATEGORY_WEIGHT, SIGNAL_STRENGTH, BRIEF_COUNTRY_BOOST, BRIEF_COUNTRY_PENALTY, BRIEF_BOOSTED_COUNTRIES, BRIEF_PENALISED_COUNTRIES, WORLD_TOPIC_WEIGHTS } from "./data/taxonomy.js";
+import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONTEXT_PATTERNS, BRIEF_CATEGORY_WEIGHT, SIGNAL_STRENGTH, BRIEF_COUNTRY_BOOST, BRIEF_COUNTRY_PENALTY, BRIEF_BOOSTED_COUNTRIES, BRIEF_PENALISED_COUNTRIES, WORLD_TOPIC_WEIGHTS, OPINION_MAP } from "./data/taxonomy.js";
+import { resolveOpinion } from "./opinions.js";
+import OpinionsTab from "./components/OpinionsTab.jsx";
 import { GN, NEWS_BRIEF_GROUPS, SOURCES, EM_SOURCES, ALL_MARKET_SOURCES, SOURCE_TIER_MAP } from "./data/sources.js";
 import { COUNTRIES, EM_COUNTRIES, MARKET_REGIONS, MARKETS, MARKET_MAP } from "./data/markets.js";
 import { BRIEF_FORMAT, BRIEF_RULES, WORLD_FORMAT, WORLD_RULES } from "./prompts.js";
@@ -94,6 +96,7 @@ async function fetchFeed(source) {
         country: source.country, flag: source.flag, lang: source.lang,
         fetchedAt: Date.now(),
         translatedTitle: null, insight: null, sector: null, signal: null, signalCategory: null, weaknessContext: false, duplicateOf: null, isMicro: classifyMicro(title),
+        isOpinion: null, opinionCategory: null,
         watchMatches: [],
       };
     }).filter(Boolean);
@@ -240,7 +243,7 @@ async function enrichBatch(articles) {
   }));
   const catCodes = Object.keys(SIGNAL_CATEGORIES).join("|");
   const prompt=`Financial analyst. For each headline return a JSON array (one object per item).
-Each item: {"translated":"<English title>","insight":"<one sentence investor takeaway>","sector":"<sector code>","signal":"<signal code>","signalCategory":"<category code>","weaknessContext":<true|false>}
+Each item: {"translated":"<English title>","insight":"<one sentence investor takeaway>","sector":"<sector code>","signal":"<signal code>","signalCategory":"<category code>","weaknessContext":<true|false>,"isOpinion":<true|false>,"opinionCategory":"<opinion code>"}
 Use EXACTLY the pre-translated title provided — do not re-translate.
 
 Sector codes: FIN=banks/insurance/capital markets, IT=software/hardware/semis, IND=manufacturing/transport/conglomerates, CD=autos/retail/luxury/leisure, CS=food/beverages/household, HC=pharma/biotech/hospitals, EN=oil/gas/renewables, MAT=mining/chemicals/steel, COM=media/telecom/internet platforms, RE=property/REITs, UTL=power/water, MAC=central bank/rates/GDP/trade/FX/fiscal/elections/tariffs, UNK=unclear.
@@ -268,6 +271,17 @@ BIZ_FEATURE = substantive long-form business feature, in-depth company profile, 
 MARKET_OUTLOOK = interview with or commentary from a fund manager, portfolio manager, investment strategist, sell-side analyst, or expert panel discussing market direction, sector rotation, valuations, or macro fundamentals from an investment perspective — includes "roundtable", "where is the market headed", "outlook" discussions; signal=N
 
 weaknessContext: set to TRUE if the headline mentions or implies the event follows a period of poor results, execution failure, strategic miss, investor pressure, or calls for change. Otherwise false.
+
+isOpinion: set to TRUE only if the item is an opinion / commentary / editorial / column / analysis piece that argues a viewpoint or thesis (e.g. op-eds, "Heard on the Street", Breakingviews, "the case for/against", "why X should..."). Set FALSE for straight news reporting, earnings results, wire briefs, and analyst rating actions.
+opinionCategory — if isOpinion is true, pick the SINGLE best code (else use "OTHER"):
+MACRO = economy, GDP, inflation, growth, recession, fiscal/monetary outlook
+GEO = geopolitics, war, sanctions, trade tensions, cross-border conflict
+MKT = markets/trading views — equities, bonds, yields, rallies, selloffs, volatility
+INVEST = investing philosophy, portfolio strategy, asset allocation, positioning
+COMPANY = opinion focused on a single named company
+SECTOR = opinion on a sector/industry as a whole
+POLICY = regulation, central-bank policy, elections, legislation, antitrust
+OTHER = opinion that fits none of the above
 
 STRICT FACTUAL RULE: Only classify based on what is EXPLICITLY in the headline. Do not infer figures or details not present. When uncertain between two categories, pick the more conservative signal strength.
 
@@ -565,7 +579,9 @@ export default function App() {
           const upgrade = { SP1:"SP2", N:"SN1", SN1:"SN2" };
           resolvedSignal = upgrade[resolvedSignal] || resolvedSignal;
         }
-        return {...a, translatedTitle:shouldStore||a.translatedTitle, insight:r.insight||a.insight, sector:r.sector||a.sector, signal:resolvedSignal, signalCategory:cat, weaknessContext:isWeakness};
+        const resolvedIsOpinion = r.isOpinion === true ? true : (r.isOpinion === false ? false : a.isOpinion);
+        const resolvedOpinionCat = OPINION_MAP[r.opinionCategory] ? r.opinionCategory : a.opinionCategory;
+        return {...a, translatedTitle:shouldStore||a.translatedTitle, insight:r.insight||a.insight, sector:r.sector||a.sector, signal:resolvedSignal, signalCategory:cat, weaknessContext:isWeakness, isOpinion:resolvedIsOpinion, opinionCategory:resolvedOpinionCat};
       });
       setAllArticles(working);
     }
@@ -647,9 +663,12 @@ export default function App() {
   );
   const briefsTabCount = briefsTabArts.length;
 
+  const opinionCount = canonical.filter(a => resolveOpinion(a).isOpinion).length;
+
   const MAIN_TABS=[
     {id:"breaking",  label:`⚡ Today${breakingArts.length>0?` (${breakingArts.length})`:""}`},
     {id:"newsbriefs",label:`📰 Intel${briefsTabCount>0?` (${briefsTabCount})`:""}`},
+    {id:"opinions",  label:`💬 Opinions${opinionCount>0?` (${opinionCount})`:""}`},
     {id:"markets",   label:"🌍 Markets"},
     {id:"watchlist", label:`◎ Watchlist${watchlistHits>0?` (${watchlistHits})`:""}`},
     {id:"filings",   label:"📋 Filings"},
@@ -825,6 +844,7 @@ export default function App() {
         {mainTab==="watchlist"&&<WatchlistTab allArticles={allArticles} setAllArticles={setAllArticles}/>}
         {mainTab==="filings"&&<FilingsTab />}
         {mainTab==="newsbriefs"&&<NewsBriefsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs} generateBrief={generateBriefUnlimited}/>}
+        {mainTab==="opinions"&&<OpinionsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs} setAllArticles={setAllArticles}/>}
         {/* BREAKING / TODAY */}
         {mainTab==="breaking"&&(()=>{
           const briefKey="breaking";

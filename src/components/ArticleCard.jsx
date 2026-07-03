@@ -2,9 +2,9 @@ import { useContext } from "react";
 import { FontScaleCtx } from "../context.js";
 import { SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES } from "../data/taxonomy.js";
 import { SOURCES } from "../data/sources.js";
-import { Tag, timeAgo } from "./helpers.jsx";
+import { Tag, timeAgo, Dots } from "./helpers.jsx";
 
-export default function ArticleCard({art, highlightKeyword=null}) {
+export default function ArticleCard({art, highlightKeyword=null, freeCoverage=false, onFindFree=null, findingFree=false}) {
   const fontScale = useContext(FontScaleCtx);
   const sec = art.sector ? SECTOR_MAP[art.sector] : null;
   const sigMeta   = art.signal ? SIGNAL_META[art.signal] : null;
@@ -109,6 +109,30 @@ export default function ArticleCard({art, highlightKeyword=null}) {
           borderLeft:"2px solid #c9a84c33",paddingLeft:9,
           fontStyle:"italic",fontFamily:"'Spectral',Georgia,serif"}}>
           {art.insight}
+        </div>
+      )}
+      {freeCoverage && (
+        <div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+          {art.freeAlt ? (
+            <a href={art.freeAlt.link} target="_blank" rel="noopener noreferrer"
+              style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:"#1b7a3e",
+                background:"#e6f4ec",padding:"2px 8px",borderRadius:3,
+                border:"1px solid #a8d5b8",textDecoration:"none"}}
+              title={art.freeAlt.title}>
+              ↗ free coverage: {art.freeAlt.source}{art.freeAlt.via==="web"?" (web)":""}
+            </a>
+          ) : (art.freeAltChecked ? (
+            <span style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:"#999"}}>
+              no free version found
+            </span>
+          ) : (
+            <button onClick={onFindFree} disabled={findingFree}
+              style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:"#8a6a20",
+                background:"#fdf6e3",padding:"2px 8px",borderRadius:3,
+                border:"1px solid #e8d9a0",cursor:findingFree?"wait":"pointer"}}>
+              {findingFree ? <><Dots color="#8a6a20"/> searching…</> : "🔓 find free coverage"}
+            </button>
+          ))}
         </div>
       )}
     </div>
