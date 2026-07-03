@@ -3,7 +3,7 @@ import { mono } from "../ui.jsx";
 import { SK, sSet } from "../storage.js";
 import { SOURCES } from "../data/sources.js";
 import { OPINION_CATEGORIES, OPINION_MAP } from "../data/taxonomy.js";
-import { resolveOpinion, findFreeAlternative, generateOpinionDigest } from "../opinions.js";
+import { resolveOpinion, findFreeAlternative, generateOpinionDigest, isUserAccessible } from "../opinions.js";
 import { Dots } from "./helpers.jsx";
 import ArticleCard from "./ArticleCard.jsx";
 import BriefRenderer from "./BriefRenderer.jsx";
@@ -132,7 +132,7 @@ export default function OpinionsTab({canonical, briefs, setBriefs, setAllArticle
               <div style={{maxWidth:900}}>
                 {catArts.map((art,i)=>(
                   <ArticleCard key={art.id||i} art={art}
-                    freeCoverage={isPaywalled(art)}
+                    freeCoverage={isPaywalled(art) && !isUserAccessible(art)}
                     findingFree={!!findingFree[art.id]}
                     onFindFree={()=>handleFindFree(art)}/>
                 ))}

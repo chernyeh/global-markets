@@ -10,7 +10,7 @@ import WatchlistTab from "./components/WatchlistTab.jsx";
 import SourcesTab from "./components/SourcesTab.jsx";
 import NewsBriefsTab from "./components/NewsBriefsTab.jsx";
 import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONTEXT_PATTERNS, BRIEF_CATEGORY_WEIGHT, SIGNAL_STRENGTH, BRIEF_COUNTRY_BOOST, BRIEF_COUNTRY_PENALTY, BRIEF_BOOSTED_COUNTRIES, BRIEF_PENALISED_COUNTRIES, WORLD_TOPIC_WEIGHTS, OPINION_MAP } from "./data/taxonomy.js";
-import { resolveOpinion } from "./opinions.js";
+import { resolveOpinion, SOURCE_WEIGHTING_NOTE } from "./opinions.js";
 import OpinionsTab from "./components/OpinionsTab.jsx";
 import { GN, NEWS_BRIEF_GROUPS, SOURCES, EM_SOURCES, ALL_MARKET_SOURCES, SOURCE_TIER_MAP } from "./data/sources.js";
 import { COUNTRIES, EM_COUNTRIES, MARKET_REGIONS, MARKETS, MARKET_MAP } from "./data/markets.js";
@@ -272,7 +272,7 @@ MARKET_OUTLOOK = interview with or commentary from a fund manager, portfolio man
 
 weaknessContext: set to TRUE if the headline mentions or implies the event follows a period of poor results, execution failure, strategic miss, investor pressure, or calls for change. Otherwise false.
 
-isOpinion: set to TRUE only if the item is an opinion / commentary / editorial / column / analysis piece that argues a viewpoint or thesis (e.g. op-eds, "Heard on the Street", Breakingviews, "the case for/against", "why X should..."). Set FALSE for straight news reporting, earnings results, wire briefs, and analyst rating actions.
+isOpinion: set to TRUE if the item argues a viewpoint, interprets events, or takes a stance rather than just reporting them — opinion, commentary, editorial, column, analysis, "big read"/feature, or a stock idea/thesis (e.g. op-eds, "Heard on the Street", Breakingviews, "the case for/against", "why X should…", bull/bear cases, "here's why"). Be inclusive: if a piece reads as interpretation, argument, or a call rather than a straight news report, mark it TRUE. Set FALSE for straight news reporting, earnings results, wire briefs, and routine analyst rating actions.
 opinionCategory — if isOpinion is true, pick the SINGLE best code (else use "OTHER"):
 MACRO = economy, GDP, inflation, growth, recession, fiscal/monetary outlook
 GEO = geopolitics, war, sanctions, trade tensions, cross-border conflict
@@ -353,7 +353,9 @@ async function generateBriefUnlimited(articles, label, coveragePriority=null, ma
   const sourceArticles = articles;
 
   const DEFAULT_PRIORITY = "COVERAGE PRIORITY: When two items are equally actionable, prefer US and China, then Europe (UK, Germany, France, Italy, Switzerland, pan-European), then HK, Korea, Taiwan, Australia, Israel, Middle East, Iran, then Singapore and Canada. Mention Indian stories briefly unless they carry clear global or sector impact.";
-  const effectivePriority = coveragePriority || DEFAULT_PRIORITY;
+  // Always weight summaries toward major publications & newswires, on top of any
+  // country-level coverage priority.
+  const effectivePriority = `${coveragePriority || DEFAULT_PRIORITY}\n${SOURCE_WEIGHTING_NOTE}`;
 
   const CHUNK = 25;
   const chunks = [];
@@ -439,6 +441,7 @@ Write in this exact format:
 ${WORLD_FORMAT}
 
 ${WORLD_RULES}
+- ${SOURCE_WEIGHTING_NOTE}
 
 Items (cite using [REF:N] at end of each bullet, N = item number):
 ${arts.map((a,i)=>fmtWorldArticle(a,i)).join("\n")}`;
@@ -463,6 +466,7 @@ Write in this exact format:
 ${WORLD_FORMAT}
 
 ${WORLD_RULES}
+- ${SOURCE_WEIGHTING_NOTE}
 - The summaries carry [Country] tags and item numbers in parentheses, e.g. "(item 3)" — use those numbers for [REF:N] citations.
 
 Summaries to synthesise:

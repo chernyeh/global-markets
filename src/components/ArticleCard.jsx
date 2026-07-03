@@ -119,18 +119,18 @@ export default function ArticleCard({art, highlightKeyword=null, freeCoverage=fa
                 background:"#e6f4ec",padding:"2px 8px",borderRadius:3,
                 border:"1px solid #a8d5b8",textDecoration:"none"}}
               title={art.freeAlt.title}>
-              ↗ free coverage: {art.freeAlt.source}{art.freeAlt.via==="web"?" (web)":""}
+              ↗ {art.freeAlt.via==="sub"?"read in your subscription":"read via"}: {art.freeAlt.source}{art.freeAlt.via==="web"?" (web)":""}
             </a>
           ) : (art.freeAltChecked ? (
             <span style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:"#999"}}>
-              no free version found
+              no readable version found
             </span>
           ) : (
             <button onClick={onFindFree} disabled={findingFree}
               style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:"#8a6a20",
                 background:"#fdf6e3",padding:"2px 8px",borderRadius:3,
                 border:"1px solid #e8d9a0",cursor:findingFree?"wait":"pointer"}}>
-              {findingFree ? <><Dots color="#8a6a20"/> searching…</> : "🔓 find free coverage"}
+              {findingFree ? <><Dots color="#8a6a20"/> searching…</> : "🔓 find readable version"}
             </button>
           ))}
         </div>
