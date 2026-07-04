@@ -350,6 +350,11 @@ function fmtBriefArticle(a, n) {
 }
 
 
+// Output-token ceiling for a briefing/synthesis call. Kept well below what an
+// 8000-token generation needs so the request completes inside the serverless
+// function's 60s limit (Vercel Hobby cap) instead of timing out with a 504.
+const BRIEF_MAX_TOKENS = 3000;
+
 async function generateBriefUnlimited(articles, label, coveragePriority=null, maxArticles=null, weightCountries=false) {
   if (!articles.length) return {text:"", articles:[]};
 
@@ -382,7 +387,7 @@ ${BRIEF_RULES(effectivePriority)}
 
 Articles (cite using [REF:N] at end of each bullet, N = article number):
 ${articles.map((a,i)=>fmtBriefArticle(a,i)).join("\n")}`;
-    const text = await callClaude(prompt, 8000, {throwOnError:true, timeoutMs:90000});
+    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000});
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
@@ -409,7 +414,7 @@ ${BRIEF_RULES(effectivePriority)}
 
 Summaries to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, 8000, {throwOnError:true, timeoutMs:90000});
+  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000});
   return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 
@@ -453,7 +458,7 @@ ${WORLD_RULES}
 
 Items (cite using [REF:N] at end of each bullet, N = item number):
 ${arts.map((a,i)=>fmtWorldArticle(a,i)).join("\n")}`;
-    const text = await callClaude(prompt, 8000, {throwOnError:true, timeoutMs:90000});
+    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000});
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
@@ -479,7 +484,7 @@ ${WORLD_RULES}
 
 Summaries to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, 8000, {throwOnError:true, timeoutMs:90000});
+  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000});
   return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 // ═══════════════════════════════════════════════════════════════════════════════
