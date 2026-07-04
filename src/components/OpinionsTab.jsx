@@ -4,7 +4,7 @@ import { SK, sSet } from "../storage.js";
 import { SOURCES } from "../data/sources.js";
 import { OPINION_CATEGORIES, OPINION_MAP } from "../data/taxonomy.js";
 import { resolveOpinion, findFreeAlternative, generateOpinionDigest, isUserAccessible } from "../opinions.js";
-import { Dots } from "./helpers.jsx";
+import { Dots, WindowSelector, withinWindow } from "./helpers.jsx";
 import ArticleCard from "./ArticleCard.jsx";
 import BriefRenderer from "./BriefRenderer.jsx";
 
@@ -17,6 +17,8 @@ export default function OpinionsTab({canonical, briefs, setBriefs, setAllArticle
   const [briefError, setBriefError] = useState({});
   const [findingFree, setFindingFree] = useState({});
   const [activeCat, setActiveCat] = useState("ALL");
+  // How far back (in hours) the digest and opinion lists reach. 0 = all pieces.
+  const [windowHours, setWindowHours] = useState(0);
 
   const humanizeBriefError = (e) => {
     const m = e?.message || "";
@@ -30,8 +32,9 @@ export default function OpinionsTab({canonical, briefs, setBriefs, setAllArticle
   const isPaywalled = a =>
     !!(SOURCES.find(s=>s.id===a.sourceId)?.paywall || SOURCES.find(s=>s.id===a.originalSourceId)?.paywall);
 
-  // Opinion pieces with their resolved category attached
+  // Opinion pieces with their resolved category attached, scoped to the window
   const opinionArts = canonical
+    .filter(a => withinWindow(a, windowHours))
     .map(a => { const r = resolveOpinion(a); return { ...a, _opCat: r.category, _op: r.isOpinion }; })
     .filter(a => a._op);
 
@@ -79,14 +82,15 @@ export default function OpinionsTab({canonical, briefs, setBriefs, setAllArticle
       {/* Digest card — "who is saying what" */}
       <div style={{background:"#fff",border:"1px solid #e8e2d6",borderLeft:"3px solid #8e44ad",borderRadius:10,padding:"16px 18px",marginBottom:18}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:activeBrief?10:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <span style={{fontSize:18}}>💬</span>
             <div>
               <div style={{...mono,fontSize:9,color:"#8e44ad",letterSpacing:"0.1em",fontWeight:600}}>
-                OPINION ROUND-UP · WHO IS SAYING WHAT · {viewArts.length} pieces{activeData?.generatedAt ? ` · generated ${new Date(activeData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}
+                OPINION ROUND-UP · WHO IS SAYING WHAT · {viewArts.length} pieces{windowHours>0?` · last ${windowHours}h`:""}{activeData?.generatedAt ? ` · generated ${new Date(activeData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}
               </div>
               <div style={{fontFamily:"'Spectral',serif",fontSize:15,color:"#1a1a1a",fontWeight:700}}>{activeLabel}</div>
             </div>
+            <WindowSelector value={windowHours} onChange={setWindowHours} color="#8e44ad" />
           </div>
           <button onClick={()=>runDigest(viewArts, activeKey, activeLabel)} disabled={briefLoading[activeKey]||!viewArts.length}
             style={{...mono,fontSize:10,padding:"5px 13px",border:"1px solid #8e44ad55",borderRadius:5,background:"none",color:"#8e44ad",
