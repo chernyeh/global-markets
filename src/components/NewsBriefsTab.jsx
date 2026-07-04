@@ -12,16 +12,21 @@ import BriefRenderer from "./BriefRenderer.jsx";
 // Maps a generation failure to a short, human-readable message for the UI.
 function humanizeBriefError(e) {
   const m = e?.message || "";
-  if (m === "AbortError" || e?.name === "AbortError") return "Timed out — try again.";
+  if (m === "AbortError" || e?.name === "AbortError") return "Timed out — briefing took too long. Try a shorter time window.";
   if (m.includes("429")) return "Rate limited — retry shortly.";
   if (m.includes("529")) return "Service busy — retry shortly.";
+  // 5xx (incl. Vercel's 504) means the synthesis exceeded the serverless time
+  // limit. A shorter window / fewer articles is the fix, not a plain retry.
+  if (/(^|_)5\d\d/.test(m)) return "Server timed out on a large briefing — try a shorter time window.";
   if (m === "empty_response") return "No briefing returned. Retry.";
-  return "Couldn't generate briefing. Retry.";
+  return `Couldn't generate briefing (${m || "unknown error"}). Retry.`;
 }
 
 // Cap the master brief so the all-articles synthesis stays fast and within the
-// upstream time budget. Articles are already ordered by recency/priority.
-const MASTER_CAP = 150;
+// upstream time budget (the serverless function is capped at 60s on Vercel
+// Hobby). Articles are already ordered by recency/priority, so the top slice
+// keeps the strongest signals. Kept low so the synthesis finishes in time.
+const MASTER_CAP = 70;
 
 export default function NewsBriefsTab({canonical, briefs, setBriefs, generateBrief, briefLoading, setBriefLoading, briefError, setBriefError}) {
   // How far back (in hours) briefings and article lists reach. 0 = all articles.
