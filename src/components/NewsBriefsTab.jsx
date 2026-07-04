@@ -2,7 +2,7 @@ import { useState } from "react";
 import { mono } from "../ui.jsx";
 import { SK, sSet } from "../storage.js";
 import { NEWS_BRIEF_GROUPS, SOURCES } from "../data/sources.js";
-import { Dots } from "./helpers.jsx";
+import { Dots, WindowSelector, withinWindow } from "./helpers.jsx";
 import ArticleCard from "./ArticleCard.jsx";
 import BriefRenderer from "./BriefRenderer.jsx";
 
@@ -26,15 +26,20 @@ const MASTER_CAP = 150;
 export default function NewsBriefsTab({canonical, briefs, setBriefs, generateBrief}) {
   const [briefLoading, setBriefLoading] = useState({});
   const [briefError, setBriefError] = useState({});
+  // How far back (in hours) briefings and article lists reach. 0 = all articles.
+  const [windowHours, setWindowHours] = useState(0);
+
+  // Article pool scoped to the selected time window.
+  const windowed = canonical.filter(a => withinWindow(a, windowHours));
 
   // Compute articles for each market group
   const groupArts = (group) =>
-    canonical.filter(a => group.sources.includes(a.sourceId) || group.sources.includes(a.originalSourceId));
+    windowed.filter(a => group.sources.includes(a.sourceId) || group.sources.includes(a.originalSourceId));
 
   // Master brief spans ALL markets (developed + emerging). generateBriefUnlimited
   // ranks by signal and keeps the top company-relevant stories, so feeding the full
   // deduplicated pool surfaces the strongest company news across every market.
-  const allBriefArts = canonical;
+  const allBriefArts = windowed;
   const masterBriefKey = "newsbriefs_master";
 
   const generateGroupBrief = async (group) => {
@@ -78,12 +83,13 @@ export default function NewsBriefsTab({canonical, briefs, setBriefs, generateBri
       {/* Master brief card */}
       <div style={{background:"#fff",border:"1px solid #e8e2d6",borderRadius:10,padding:"16px 18px",marginBottom:20}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:masterBrief?10:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <span style={{fontSize:18}}>📰</span>
             <div>
-              <div style={{...mono,fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>GLOBAL NEWS BRIEFS · {allBriefArts.length>MASTER_CAP ? `top ${MASTER_CAP} by signal of ${allBriefArts.length}` : `${allBriefArts.length}`} articles{masterBriefData?.generatedAt ? ` · generated ${new Date(masterBriefData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
+              <div style={{...mono,fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>GLOBAL NEWS BRIEFS · {allBriefArts.length>MASTER_CAP ? `top ${MASTER_CAP} by signal of ${allBriefArts.length}` : `${allBriefArts.length}`} articles{windowHours>0?` · last ${windowHours}h`:""}{masterBriefData?.generatedAt ? ` · generated ${new Date(masterBriefData.generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
               <div style={{fontFamily:"'Spectral',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Company News Intelligence</div>
             </div>
+            <WindowSelector value={windowHours} onChange={setWindowHours} color="#c0392b" />
           </div>
           <button onClick={generateMasterBrief} disabled={briefLoading[masterBriefKey]||!allBriefArts.length}
             style={{...mono,fontSize:9,padding:"4px 12px",border:"1px solid #c0392b44",borderRadius:4,background:"none",color:"#c0392b",

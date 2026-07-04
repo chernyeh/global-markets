@@ -678,7 +678,7 @@ export default function App() {
   const opinionCount = canonical.filter(a => resolveOpinion(a).isOpinion).length;
 
   const MAIN_TABS=[
-    {id:"breaking",  label:`⚡ Today${breakingArts.length>0?` (${breakingArts.length})`:""}`},
+    {id:"breaking",  label:`⚡ Breaking${breakingArts.length>0?` (${breakingArts.length})`:""}`},
     {id:"newsbriefs",label:`📰 Intel${briefsTabCount>0?` (${briefsTabCount})`:""}`},
     {id:"opinions",  label:`💬 Opinions${opinionCount>0?` (${opinionCount})`:""}`},
     {id:"markets",   label:"🌍 Markets"},
