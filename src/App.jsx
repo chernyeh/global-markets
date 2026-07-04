@@ -506,6 +506,7 @@ export default function App() {
   const [lastFetch,     setLastFetch]     = useState({});
   const [briefs,        setBriefs]        = useState({});
   const [briefLoading,  setBriefLoading]  = useState({});
+  const [briefError,    setBriefError]    = useState({});
   const [statusMsg,     setStatusMsg]     = useState("Loading…");
   const [enriching,     setEnriching]     = useState(false);
   const [showDupes,     setShowDupes]     = useState(false);
@@ -855,8 +856,8 @@ export default function App() {
 
         {mainTab==="watchlist"&&<WatchlistTab allArticles={allArticles} setAllArticles={setAllArticles}/>}
         {mainTab==="filings"&&<FilingsTab />}
-        {mainTab==="newsbriefs"&&<NewsBriefsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs} generateBrief={generateBriefUnlimited}/>}
-        {mainTab==="opinions"&&<OpinionsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs} setAllArticles={setAllArticles}/>}
+        {mainTab==="newsbriefs"&&<NewsBriefsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs} generateBrief={generateBriefUnlimited} briefLoading={briefLoading} setBriefLoading={setBriefLoading} briefError={briefError} setBriefError={setBriefError}/>}
+        {mainTab==="opinions"&&<OpinionsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs} setAllArticles={setAllArticles} briefLoading={briefLoading} setBriefLoading={setBriefLoading} briefError={briefError} setBriefError={setBriefError}/>}
         {/* BREAKING / TODAY */}
         {mainTab==="breaking"&&(()=>{
           const briefKey="breaking";

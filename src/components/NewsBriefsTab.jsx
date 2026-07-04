@@ -23,11 +23,9 @@ function humanizeBriefError(e) {
 // upstream time budget. Articles are already ordered by recency/priority.
 const MASTER_CAP = 150;
 
-export default function NewsBriefsTab({canonical, briefs, setBriefs, generateBrief}) {
-  const [briefLoading, setBriefLoading] = useState({});
-  const [briefError, setBriefError] = useState({});
+export default function NewsBriefsTab({canonical, briefs, setBriefs, generateBrief, briefLoading, setBriefLoading, briefError, setBriefError}) {
   // How far back (in hours) briefings and article lists reach. 0 = all articles.
-  const [windowHours, setWindowHours] = useState(0);
+  const [windowHours, setWindowHours] = useState(12);
 
   // Article pool scoped to the selected time window.
   const windowed = canonical.filter(a => withinWindow(a, windowHours));

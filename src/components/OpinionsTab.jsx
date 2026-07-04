@@ -12,13 +12,11 @@ import BriefRenderer from "./BriefRenderer.jsx";
 // OPINIONS TAB — opinion pieces by category, free-coverage for paywalled items,
 // and a "who is saying what" digest.
 // ═══════════════════════════════════════════════════════════════════════════════
-export default function OpinionsTab({canonical, briefs, setBriefs, setAllArticles}) {
-  const [briefLoading, setBriefLoading] = useState({});
-  const [briefError, setBriefError] = useState({});
+export default function OpinionsTab({canonical, briefs, setBriefs, setAllArticles, briefLoading, setBriefLoading, briefError, setBriefError}) {
   const [findingFree, setFindingFree] = useState({});
   const [activeCat, setActiveCat] = useState("ALL");
   // How far back (in hours) the digest and opinion lists reach. 0 = all pieces.
-  const [windowHours, setWindowHours] = useState(0);
+  const [windowHours, setWindowHours] = useState(12);
 
   const humanizeBriefError = (e) => {
     const m = e?.message || "";
