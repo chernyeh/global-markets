@@ -2,13 +2,29 @@ import { useState, useEffect, useContext } from "react";
 import { FontScaleCtx } from "../context.js";
 import { SOURCES } from "../data/sources.js";
 
+// ─── Citation markers ─────────────────────────────────────────────────────────
+// Models are told to cite with [REF:N], but they drift: lowercase [Ref:3],
+// parentheses (REF: 3,4), "article" phrasing (article 3), the un-substituted
+// placeholder [REF:N], or a bare trailing "Ref: 3". Match all of these so they
+// get stripped from the rendered text and parsed for links — one shared pattern
+// keeps every briefing tab consistent.
+const CITE_RE = /[[(]\s*(?:refs?|articles?)\b\s*:?\s*[\dnm]+(?:\s*(?:,|&|and)\s*[\dnm]+)*\s*[\])]|\brefs?\.?\s*:\s*[\dnm]+(?:\s*(?:,|&|and)\s*[\dnm]+)*/gi;
+
+// Remove every citation marker from a string.
+export function stripRefs(s) {
+  return (s || "").replace(CITE_RE, "").replace(/\s{2,}/g, " ").trim();
+}
+
 // ─── REF-link resolver ────────────────────────────────────────────────────────
 export function findLinksForBullet(bulletText, articles) {
   if (!articles?.length || !bulletText) return [];
-  const refMatch = bulletText.match(/\[REF:([\d,\s]+)\]/);
-  if (refMatch) {
-    const indices = refMatch[1].split(",").map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
-    return indices.map(i=>articles[i]).filter(Boolean);
+  const cites = bulletText.match(CITE_RE);
+  if (cites) {
+    const nums = cites.join(" ").match(/\d+/g);
+    if (nums) {
+      const arts = nums.map(n=>articles[parseInt(n,10)]).filter(Boolean);
+      if (arts.length) return arts;
+    }
   }
   const words = bulletText.toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(w=>w.length>4);
   return articles
@@ -180,7 +196,7 @@ export default function BriefRenderer({text, articles=[]}) {
         }
         if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
           const txt = trimmed.replace(/^[-*] /,"");
-          const cleanTxt = txt.replace(/\[REF:[\d,\s]+\]/g, "").trim();
+          const cleanTxt = stripRefs(txt);
           const boldMatch = cleanTxt.match(/^\*\*(.+?)\*\*:?\s*(.*)/s);
           const links = findLinksForBullet(txt, articles);
           return (
@@ -217,13 +233,13 @@ export default function BriefRenderer({text, articles=[]}) {
           );
         }
         const mergedMatch = trimmed.match(/^\*\*([^*]+)\*\*:?\n([\s\S]+)$/);
-        const cleanPara = trimmed.replace(/\[REF:[\d,\s]+\]/g, "").trim();
+        const cleanPara = stripRefs(trimmed);
         return (
           <p key={i} style={{fontFamily:"'Spectral',Georgia,serif",fontSize:Math.round(14*fontScale),
             color:"#1a1a1a",lineHeight:1.7,margin:"10px 0",
             background:"#f0ece4",padding:"14px 18px",borderRadius:4}}>
             {mergedMatch
-              ? <><strong>{renderTickers(mergedMatch[1].replace(/\[REF:[\d,\s]+\]/g,"").trim(), quotes, `${i}-mb`)}</strong>{": "}{renderInline(mergedMatch[2].replace(/\[REF:[\d,\s]+\]/g,"").trim(), quotes, `${i}-mr`)}</>
+              ? <><strong>{renderTickers(stripRefs(mergedMatch[1]), quotes, `${i}-mb`)}</strong>{": "}{renderInline(stripRefs(mergedMatch[2]), quotes, `${i}-mr`)}</>
               : renderInline(cleanPara, quotes, `${i}-p`)
             }
           </p>
