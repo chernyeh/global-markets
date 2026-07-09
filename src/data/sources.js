@@ -14,8 +14,8 @@ export const NEWS_BRIEF_GROUPS = [
     market: "Broker Calls & Analyst Actions",
     flag: "🎯",
     color: "#7b1fa2",
-    sources: ["benzinga_upgrades","benzinga_downgrades","benzinga_initiation","benzinga_pt","estimate_revisions","sa_wsb","sa_currents","investing_ratings","openinsider"],
-    desc: "Benzinga Upgrades · Benzinga Downgrades · Benzinga Initiations · Benzinga Price Targets · Estimate & Target Revisions · SA Wall St Breakfast · SA Market Currents · Investing.com Ratings · OpenInsider Buys",
+    sources: ["benzinga_upgrades","benzinga_downgrades","benzinga_initiation","benzinga_pt","estimate_revisions","blockbeats_ai","sa_wsb","sa_currents","investing_ratings","openinsider"],
+    desc: "Benzinga Upgrades · Benzinga Downgrades · Benzinga Initiations · Benzinga Price Targets · Estimate & Target Revisions · BlockBeats AI (broker notes on AI infra) · SA Wall St Breakfast · SA Market Currents · Investing.com Ratings · OpenInsider Buys",
   },
   {
     market: "Ideas & Commentary",
@@ -63,8 +63,8 @@ export const NEWS_BRIEF_GROUPS = [
     market: "Hong Kong / China",
     flag: "🇭🇰",
     color: "#1565c0",
-    sources: ["scmp_markets","caixin_briefs","hkex_news","aastocks_hk","etnet_hk"],
-    desc: "SCMP Markets Today · Caixin Briefs · HKEX News · AAStocks · ET Net",
+    sources: ["scmp","scmp_markets","scmp_china","caixin_briefs","hkex_news","aastocks_hk","etnet_hk"],
+    desc: "SCMP · SCMP Markets Today · SCMP China · Caixin Briefs · HKEX News · AAStocks · ET Net",
   },
   {
     market: "Japan",
@@ -133,6 +133,7 @@ export const SOURCES = [
   {id:"analyst_roundtables",tier:2,desc:"Analyst Roundtables & Strategist Views — fund manager, strategist and CIO interviews, roundtables and outlook calls; investment views and positioning ahead of consensus.",country:"US",name:"Analyst Roundtables & Strategist Views",lang:"en",flag:"🎙️",url:GN("(\"fund manager\" OR strategist OR \"portfolio manager\" OR CIO) (interview OR roundtable OR outlook) stocks market"),limit:15},
   {id:"mgmt_interviews",tier:2,desc:"Management Interviews — in-depth CEO/CFO interviews on strategy, turnarounds, capital allocation and outlook; surfaces management conviction and strategic shifts.",country:"US",name:"Management Interviews",lang:"en",flag:"🗣️",url:GN("(CEO OR CFO OR \"chief executive\") interview (strategy OR turnaround OR outlook OR growth OR priorities) company"),limit:15},
   {id:"estimate_revisions",tier:2,desc:"Estimate & Target Revisions — analyst price-target, earnings-estimate and rating revisions across global equities; tracks changes in view before they become consensus.",country:"US",name:"Estimate & Target Revisions",lang:"en",flag:"📊",url:GN("stocks (\"price target\" OR \"earnings estimate\" OR rating) (raised OR cut OR lifted OR lowered OR upgraded OR downgraded OR initiated) analyst"),limit:15},
+  {id:"blockbeats_ai",tier:3,desc:"BlockBeats AI — fast, explicitly-attributed translations of brokerage/analyst notes on AI infrastructure, semiconductors and data centers (Morgan Stanley, Goldman, JPMorgan, Citi, Bernstein, BofA, UBS). Secondary/translated, not primary reporting — corroborate before treating as gospel.",country:"CN",name:"BlockBeats AI",lang:"en",flag:"🤖",url:GN("site:theblockbeats.info (AI OR semiconductor OR chip OR \"data center\" OR datacenter) (\"Morgan Stanley\" OR \"Goldman Sachs\" OR JPMorgan OR Citi OR Bernstein OR \"Bank of America\" OR UBS OR analyst)"),limit:15},
   {id:"semiwiki",tier:2,   desc:"SemiWiki — semiconductor industry blog with deep dives on process nodes, chip architecture, foundry dynamics, and company strategies by engineers and analysts. Strong on TSMC, Intel, AMD, and fabless players.",country:"US",name:"SemiWiki",  lang:"en",flag:"🇺🇸",url:GN("site:semiwiki.com semiconductor chip TSMC Intel AMD Qualcomm")},
   {id:"eetimes",tier:2,    desc:"EE Times — global electronics engineering publication; covers semiconductor design, chip technology, AI hardware, embedded systems, and industry business news.", country:"US",name:"EE Times",   lang:"en",flag:"🇺🇸",url:GN("site:eetimes.com")},
   // ── Opinion & Commentary — major publications ──────────────────────────────
@@ -145,7 +146,7 @@ export const SOURCES = [
   {id:"wired",tier:2,desc:"Wired — feature journalism and analysis on technology, business, AI and the culture of Silicon Valley; distinctive long-form viewpoints.",country:"US",name:"Wired",lang:"en",flag:"🇺🇸",url:"https://www.wired.com/feed/rss",limit:15},
   {id:"et_opinion",tier:2,desc:"Economic Times Opinion — editorials and columns on India's markets, economy and policy.",country:"IN",name:"Economic Times Opinion",lang:"en",flag:"🇮🇳",url:GN("site:economictimes.indiatimes.com (opinion OR editorial) markets economy","en-IN","IN","IN:en"),limit:10},
   {id:"mint_opinion",tier:2,desc:"Mint Opinion — views and columns on Indian markets, companies and the economy.",country:"IN",name:"Mint Opinion",lang:"en",flag:"🇮🇳",url:GN("site:livemint.com (opinion OR views) markets economy","en-IN","IN","IN:en"),limit:10},
-  {id:"scmp_opinion",tier:2,desc:"SCMP Opinion — comment and analysis on China, Hong Kong, the economy and geopolitics.",country:"HK",name:"SCMP Opinion",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com (opinion OR comment) China economy markets"),paywall:true,limit:10},
+  {id:"scmp_opinion",tier:2,desc:"SCMP Opinion — comment and analysis on China, Hong Kong, the economy and geopolitics, including SCMP's named columnists (Alex Lo, Yonden Lhatoo, Chow Chung-yan, Tammy Tam, Nury Vittachi, David Dodwell, Enoch Yiu, Zhang Shidong, Jing Yang, Julie Zhang, Yulu Ao, Peggy Ye, Snow Xia).",country:"HK",name:"SCMP Opinion",lang:"en",flag:"🇭🇰",url:GN("site:scmp.com (opinion OR comment OR \"Alex Lo\" OR \"Yonden Lhatoo\" OR \"Chow Chung-yan\" OR \"Tammy Tam\" OR \"Nury Vittachi\" OR \"David Dodwell\" OR \"Enoch Yiu\" OR \"Zhang Shidong\" OR \"Jing Yang\" OR \"Julie Zhang\" OR \"Yulu Ao\" OR \"Peggy Ye\" OR \"Snow Xia\") China economy markets"),paywall:true,limit:15},
   {id:"caixin_opinion",tier:2,desc:"Caixin Opinion — commentary on China's economy, markets and policy from China's leading independent financial outlet.",country:"CN",name:"Caixin Opinion",lang:"en",flag:"🇨🇳",url:GN("\"Caixin\" (commentary OR \"opinion:\" OR editorial) (China OR economy OR yuan OR markets)"),paywall:true,limit:10},
   {id:"taipei_times_opinion",tier:2,desc:"Taipei Times Opinion — editorials and columns on Taiwan's economy, cross-strait relations and politics.",country:"TW",name:"Taipei Times Opinion",lang:"en",flag:"🇹🇼",url:GN("site:taipeitimes.com (editorials OR opinion) Taiwan economy")},
   {id:"haaretz_opinion",tier:2,desc:"Haaretz Opinion — columns and analysis on Israel's economy, politics and the region.",country:"IL",name:"Haaretz Opinion",lang:"en",flag:"🇮🇱",url:GN("site:haaretz.com opinion Israel economy business"),paywall:true},
