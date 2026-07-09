@@ -4,6 +4,7 @@
 import { OPINION_MAP } from "./data/taxonomy.js";
 import { SOURCES, GN } from "./data/sources.js";
 import { callClaude, mapLimit } from "./api.js";
+import { MARKET_CONCERN_NOTE } from "./prompts.js";
 
 // Feeds that are inherently opinion / commentary / columns / analysis / features.
 // Broadened to sweep in a diverse range of opinion pieces across every region.
@@ -53,6 +54,9 @@ const OPINION_COLUMNIST_NAMES = [
   // MarketWatch
   "Brett Arends","Mark Hulbert","Howard Gold","Therese Poletti","Michael Brush","Jeff Reeves",
   "Jonathan Burton","Philip van Doorn","Chuck Jaffe","Charles Passy",
+  // SCMP
+  "Enoch Yiu","Zhang Shidong","Jing Yang","Julie Zhang","Yulu Ao","Peggy Ye","Snow Xia",
+  "Alex Lo","Yonden Lhatoo","Chow Chung-yan","Tammy Tam","Nury Vittachi","David Dodwell",
 ];
 const normName = s => (s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 export const OPINION_COLUMNISTS = new Set(OPINION_COLUMNIST_NAMES.map(normName));
@@ -291,6 +295,7 @@ export async function generateOpinionDigest(articles, label) {
 - For EACH opinion piece, state WHO is arguing it (the named columnist/author if it appears in the headline or description, otherwise the publication) and WHAT their thesis or stance is, in 1-2 sentences.
 - Where several writers address the same subject, explicitly note where they AGREE and where they DIVERGE.
 - End every bullet with [REF:N] (or [REF:N,M]) citing the article number(s).
+- ${MARKET_CONCERN_NOTE}
 - ${SOURCE_WEIGHTING_NOTE}
 - ATTRIBUTION CONSTRAINT: only the headline and a short description are available — attribute at the columnist/publication level. Do NOT invent quotes, figures, or details not present in the text. Never fabricate an author name.`;
 
