@@ -2,25 +2,13 @@ import { useState } from "react";
 import { mono } from "../ui.jsx";
 import { SK, sSet } from "../storage.js";
 import { NEWS_BRIEF_GROUPS, SOURCES } from "../data/sources.js";
-import { Dots, WindowSelector, withinWindow } from "./helpers.jsx";
+import { Dots, WindowSelector, withinWindow, humanizeBriefError } from "./helpers.jsx";
 import ArticleCard from "./ArticleCard.jsx";
 import BriefRenderer from "./BriefRenderer.jsx";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // NEWS BRIEFS TAB
 // ═══════════════════════════════════════════════════════════════════════════════
-// Maps a generation failure to a short, human-readable message for the UI.
-function humanizeBriefError(e) {
-  const m = e?.message || "";
-  if (m === "AbortError" || e?.name === "AbortError") return "Timed out — briefing took too long. Try a shorter time window.";
-  if (m.includes("429")) return "Rate limited — retry shortly.";
-  if (m.includes("529")) return "Service busy — retry shortly.";
-  // 5xx (incl. Vercel's 504) means the synthesis exceeded the serverless time
-  // limit. A shorter window / fewer articles is the fix, not a plain retry.
-  if (/(^|_)5\d\d/.test(m)) return "Server timed out on a large briefing — try a shorter time window.";
-  if (m === "empty_response") return "No briefing returned. Retry.";
-  return `Couldn't generate briefing (${m || "unknown error"}). Retry.`;
-}
 
 // Cap the master brief so the all-articles synthesis stays fast and within the
 // upstream time budget (the serverless function is capped at 60s on Vercel
