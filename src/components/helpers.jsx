@@ -50,6 +50,19 @@ export function WindowSelector({ value, onChange, color = "#c0392b" }) {
   );
 }
 
+// Maps a briefing-generation failure to a short, human-readable message for the UI.
+export function humanizeBriefError(e) {
+  const m = e?.message || "";
+  if (m === "AbortError" || e?.name === "AbortError") return "Timed out — briefing took too long. Try a shorter time window.";
+  if (m.includes("429")) return "Rate limited — retry shortly.";
+  if (m.includes("529")) return "Service busy — retry shortly.";
+  // 5xx (incl. Vercel's 504) means the synthesis exceeded the serverless time
+  // limit. A shorter window / fewer articles is the fix, not a plain retry.
+  if (/(^|_)5\d\d/.test(m)) return "Server timed out on a large briefing — try a shorter time window.";
+  if (m === "empty_response") return "No briefing returned. Retry.";
+  return `Couldn't generate briefing (${m || "unknown error"}). Retry.`;
+}
+
 export function Tag({children,color="#c0392b",onClick}) {
   return (
     <span onClick={onClick} style={{fontSize:9,padding:"1px 6px",borderRadius:3,

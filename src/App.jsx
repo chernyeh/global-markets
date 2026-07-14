@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useContext } from "react";
 import { FontScaleCtx, FONT_SCALES } from "./context.js";
-import { timeAgo, Dots, Tag } from "./components/helpers.jsx";
+import { timeAgo, Dots, Tag, humanizeBriefError } from "./components/helpers.jsx";
 import ArticleCard from "./components/ArticleCard.jsx";
 import BriefRenderer, { findLinksForBullet, extractTickers, fetchQuotes } from "./components/BriefRenderer.jsx";
 import BriefBox from "./components/BriefBox.jsx";
@@ -888,11 +888,13 @@ export default function App() {
                     </div>
                   </div>
                   <button onClick={async()=>{
+                      setBriefError(p=>({...p,[briefKey]:null}));
                       setBriefLoading(p=>({...p,[briefKey]:true}));
                       try {
                         const b=await generateWorldBriefing(breakingArts,"Breaking News");
                         if(b.text) setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
-                      } catch(e){ console.warn("breaking brief failed:",e); }
+                        else setBriefError(p=>({...p,[briefKey]:"No briefing returned. Retry."}));
+                      } catch(e){ console.warn("breaking brief failed:",e); setBriefError(p=>({...p,[briefKey]:humanizeBriefError(e)})); }
                       finally { setBriefLoading(p=>({...p,[briefKey]:false})); }
                     }}
                     disabled={briefLoading[briefKey]||breakingArts.length===0}
@@ -902,6 +904,7 @@ export default function App() {
                     {briefLoading[briefKey]?<Dots color="#c0392b"/>:"✦ brief"}
                   </button>
                 </div>
+                {briefError[briefKey]&&!briefLoading[briefKey]&&<div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c0392b",marginTop:-2,marginBottom:8}}>⚠ {briefError[briefKey]}</div>}
                 {briefs[briefKey]&&(
                   <div style={{borderTop:"1px solid #e8e2d6",paddingTop:12}}>
                     <BriefRenderer
