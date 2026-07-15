@@ -355,6 +355,13 @@ function fmtBriefArticle(a, n) {
 // function's 60s limit (Vercel Hobby cap) instead of timing out with a 504.
 const BRIEF_MAX_TOKENS = 3000;
 
+// Cap on articles fed into a single briefing/synthesis call, mirroring
+// NewsBriefsTab's MASTER_CAP. Uncapped input (e.g. Breaking News at a 24-48h
+// window) produces a synthesis prompt large enough to exceed the serverless
+// function's 60s limit. Articles are pre-sorted by importance/recency, so the
+// top slice keeps the strongest signals.
+const WORLD_BRIEF_CAP = 70;
+
 async function generateBriefUnlimited(articles, label, coveragePriority=null, maxArticles=null, weightCountries=false) {
   if (!articles.length) return {text:"", articles:[]};
 
@@ -891,7 +898,7 @@ export default function App() {
                       setBriefError(p=>({...p,[briefKey]:null}));
                       setBriefLoading(p=>({...p,[briefKey]:true}));
                       try {
-                        const b=await generateWorldBriefing(breakingArts,"Breaking News");
+                        const b=await generateWorldBriefing(breakingArts,"Breaking News",WORLD_BRIEF_CAP);
                         if(b.text) setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
                         else setBriefError(p=>({...p,[briefKey]:"No briefing returned. Retry."}));
                       } catch(e){ console.warn("breaking brief failed:",e); setBriefError(p=>({...p,[briefKey]:humanizeBriefError(e)})); }
