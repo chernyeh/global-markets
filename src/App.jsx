@@ -372,7 +372,7 @@ async function generateBriefUnlimited(articles, label, coveragePriority=null, ma
   articles = ranked;
   const sourceArticles = articles;
 
-  const DEFAULT_PRIORITY = "COVERAGE PRIORITY: When two items are equally actionable, prefer US and China, then Europe (UK, Germany, France, Italy, Switzerland, pan-European), then HK, Korea, Taiwan, Australia, Israel, Middle East, Iran, then Singapore and Canada. Mention Indian stories briefly unless they carry clear global or sector impact.";
+  const DEFAULT_PRIORITY = "COVERAGE PRIORITY: When two items are equally actionable, prefer US and China, then Europe (UK, Germany, France, Italy, Switzerland, pan-European), then Hong Kong and China company news, then Singapore, Korea, Taiwan, Australia, Israel, Middle East, Iran, then Canada. Give Hong Kong, China and Singapore more weight than Korea. Mention Indian stories briefly unless they carry clear global or sector impact.";
   // Always weight summaries toward major publications & newswires, on top of any
   // country-level coverage priority.
   const effectivePriority = `${coveragePriority || DEFAULT_PRIORITY}\n${SOURCE_WEIGHTING_NOTE}`;
