@@ -18,7 +18,7 @@ const SOURCE_RANK = {
   SG: ["reuters_sg","bloom_sg","bt_sg","bt_stocks_watch","edge_sg_stocks_watch","edge_sg_focus","sginvestors","edge_sg","cna_sg","sgx_annc","sg_biz_review"],
   HK: ["reuters_hk","bloom_hk","asia_broker_calls","reuters_asia","hkex_news","scmp","scmp_markets","scmp_china","mingtiandi","aastocks_hk","etnet_hk","hket","mingpao"],
   KR: ["reuters_kr","bloom_kr","kr_analyst_calls","kr_herald","yonhap","yonhap2","ktimes","ked","hankyung","maeil","chosunbiz"],
-  TW: ["reuters_tw","bloom_tw","focus_tw","taipei_t","digitimes","udn_money","ctee"],
+  TW: ["ctee_rss","ctee_tech","ctee_industry","ctee_stock","ctee_finance","ctee_world","ctee_semi","ctee","reuters_tw","bloom_tw","digitimes","focus_tw","taipei_t","udn_money"],
   IN: ["reuters_in","bloom_in","econ_times","mint","mint2","mint3","biz_std","hindubiz","fin_exp","cnbctv18","moneyctrl","forbes_in"],
   AU: ["reuters_au","bloom_au","afr","afr_street_talk","market_herald","smh","abc_au","stockhead_top10","fnarena","stockhead_au","guardian_au","the_aus"],
   CN: ["reuters_cn","bloom_cn","xinhua","cgtn","chinadaily","caixin","caixin_briefs","kr36","globaltimes","yicai","peoples_d"],

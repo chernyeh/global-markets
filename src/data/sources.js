@@ -87,6 +87,13 @@ export const NEWS_BRIEF_GROUPS = [
     sources: ["kr_analyst_calls","ked","ktimes","kr_herald","yonhap","focus_tw","reuters_kr","bloom_kr"],
     desc: "Korea Analyst Actions · KED Global · Korea Times · Korea Herald · Yonhap · Focus Taiwan · Reuters Korea · Bloomberg Korea",
   },
+  {
+    market: "Taiwan Tech & Supply Chain",
+    flag: "🇹🇼",
+    color: "#00695c",
+    sources: ["ctee_rss","ctee_tech","ctee_industry","ctee_stock","ctee_finance","ctee_world","ctee_semi","ctee","digitimes","udn_money","reuters_tw","bloom_tw","taipei_t","focus_tw"],
+    desc: "CTEE 工商時報 (即時 · 科技 · 產業 · 證券 · 金融 · 國際 · 半導體) · DigiTimes · UDN Money · Reuters Taiwan · Bloomberg Taiwan · Taipei Times · Focus Taiwan — CTEE-led view of the Taiwan IT hardware and semiconductor supply chain",
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -226,7 +233,22 @@ export const SOURCES = [
   {id:"taipei_t",tier:2,desc:"Taiwan's main English daily; useful for government policy, cross-strait tension, and macro.",   country:"TW",name:"Taipei Times Business",  lang:"en",flag:"🇹🇼",url:GN("site:taipeitimes.com business"),paywall:true},
   {id:"focus_tw",tier:2,desc:"CNA's English Taiwan feed; official wire — fast on policy announcements and corporate filings.",   country:"TW",name:"Focus Taiwan CNA",       lang:"en",flag:"🇹🇼",url:GN("site:focustaiwan.tw business"),paywall:true},
   {id:"udn_money",tier:2,desc:"UDN Money — Taiwan's major Mandarin financial portal, auto-translated; strong on TSMC and tech supply chain.",  country:"TW",name:"經濟日報 UDN Money",       lang:"zh",flag:"🇹🇼",url:GN("site:money.udn.com","zh-TW","TW","TW:zh-Hant")},
-  {id:"ctee",tier:2,desc:"China Times Economy — influential Mandarin business paper, auto-translated; covers Taiwan equities and property.",       country:"TW",name:"工商時報 CTEE",            lang:"zh",flag:"🇹🇼",url:GN("site:ctee.com.tw","zh-TW","TW","TW:zh-Hant")},
+  // CTEE (工商時報) — Taiwan's leading business daily and the single best read on
+  // the island's IT hardware, semiconductor and component supply chain. The
+  // Google News `site:` search below surfaces only a thin slice of what CTEE
+  // publishes, so the desk feeds are pulled from its native RSS (one feed per
+  // 即時 section, mirroring the site's own /livenews/<section> paths). Section
+  // feeds overlap the 總覽 overview by design — localDedup collapses the repeats
+  // and the extra feeds carry what the overview truncates. All are marked
+  // prominent:true so they outrank their nominal tier in every briefing.
+  {id:"ctee_rss",tier:2,prominent:true,desc:"CTEE 即時總覽 (native RSS) — the Commercial Times live wire across every desk; far higher-volume and fresher than the Google News search.",country:"TW",name:"工商時報 CTEE 即時 (RSS)",lang:"zh",flag:"🇹🇼",url:"https://www.ctee.com.tw/rss_web/livenews/ctee",limit:25},
+  {id:"ctee_tech",tier:2,prominent:true,desc:"CTEE 科技 (native RSS) — technology desk; AI servers, CoWoS, silicon photonics, memory, PCB and component makers.",country:"TW",name:"工商時報 CTEE 科技 (RSS)",lang:"zh",flag:"🇹🇼",url:"https://www.ctee.com.tw/rss_web/livenews/tech",limit:20},
+  {id:"ctee_industry",tier:2,prominent:true,desc:"CTEE 產業 (native RSS) — industry desk; semiconductor and electronics supply-chain reporting, capacity, orders and pricing.",country:"TW",name:"工商時報 CTEE 產業 (RSS)",lang:"zh",flag:"🇹🇼",url:"https://www.ctee.com.tw/rss_web/livenews/industry",limit:20},
+  {id:"ctee_stock",tier:2,prominent:true,desc:"CTEE 證券 (native RSS) — securities desk; TAIEX moves, broker calls, earnings and company announcements.",country:"TW",name:"工商時報 CTEE 證券 (RSS)",lang:"zh",flag:"🇹🇼",url:"https://www.ctee.com.tw/rss_web/livenews/stock",limit:20},
+  {id:"ctee_finance",tier:2,prominent:true,desc:"CTEE 金融 (native RSS) — banking and financial desk; TWD, CBC policy, credit and insurance.",country:"TW",name:"工商時報 CTEE 金融 (RSS)",lang:"zh",flag:"🇹🇼",url:"https://www.ctee.com.tw/rss_web/livenews/finance",limit:15},
+  {id:"ctee_world",tier:2,prominent:true,desc:"CTEE 國際 (native RSS) — international desk; global macro, tariffs and US-China tech trade seen from Taipei.",country:"TW",name:"工商時報 CTEE 國際 (RSS)",lang:"zh",flag:"🇹🇼",url:"https://www.ctee.com.tw/rss_web/livenews/world",limit:15},
+  {id:"ctee_semi",tier:2,prominent:true,desc:"CTEE semiconductor & AI supply chain — targeted Google News search over ctee.com.tw for TSMC, foundry, packaging, AI server and supply-chain stories; backstop if the native feeds are unreachable.",country:"TW",name:"工商時報 CTEE 半導體",lang:"zh",flag:"🇹🇼",url:GN("site:ctee.com.tw (台積電 OR 半導體 OR 晶圓 OR 封測 OR AI OR 伺服器 OR 供應鏈 OR 電子)","zh-TW","TW","TW:zh-Hant"),limit:15},
+  {id:"ctee",tier:2,prominent:true,desc:"CTEE (工商時報) — Taiwan's leading Mandarin business daily, auto-translated; IT hardware, semiconductors, company news and industry trends. Google News search, kept alongside the native RSS desks.",country:"TW",name:"工商時報 CTEE",            lang:"zh",flag:"🇹🇼",url:GN("site:ctee.com.tw","zh-TW","TW","TW:zh-Hant"),limit:15},
   {id:"digitimes",tier:2,desc:"The definitive English source for Taiwan semiconductor, electronics, and supply chain intelligence.",  country:"TW",name:"DigiTimes",              lang:"en",flag:"🇹🇼",url:GN("site:digitimes.com Taiwan semiconductor technology supply chain"),paywall:true},
   {id:"reuters_tw",tier:1,desc:"Reuters Taiwan; essential for TSMC, semiconductors, and US-China tech trade.", country:"TW",name:"Reuters Taiwan",          lang:"en",flag:"🇹🇼",url:GN("site:reuters.com Taiwan economy business")},
   {id:"bloom_tw",tier:1,desc:"Bloomberg Taiwan; covers TWD, TAIEX, and chip sector in depth.",   country:"TW",name:"Bloomberg Taiwan",        lang:"en",flag:"🇹🇼",url:GN("site:bloomberg.com Taiwan markets economy"),paywall:true},
@@ -416,3 +438,24 @@ export const ALL_MARKET_SOURCES = [...SOURCES, ...EM_SOURCES];
 
 // Tier lookup map for scoring
 export const SOURCE_TIER_MAP = Object.fromEntries(ALL_MARKET_SOURCES.map(s => [s.id, s.tier ?? 3]));
+
+// Sources flagged `prominent:true` are ranked above their nominal tier in every
+// briefing — used for regional papers of record whose desk reporting is the
+// primary source on a subject the briefings care about, rather than a
+// second-hand regional echo of the wires. Mark a source prominent in the list
+// above and it registers here automatically.
+export const PROMINENT_SOURCE_IDS = new Set(
+  ALL_MARKET_SOURCES.filter(s => s.prominent).map(s => s.id)
+);
+
+// Multiplier applied to a prominent source's brief score, on top of the category,
+// signal and country weights. Worth roughly half a category band: a prominent
+// source wins outright against an equally-classified rival on the same story, and
+// its directional calls (SP1/SN1 and stronger) outrank an ordinary source's
+// neutral item one band above. Deliberately short of a full band, so a genuine
+// strong signal elsewhere — a profit warning, a rating change — still leads.
+export const PROMINENT_SOURCE_BOOST = 1.35;
+
+// Score bonus for a prominent source in the world/breaking-news ranking, matching
+// the bonus given to the global marquee publications in worldScore.
+export const PROMINENT_SOURCE_WORLD_BONUS = 15;
