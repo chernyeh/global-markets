@@ -48,7 +48,7 @@ export const WORLD_FORMAT = `## [Headline capturing the dominant global story ri
 [3-4 sentence big-picture summary: the dominant macro/geopolitical force shaping markets, the most significant development of the day, and the overall risk-on/risk-off tone.]
 
 ## AI Capex & Bubble Risk
-- [The AI capex sustainability debate: whether AI investment is generating enough profit/productivity to justify the spend, data-centre and chip buildout, AI model launches or regulation, and the read-through for Nvidia, Broadcom, and other AI-capex-driven names — including in China and Hong Kong. [REF:N]]
+- [The AI capex sustainability debate: whether AI investment is generating enough profit/productivity to justify the spend, data-centre and chip buildout, AI model launches or regulation, and the read-through for Nvidia, Broadcom, and other AI-capex-driven names — including in China and Hong Kong. Give the Taiwan supply chain its own space here: TSMC and foundry capex and capacity, CoWoS and advanced packaging, AI server and component orders, and what Taiwanese suppliers are saying about demand — this is the hard evidence behind the capex debate. [REF:N]]
 
 ## Fed Policy & Independence
 - [Chair Kevin Warsh's approach (forward guidance, the balance-sheet/framework review), FOMC decisions, and the Fed independence question (the Supreme Court case on removing Governor Lisa Cook). [REF:N]]
@@ -80,7 +80,7 @@ export const WORLD_FORMAT = `## [Headline capturing the dominant global story ri
 export const WORLD_RULES = `Rules:
 - PRIORITY ORDER: Lead with the AI capex/bubble-risk debate, then Fed policy & independence, then Geopolitics (Iran, Ukraine, Taiwan, Israel/ME, US-China, Russia), then Inflation/Oil & rate path, then Tariffs & trade, then Valuations & market leadership, then Elon Musk, then company catalysts, then other important global news.
 - ${MARKET_CONCERN_NOTE}
-- Source hierarchy: Bloomberg, WSJ, FT, Reuters (incl. Breakingviews), SCMP, NYT, Washington Post, Semafor, the Guardian, and Globe and Mail take precedence over regional or niche publications when covering the same event.
+- Source hierarchy: Bloomberg, WSJ, FT, Reuters (incl. Breakingviews), SCMP, NYT, Washington Post, Semafor, the Guardian, and Globe and Mail take precedence over regional or niche publications when covering the same event. The exception is Taiwan's Commercial Times (工商時報 / CTEE): on Taiwan IT hardware, semiconductors, components and the electronics supply chain it is the primary source, not a regional echo — lead with it on those stories and cite it directly.
 - De-prioritise news from Philippines, Nigeria, Malaysia, and India unless it carries clear global market impact.
 - EXCLUDE sports, entertainment, and celebrity news entirely — even from tier-1 sources.
 - OMIT any section with no genuine content — do not pad with filler.

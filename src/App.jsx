@@ -12,7 +12,7 @@ import NewsBriefsTab from "./components/NewsBriefsTab.jsx";
 import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONTEXT_PATTERNS, BRIEF_CATEGORY_WEIGHT, SIGNAL_STRENGTH, BRIEF_COUNTRY_BOOST, BRIEF_COUNTRY_PENALTY, BRIEF_BOOSTED_COUNTRIES, BRIEF_PENALISED_COUNTRIES, WORLD_TOPIC_WEIGHTS, OPINION_MAP } from "./data/taxonomy.js";
 import { resolveOpinion, SOURCE_WEIGHTING_NOTE } from "./opinions.js";
 import OpinionsTab from "./components/OpinionsTab.jsx";
-import { GN, NEWS_BRIEF_GROUPS, SOURCES, EM_SOURCES, ALL_MARKET_SOURCES, SOURCE_TIER_MAP } from "./data/sources.js";
+import { GN, NEWS_BRIEF_GROUPS, SOURCES, EM_SOURCES, ALL_MARKET_SOURCES, SOURCE_TIER_MAP, PROMINENT_SOURCE_IDS, PROMINENT_SOURCE_BOOST, PROMINENT_SOURCE_WORLD_BONUS } from "./data/sources.js";
 import { COUNTRIES, EM_COUNTRIES, MARKET_REGIONS, MARKETS, MARKET_MAP } from "./data/markets.js";
 import { BRIEF_FORMAT, BRIEF_RULES, WORLD_FORMAT, WORLD_RULES } from "./prompts.js";
 import { mono, RED, labelSm, labelMed, pillBtn, card, HoverButton } from "./ui.jsx";
@@ -43,7 +43,11 @@ function worldScore(a) {
     (best, t) => t.re.test(text) ? Math.max(best, t.score) : best, 0
   );
   const tier = SOURCE_TIER_MAP[a.sourceId] ?? 3;
-  const sourceBonus = isMarqueeSource(a.sourceId) ? 15 : tier === 1 ? 8 : tier === 2 ? 3 : 0;
+  // Prominent regional papers of record rank with the global marquee titles
+  // rather than at their nominal tier — see PROMINENT_SOURCE_IDS.
+  const sourceBonus = isMarqueeSource(a.sourceId) ? 15
+    : PROMINENT_SOURCE_IDS.has(a.sourceId) || PROMINENT_SOURCE_IDS.has(a.originalSourceId) ? PROMINENT_SOURCE_WORLD_BONUS
+    : tier === 1 ? 8 : tier === 2 ? 3 : 0;
   const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt || 0);
   const recency = t ? Math.min(0.999, t / Date.now()) : 0;
   return (topicScore + sourceBonus) * 10 + recency;
@@ -157,6 +161,11 @@ function resolveGroup(arts) {
 const PUBLISHER_FAMILIES = [
   ["bloomberg","bloomberg2"],
   ["wsj","wsj2"],
+  // CTEE's desk feeds overlap by design — the 即時 overview repeats what the
+  // section feeds carry. Identical headlines already collapse on article id;
+  // grouping the desks as one publisher applies the tighter fuzzy threshold so
+  // a story reworded between desks counts once, not several times.
+  ["ctee","ctee_rss","ctee_tech","ctee_industry","ctee_stock","ctee_finance","ctee_world","ctee_semi"],
 ];
 function sameFamily(idA, idB) {
   return PUBLISHER_FAMILIES.some(fam=>fam.includes(idA)&&fam.includes(idB));
@@ -246,7 +255,7 @@ async function enrichBatch(articles) {
   if(!articles.length) return [];
   const withTranslations = await Promise.all(articles.map(async a => {
     if (a.lang === "en") return { ...a, _preTranslated: a.title };
-    const translated = await googleTranslate(a.title, a.lang === "zh" ? "zh-CN" : a.lang);
+    const translated = await googleTranslate(a.title, a.lang);
     return { ...a, _preTranslated: translated };
   }));
   const catCodes = Object.keys(SIGNAL_CATEGORIES).join("|");
@@ -314,12 +323,19 @@ function briefCountryWeight(country) {
   return 1;
 }
 
+function briefSourceWeight(a) {
+  return PROMINENT_SOURCE_IDS.has(a.sourceId) || PROMINENT_SOURCE_IDS.has(a.originalSourceId)
+    ? PROMINENT_SOURCE_BOOST
+    : 1;
+}
+
 function briefScore(a, weightCountries=false) {
   const w = BRIEF_CATEGORY_WEIGHT[a.signalCategory] ?? 0;
   const s = SIGNAL_STRENGTH[a.signal] ?? 0;
   const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt || 0);
   const recency = t ? Math.min(0.999, t / Date.now()) : 0; // sub-1 tiebreak
-  const base = w * 10 + s * 2 + recency;
+  // Source prominence applies in every brief; country weighting stays opt-in.
+  const base = (w * 10 + s * 2 + recency) * briefSourceWeight(a);
   return weightCountries ? base * briefCountryWeight(a.country) : base;
 }
 
@@ -372,7 +388,7 @@ async function generateBriefUnlimited(articles, label, coveragePriority=null, ma
   articles = ranked;
   const sourceArticles = articles;
 
-  const DEFAULT_PRIORITY = "COVERAGE PRIORITY: When two items are equally actionable, prefer US and China, then Europe (UK, Germany, France, Italy, Switzerland, pan-European), then Hong Kong and China company news, then Singapore, Korea, Taiwan, Australia, Israel, Middle East, Iran, then Canada. Give Hong Kong, China and Singapore more weight than Korea. Mention Indian stories briefly unless they carry clear global or sector impact.";
+  const DEFAULT_PRIORITY = "COVERAGE PRIORITY: When two items are equally actionable, prefer US and China, then Europe (UK, Germany, France, Italy, Switzerland, pan-European), then Hong Kong and China company news, then Singapore, Korea, Taiwan, Australia, Israel, Middle East, Iran, then Canada. Give Hong Kong, China and Singapore more weight than Korea. Taiwan IT hardware, semiconductor and electronics supply-chain stories are an exception to this ordering — treat them as top-priority regardless of where Taiwan sits in the list, since they are the read-through on AI capex. Mention Indian stories briefly unless they carry clear global or sector impact.";
   // Always weight summaries toward major publications & newswires, on top of any
   // country-level coverage priority.
   const effectivePriority = `${coveragePriority || DEFAULT_PRIORITY}\n${SOURCE_WEIGHTING_NOTE}`;
@@ -570,8 +586,7 @@ export default function App() {
   const runAutoTranslate=useCallback(async(currentArticles,toTranslate)=>{
     setStatusMsg(`Translating ${toTranslate.length} non-English titles…`);
     const translated = await Promise.all(toTranslate.map(async a => {
-      const lang = a.lang === "zh" ? "zh-CN" : a.lang;
-      const t = await googleTranslate(a.title, lang);
+      const t = await googleTranslate(a.title, a.lang);
       return { ...a, translatedTitle: t };
     }));
     setAllArticles(prev => {
