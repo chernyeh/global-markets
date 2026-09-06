@@ -91,8 +91,8 @@ export const NEWS_BRIEF_GROUPS = [
     market: "Taiwan Tech & Supply Chain",
     flag: "🇹🇼",
     color: "#00695c",
-    sources: ["ctee_rss","ctee_tech","ctee_industry","ctee_stock","ctee_finance","ctee_world","ctee_semi","ctee","digitimes","udn_money","reuters_tw","bloom_tw","taipei_t","focus_tw"],
-    desc: "CTEE 工商時報 (即時 · 科技 · 產業 · 證券 · 金融 · 國際 · 半導體) · DigiTimes · UDN Money · Reuters Taiwan · Bloomberg Taiwan · Taipei Times · Focus Taiwan — CTEE-led view of the Taiwan IT hardware and semiconductor supply chain",
+    sources: ["ctee_rss","ctee_tech","ctee_industry","ctee_stock","ctee_finance","ctee_world","ctee_semi","ctee","udn_money_rss","udn_money_semi","udn_money_trade","udn_money","ltn_rss","ltn_biz","ltn_world","ltn_ec","ltn_semi","wantrich","wantrich_market","wantrich_semi","digitimes","reuters_tw","bloom_tw","taipei_t","focus_tw"],
+    desc: "工商時報 CTEE · 經濟日報 UDN Money · 自由時報 LTN / 自由財經 · 旺得富 Wantrich · DigiTimes · Reuters Taiwan · Bloomberg Taiwan · Taipei Times · Focus Taiwan — Taiwan business press leading on the semiconductor supply chain, trade policy and cross-strait geopolitics",
   },
 ];
 
@@ -232,7 +232,30 @@ export const SOURCES = [
   // ── Taiwan ─────────────────────────────────────────────────────────────────
   {id:"taipei_t",tier:2,desc:"Taiwan's main English daily; useful for government policy, cross-strait tension, and macro.",   country:"TW",name:"Taipei Times Business",  lang:"en",flag:"🇹🇼",url:GN("site:taipeitimes.com business"),paywall:true},
   {id:"focus_tw",tier:2,desc:"CNA's English Taiwan feed; official wire — fast on policy announcements and corporate filings.",   country:"TW",name:"Focus Taiwan CNA",       lang:"en",flag:"🇹🇼",url:GN("site:focustaiwan.tw business"),paywall:true},
-  {id:"udn_money",tier:2,desc:"UDN Money — Taiwan's major Mandarin financial portal, auto-translated; strong on TSMC and tech supply chain.",  country:"TW",name:"經濟日報 UDN Money",       lang:"zh",flag:"🇹🇼",url:GN("site:money.udn.com","zh-TW","TW","TW:zh-Hant")},
+  // UDN Money (經濟日報) — Taiwan's other major financial daily. Was already here
+  // as a bare Google News search capped at 10; promoted to the same footing as
+  // CTEE with a native RSS desk, targeted supply-chain / trade queries, and a
+  // raised limit. 5590 is UDN's 證券 category id (money.udn.com/money/cate/5590);
+  // the feed index lives at money.udn.com/rssfeed/lists/1001.
+  {id:"udn_money_rss",tier:2,prominent:true,desc:"UDN Money 證券 (native RSS) — Economic Daily News securities desk; TAIEX, company results and broker action, higher-volume than the Google News search.",country:"TW",name:"經濟日報 UDN 證券 (RSS)",lang:"zh",flag:"🇹🇼",url:"https://money.udn.com/rssfeed/news/1001/5590?ch=money",limit:20},
+  {id:"udn_money_semi",tier:2,prominent:true,desc:"UDN Money semiconductor & supply chain — targeted search over money.udn.com for TSMC, foundry, packaging, AI server, component and supply-chain reporting.",country:"TW",name:"經濟日報 UDN 半導體",lang:"zh",flag:"🇹🇼",url:GN("site:money.udn.com (台積電 OR 半導體 OR 晶圓 OR 封測 OR 供應鏈 OR 伺服器 OR 記憶體 OR 電子)","zh-TW","TW","TW:zh-Hant"),limit:20},
+  {id:"udn_money_trade",tier:2,prominent:true,desc:"UDN Money trade & geopolitics — targeted search over money.udn.com for tariffs, export controls, US-China tech friction and cross-strait economic policy.",country:"TW",name:"經濟日報 UDN 貿易地緣",lang:"zh",flag:"🇹🇼",url:GN("site:money.udn.com (關稅 OR 貿易戰 OR 出口管制 OR 美中 OR 兩岸 OR 地緣政治 OR 制裁)","zh-TW","TW","TW:zh-Hant"),limit:15},
+  {id:"udn_money",tier:2,prominent:true,desc:"UDN Money (經濟日報) — Taiwan's major Mandarin financial daily, auto-translated; strong on TSMC and the tech supply chain. Google News search, kept alongside the native RSS desk.",country:"TW",name:"經濟日報 UDN Money",       lang:"zh",flag:"🇹🇼",url:GN("site:money.udn.com","zh-TW","TW","TW:zh-Hant"),limit:15},
+  // LTN (自由時報 / 自由財經) — Taiwan's largest-circulation daily. Native RSS at
+  // news.ltn.com.tw/rss/<section>.xml, section slugs matching the site's own
+  // /list/breakingnews/<section> paths; 自由財經 lives on the ec. subdomain and is
+  // covered by search. Strong on trade policy, cross-strait and industry news.
+  {id:"ltn_rss",tier:2,prominent:true,desc:"LTN 自由時報 即時總覽 (native RSS) — the live wire across every desk of Taiwan's largest-circulation daily.",country:"TW",name:"自由時報 LTN 即時 (RSS)",lang:"zh",flag:"🇹🇼",url:"https://news.ltn.com.tw/rss/all.xml",limit:25},
+  {id:"ltn_biz",tier:2,prominent:true,desc:"LTN 財經 (native RSS) — business desk; Taiwan industry, TAIEX, trade policy and the electronics sector.",country:"TW",name:"自由時報 LTN 財經 (RSS)",lang:"zh",flag:"🇹🇼",url:"https://news.ltn.com.tw/rss/business.xml",limit:20},
+  {id:"ltn_world",tier:2,prominent:true,desc:"LTN 國際 (native RSS) — international desk; US-China friction, tariffs and cross-strait geopolitics from Taipei.",country:"TW",name:"自由時報 LTN 國際 (RSS)",lang:"zh",flag:"🇹🇼",url:"https://news.ltn.com.tw/rss/world.xml",limit:15},
+  {id:"ltn_ec",tier:2,prominent:true,desc:"自由財經 (LTN business vertical) — targeted search over ec.ltn.com.tw for markets, industry and economic policy.",country:"TW",name:"自由財經 LTN EC",lang:"zh",flag:"🇹🇼",url:GN("site:ec.ltn.com.tw","zh-TW","TW","TW:zh-Hant"),limit:20},
+  {id:"ltn_semi",tier:2,prominent:true,desc:"LTN semiconductor, trade & geopolitics — targeted search over ltn.com.tw for TSMC and the chip supply chain, tariffs, export controls and cross-strait tension.",country:"TW",name:"自由時報 LTN 半導體地緣",lang:"zh",flag:"🇹🇼",url:GN("site:ltn.com.tw (台積電 OR 半導體 OR 晶圓 OR 供應鏈 OR 關稅 OR 出口管制 OR 美中 OR 地緣政治)","zh-TW","TW","TW:zh-Hant"),limit:20},
+  // Wantrich (旺得富) — the China Times group's markets vertical, the tw-market
+  // desk the user reads. chinatimes.com publishes no native RSS (RSSHub drives it
+  // with a headless browser), so these are Google News searches only.
+  {id:"wantrich",tier:2,prominent:true,desc:"旺得富 Wantrich — China Times group markets vertical; Taiwan equities, company news and industry trends.",country:"TW",name:"旺得富 Wantrich",lang:"zh",flag:"🇹🇼",url:GN("site:wantrich.chinatimes.com","zh-TW","TW","TW:zh-Hant"),limit:20},
+  {id:"wantrich_market",tier:2,prominent:true,desc:"旺得富 台股 (tw-market desk) — targeted search for TAIEX, individual Taiwan listings, broker calls and market moves.",country:"TW",name:"旺得富 台股",lang:"zh",flag:"🇹🇼",url:GN("site:wantrich.chinatimes.com (台股 OR 個股 OR 盤中 OR 法人 OR 外資 OR 目標價 OR 財報)","zh-TW","TW","TW:zh-Hant"),limit:20},
+  {id:"wantrich_semi",tier:2,prominent:true,desc:"旺得富 semiconductor & supply chain — targeted search for TSMC, foundry, packaging, AI server and component supply-chain stories, plus tariffs and US-China tech friction.",country:"TW",name:"旺得富 半導體",lang:"zh",flag:"🇹🇼",url:GN("site:wantrich.chinatimes.com (台積電 OR 半導體 OR 晶圓 OR 封測 OR 供應鏈 OR 伺服器 OR 關稅 OR 美中)","zh-TW","TW","TW:zh-Hant"),limit:20},
   // CTEE (工商時報) — Taiwan's leading business daily and the single best read on
   // the island's IT hardware, semiconductor and component supply chain. The
   // Google News `site:` search below surfaces only a thin slice of what CTEE

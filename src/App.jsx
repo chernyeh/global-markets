@@ -9,7 +9,7 @@ import FilingsTab from "./components/FilingsTab.jsx";
 import WatchlistTab from "./components/WatchlistTab.jsx";
 import SourcesTab from "./components/SourcesTab.jsx";
 import NewsBriefsTab from "./components/NewsBriefsTab.jsx";
-import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONTEXT_PATTERNS, BRIEF_CATEGORY_WEIGHT, SIGNAL_STRENGTH, BRIEF_COUNTRY_BOOST, BRIEF_COUNTRY_PENALTY, BRIEF_BOOSTED_COUNTRIES, BRIEF_PENALISED_COUNTRIES, WORLD_TOPIC_WEIGHTS, OPINION_MAP } from "./data/taxonomy.js";
+import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONTEXT_PATTERNS, BRIEF_CATEGORY_WEIGHT, SIGNAL_STRENGTH, BRIEF_COUNTRY_BOOST, BRIEF_COUNTRY_PENALTY, BRIEF_BOOSTED_COUNTRIES, BRIEF_PENALISED_COUNTRIES, BRIEF_PRIORITY_TOPIC_RES, BRIEF_TOPIC_BOOST, WORLD_TOPIC_WEIGHTS, OPINION_MAP } from "./data/taxonomy.js";
 import { resolveOpinion, SOURCE_WEIGHTING_NOTE } from "./opinions.js";
 import OpinionsTab from "./components/OpinionsTab.jsx";
 import { GN, NEWS_BRIEF_GROUPS, SOURCES, EM_SOURCES, ALL_MARKET_SOURCES, SOURCE_TIER_MAP, PROMINENT_SOURCE_IDS, PROMINENT_SOURCE_BOOST, PROMINENT_SOURCE_WORLD_BONUS } from "./data/sources.js";
@@ -166,6 +166,9 @@ const PUBLISHER_FAMILIES = [
   // grouping the desks as one publisher applies the tighter fuzzy threshold so
   // a story reworded between desks counts once, not several times.
   ["ctee","ctee_rss","ctee_tech","ctee_industry","ctee_stock","ctee_finance","ctee_world","ctee_semi"],
+  ["udn_money","udn_money_rss","udn_money_semi","udn_money_trade"],
+  ["ltn_rss","ltn_biz","ltn_world","ltn_ec","ltn_semi"],
+  ["wantrich","wantrich_market","wantrich_semi"],
 ];
 function sameFamily(idA, idB) {
   return PUBLISHER_FAMILIES.some(fam=>fam.includes(idA)&&fam.includes(idB));
@@ -329,13 +332,22 @@ function briefSourceWeight(a) {
     : 1;
 }
 
+// Semiconductor supply chain, trade policy and geopolitics rank above everything
+// else. Matched on the translated title + description, so non-English headlines
+// are covered once enrichment has run.
+function briefTopicWeight(a) {
+  const text = `${a.translatedTitle || a.title} ${a.description || ""}`;
+  return BRIEF_PRIORITY_TOPIC_RES.some(re => re.test(text)) ? BRIEF_TOPIC_BOOST : 1;
+}
+
 function briefScore(a, weightCountries=false) {
   const w = BRIEF_CATEGORY_WEIGHT[a.signalCategory] ?? 0;
   const s = SIGNAL_STRENGTH[a.signal] ?? 0;
   const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt || 0);
   const recency = t ? Math.min(0.999, t / Date.now()) : 0; // sub-1 tiebreak
-  // Source prominence applies in every brief; country weighting stays opt-in.
-  const base = (w * 10 + s * 2 + recency) * briefSourceWeight(a);
+  // Source prominence and priority topics apply in every brief; country
+  // weighting stays opt-in.
+  const base = (w * 10 + s * 2 + recency) * briefSourceWeight(a) * briefTopicWeight(a);
   return weightCountries ? base * briefCountryWeight(a.country) : base;
 }
 
