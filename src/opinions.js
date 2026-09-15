@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 import { OPINION_MAP } from "./data/taxonomy.js";
 import { SOURCES, GN } from "./data/sources.js";
-import { callClaude, mapLimit } from "./api.js";
+import { callClaude, mapLimit, MODEL_CLASSIFY, MODEL_SYNTHESIZE } from "./api.js";
 import { MARKET_CONCERN_NOTE } from "./prompts.js";
 
 // Feeds that are inherently opinion / commentary / columns / analysis / features.
@@ -169,6 +169,9 @@ export const MAJOR_SOURCE_IDS = new Set([
   "afr","afr_street_talk","smh","the_aus","edge_sg","edge_sg_focus","edge_sg_stocks_watch",
   "taipei_t","taipei_times_opinion",
   "ctee","ctee_rss","ctee_tech","ctee_industry","ctee_stock","ctee_finance","ctee_world","ctee_semi",
+  "udn_money","udn_money_rss","udn_money_semi","udn_money_trade",
+  "ltn_rss","ltn_biz","ltn_world","ltn_ec","ltn_semi",
+  "wantrich","wantrich_market","wantrich_semi",
   // Europe
   "handelsblatt","handelsblatt_en","spiegel_de","nzz","nzz_en",
   // Emerging markets
@@ -178,7 +181,7 @@ export const MAJOR_SOURCE_IDS = new Set([
 ]);
 
 // Prompt instruction: weight any summary toward these publications and newswires.
-export const SOURCE_WEIGHTING_NOTE = "SOURCE WEIGHTING: Give the most weight, space, and prominence to reporting and commentary from major publications and global newswires — Reuters, Bloomberg (including Bloomberg Opinion and its regional editions), Associated Press, AFP, the Wall Street Journal, The New York Times, Barron's, the Financial Times, MarketWatch, The Washington Post, Wired, Nikkei Asia, the South China Morning Post, Singapore's Business Times and The Edge, Canada's Globe and Mail, the Australian Financial Review, The Australian, the Sydney Morning Herald, leading European papers (Handelsblatt, Der Spiegel, NZZ, Semafor), and major emerging-market outlets (India's Mint and Economic Times, China's Caixin, Taiwan's Commercial Times (工商時報 / CTEE) and Taipei Times, Thailand's Bangkok Post, Israel's Haaretz and Globes, and leading Latin American business papers). Lead with what these outlets say. Treat the Commercial Times (工商時報 / CTEE) as a first-rank source on Taiwan IT hardware, semiconductors, components and the electronics supply chain — it breaks order, capacity, pricing and customer news on TSMC and its supply chain ahead of the English-language wires, so give its headlines prominent space and cite them directly rather than folding them into a wire summary. At the same time, actively surface unique, differentiated, and contrarian viewpoints — do not just echo the consensus; when an outlet takes a distinctive stance, give it room. Treat blogs, aggregators, and single-stock tip sheets as secondary or corroborating unless they carry unique, market-moving detail.";
+export const SOURCE_WEIGHTING_NOTE = "SOURCE WEIGHTING: Give the most weight, space, and prominence to reporting and commentary from major publications and global newswires — Reuters, Bloomberg (including Bloomberg Opinion and its regional editions), Associated Press, AFP, the Wall Street Journal, The New York Times, Barron's, the Financial Times, MarketWatch, The Washington Post, Wired, Nikkei Asia, the South China Morning Post, Singapore's Business Times and The Edge, Canada's Globe and Mail, the Australian Financial Review, The Australian, the Sydney Morning Herald, leading European papers (Handelsblatt, Der Spiegel, NZZ, Semafor), and major emerging-market outlets (India's Mint and Economic Times, China's Caixin, Taiwan's Commercial Times (工商時報 / CTEE), Economic Daily News (經濟日報 / UDN Money), Liberty Times (自由時報 / LTN and 自由財經), Wantrich (旺得富) and Taipei Times, Thailand's Bangkok Post, Israel's Haaretz and Globes, and leading Latin American business papers). Lead with what these outlets say. Treat Taiwan's business press — the Commercial Times (工商時報 / CTEE), Economic Daily News (經濟日報 / UDN Money), Liberty Times (自由時報 / 自由財經) and Wantrich (旺得富) — as first-rank sources on the semiconductor and electronics supply chain, trade policy and cross-strait geopolitics. They break order, capacity, pricing and customer news on TSMC and its supply chain, and read tariff and export-control moves from inside the affected industry, ahead of the English-language wires. Give their headlines prominent space and cite them directly rather than folding them into a wire summary. Weight supply-chain, trade and geopolitical stories above all other topics. At the same time, actively surface unique, differentiated, and contrarian viewpoints — do not just echo the consensus; when an outlet takes a distinctive stance, give it room. Treat blogs, aggregators, and single-stock tip sheets as secondary or corroborating unless they carry unique, market-moving detail.";
 
 // Stable sort that floats major-publication/newswire pieces to the front.
 export function sortMajorFirst(articles) {
@@ -252,7 +255,7 @@ Below are articles the reader can access. Return ONLY the number of the ONE that
 
 ${candidates.map((a,i)=>`${i}. ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
     try {
-      const raw = await callClaude(prompt, 20);
+      const raw = await callClaude(prompt, 20, {model:MODEL_CLASSIFY});
       const idx = parseInt((raw.match(/-?\d+/)||["-1"])[0], 10);
       if (idx >= 0 && candidates[idx]) {
         const m = candidates[idx];
@@ -311,7 +314,7 @@ ${rules}
 
 Opinion pieces (cite using [REF:N], N = article number):
 ${articles.map((a,i)=>`${i}. ${line(a)}`).join("\n")}`;
-    const text = await callClaude(prompt, 6000, {throwOnError:true, timeoutMs:90000});
+    const text = await callClaude(prompt, 6000, {throwOnError:true, timeoutMs:90000, model:MODEL_SYNTHESIZE});
     return { text, articles: sourceArticles, generatedAt: Date.now() };
   }
 
@@ -321,7 +324,7 @@ ${articles.map((a,i)=>`${i}. ${line(a)}`).join("\n")}`;
     const offset = ci * CHUNK;
     const prompt = `For each opinion piece below, note WHO is arguing it (named columnist/author if present, else the publication) and WHAT their thesis is, in one sentence. Put the article number in parentheses at the end, e.g. "(article 3)". Do not invent authors or quotes.
 ${chunk.map((a,i)=>`${offset+i}. ${line(a)}`).join("\n")}`;
-    return callClaude(prompt, 900, {throwOnError:false});
+    return callClaude(prompt, 900, {throwOnError:false, model:MODEL_CLASSIFY});
   });
 
   const goodSummaries = summaries.filter(s => s && s.trim());
@@ -341,6 +344,6 @@ ${articleIndex}
 
 Notes to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, 6000, {throwOnError:true, timeoutMs:90000});
+  const text = await callClaude(synthPrompt, 6000, {throwOnError:true, timeoutMs:90000, model:MODEL_SYNTHESIZE});
   return { text, articles: sourceArticles, generatedAt: Date.now() };
 }

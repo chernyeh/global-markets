@@ -13,6 +13,14 @@ const BROWSER_HEADER_HOSTS = {
     "Referer": "https://www.ctee.com.tw/",
     "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
   },
+  "ltn.com.tw": {
+    "Referer": "https://news.ltn.com.tw/",
+    "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
+  },
+  "udn.com": {
+    "Referer": "https://money.udn.com/",
+    "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
+  },
 };
 
 function hostOf(url) {

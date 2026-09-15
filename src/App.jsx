@@ -9,14 +9,14 @@ import FilingsTab from "./components/FilingsTab.jsx";
 import WatchlistTab from "./components/WatchlistTab.jsx";
 import SourcesTab from "./components/SourcesTab.jsx";
 import NewsBriefsTab from "./components/NewsBriefsTab.jsx";
-import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONTEXT_PATTERNS, BRIEF_CATEGORY_WEIGHT, SIGNAL_STRENGTH, BRIEF_COUNTRY_BOOST, BRIEF_COUNTRY_PENALTY, BRIEF_BOOSTED_COUNTRIES, BRIEF_PENALISED_COUNTRIES, WORLD_TOPIC_WEIGHTS, OPINION_MAP } from "./data/taxonomy.js";
+import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONTEXT_PATTERNS, BRIEF_CATEGORY_WEIGHT, SIGNAL_STRENGTH, BRIEF_COUNTRY_BOOST, BRIEF_COUNTRY_PENALTY, BRIEF_BOOSTED_COUNTRIES, BRIEF_PENALISED_COUNTRIES, BRIEF_PRIORITY_TOPIC_RES, BRIEF_TOPIC_BOOST, WORLD_TOPIC_WEIGHTS, OPINION_MAP } from "./data/taxonomy.js";
 import { resolveOpinion, SOURCE_WEIGHTING_NOTE } from "./opinions.js";
 import OpinionsTab from "./components/OpinionsTab.jsx";
 import { GN, NEWS_BRIEF_GROUPS, SOURCES, EM_SOURCES, ALL_MARKET_SOURCES, SOURCE_TIER_MAP, PROMINENT_SOURCE_IDS, PROMINENT_SOURCE_BOOST, PROMINENT_SOURCE_WORLD_BONUS } from "./data/sources.js";
 import { COUNTRIES, EM_COUNTRIES, MARKET_REGIONS, MARKETS, MARKET_MAP } from "./data/markets.js";
 import { BRIEF_FORMAT, BRIEF_RULES, WORLD_FORMAT, WORLD_RULES } from "./prompts.js";
 import { mono, RED, labelSm, labelMed, pillBtn, card, HoverButton } from "./ui.jsx";
-import { sleep, backoff, mapLimit, callClaude } from "./api.js";
+import { sleep, backoff, mapLimit, callClaude, MODEL_CLASSIFY, MODEL_SYNTHESIZE } from "./api.js";
 import { SK, EM_SK, sGet, sSet } from "./storage.js";
 import { classifyMicro } from "./utils.js";
 
@@ -166,6 +166,9 @@ const PUBLISHER_FAMILIES = [
   // grouping the desks as one publisher applies the tighter fuzzy threshold so
   // a story reworded between desks counts once, not several times.
   ["ctee","ctee_rss","ctee_tech","ctee_industry","ctee_stock","ctee_finance","ctee_world","ctee_semi"],
+  ["udn_money","udn_money_rss","udn_money_semi","udn_money_trade"],
+  ["ltn_rss","ltn_biz","ltn_world","ltn_ec","ltn_semi"],
+  ["wantrich","wantrich_market","wantrich_semi"],
 ];
 function sameFamily(idA, idB) {
   return PUBLISHER_FAMILIES.some(fam=>fam.includes(idA)&&fam.includes(idB));
@@ -216,7 +219,7 @@ async function claudeDedup(articles) {
 Return ONLY a JSON array of index arrays e.g. [[0,3],[1,5]]. Only groups of 2+. Empty array [] if none.
 ${candidates.map((a,i)=>`${i}. [${a.lang}] ${a.translatedTitle||a.title}`).join("\n")}`;
   try {
-    const res=await callClaude(prompt,600);
+    const res=await callClaude(prompt,600,{model:MODEL_CLASSIFY});
     const groups=JSON.parse(res.replace(/```json|```/g,"").trim());
     let updated=[...articles];
     groups.forEach(grp=>{
@@ -306,7 +309,7 @@ Return ONLY a valid JSON array, no markdown. ${withTranslations.length} items:
 ${withTranslations.map((a,i)=>`${i}. ${a._preTranslated}`).join("\n")}`;
 
   try {
-    const text = await callClaude(prompt, 2000);
+    const text = await callClaude(prompt, 2000, {model:MODEL_CLASSIFY});
     const cleaned = text.replace(/```json|```/g,"").trim();
     return JSON.parse(cleaned);
   } catch { 
@@ -329,13 +332,22 @@ function briefSourceWeight(a) {
     : 1;
 }
 
+// Semiconductor supply chain, trade policy and geopolitics rank above everything
+// else. Matched on the translated title + description, so non-English headlines
+// are covered once enrichment has run.
+function briefTopicWeight(a) {
+  const text = `${a.translatedTitle || a.title} ${a.description || ""}`;
+  return BRIEF_PRIORITY_TOPIC_RES.some(re => re.test(text)) ? BRIEF_TOPIC_BOOST : 1;
+}
+
 function briefScore(a, weightCountries=false) {
   const w = BRIEF_CATEGORY_WEIGHT[a.signalCategory] ?? 0;
   const s = SIGNAL_STRENGTH[a.signal] ?? 0;
   const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt || 0);
   const recency = t ? Math.min(0.999, t / Date.now()) : 0; // sub-1 tiebreak
-  // Source prominence applies in every brief; country weighting stays opt-in.
-  const base = (w * 10 + s * 2 + recency) * briefSourceWeight(a);
+  // Source prominence and priority topics apply in every brief; country
+  // weighting stays opt-in.
+  const base = (w * 10 + s * 2 + recency) * briefSourceWeight(a) * briefTopicWeight(a);
   return weightCountries ? base * briefCountryWeight(a.country) : base;
 }
 
@@ -410,7 +422,7 @@ ${BRIEF_RULES(effectivePriority)}
 
 Articles (cite using [REF:N] at end of each bullet, N = article number):
 ${articles.map((a,i)=>fmtBriefArticle(a,i)).join("\n")}`;
-    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000});
+    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE});
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
@@ -420,7 +432,7 @@ ${articles.map((a,i)=>fmtBriefArticle(a,i)).join("\n")}`;
     const offset = ci * CHUNK;
     const prompt = `You are a buy-side analyst. For each tagged item below, write ONE sentence: the company or subject, what changed, why it matters, and the implied action (accumulate/trim/watch/avoid). Keep the [CATEGORY] tag at the front of each line and end with the article number in parentheses, e.g. "(article 3)". Prioritise analyst rating changes, management changes, insider/activist signals, management interviews, analyst roundtables and strategic shifts. Flag a macro item only when it reflects a change in regime, trend, or sentiment.
 ${chunk.map((a,i)=>fmtBriefArticle(a, offset+i)).join("\n")}`;
-    return callClaude(prompt, 800, {throwOnError:false});
+    return callClaude(prompt, 800, {throwOnError:false, model:MODEL_CLASSIFY});
   });
 
   const goodSummaries = summaries.filter(s => s && s.trim());
@@ -437,7 +449,7 @@ ${BRIEF_RULES(effectivePriority)}
 
 Summaries to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000});
+  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE});
   return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 
@@ -481,7 +493,7 @@ ${WORLD_RULES}
 
 Items (cite using [REF:N] at end of each bullet, N = item number):
 ${arts.map((a,i)=>fmtWorldArticle(a,i)).join("\n")}`;
-    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000});
+    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE});
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
@@ -489,7 +501,7 @@ ${arts.map((a,i)=>fmtWorldArticle(a,i)).join("\n")}`;
     const offset = ci * CHUNK;
     const prompt = `You are a global markets editor. For each tagged item below, write ONE sentence: the country/region, what happened, and why it matters for markets or the world. Keep the [Country] tag at the front of each line and end with the item number in parentheses, e.g. "(item 3)". Cover macro, policy, geopolitics, regional and corporate news alike.
 ${chunk.map((a,i)=>fmtWorldArticle(a, offset+i)).join("\n")}`;
-    return callClaude(prompt, 800, {throwOnError:false});
+    return callClaude(prompt, 800, {throwOnError:false, model:MODEL_CLASSIFY});
   });
 
   const goodSummaries = summaries.filter(s => s && s.trim());
@@ -507,7 +519,7 @@ ${WORLD_RULES}
 
 Summaries to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000});
+  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE});
   return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 // ═══════════════════════════════════════════════════════════════════════════════

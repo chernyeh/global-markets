@@ -97,9 +97,26 @@ export const WEAKNESS_CONTEXT_PATTERNS = /after (disappointing|poor|weak|dismal|
 // ═══════════════════════════════════════════════════════════════════════════════
 // WORLD NEWS PRIORITY SCORING — Today tab sort order
 // ═══════════════════════════════════════════════════════════════════════════════
+// ─── Priority topic patterns ──────────────────────────────────────────────────
+// Shared by the world/breaking-news ranking (WORLD_TOPIC_WEIGHTS) and the brief
+// ranking (BRIEF_PRIORITY_TOPIC_RES) so one edit moves both. Matched against the
+// English translated title + description, so they stay ASCII: non-English
+// headlines are translated before scoring.
+export const GEOPOLITICS_RE = /\biran(ian)?\b|\bukraina?\b|\bzelensky\b|\bkyiv\b|\btaiwan\b|\bsouth china sea\b|\bpla\b|\bisrael\b|\bgaza\b|\bhamas\b|\bnetanyahu\b|\bidf\b|\bhezbollah\b|\bhouthi\b|\bwest bank\b|\bputin\b|\bkremlin\b|\brussia\b|trade war|export control|chip ban|us.china/i;
+
+export const SEMI_SUPPLY_CHAIN_RE = /\bsemiconductor|\bchipmaker|\bchip (maker|market|sector|supply|demand|price|output|production|shortage|glut)|\bfoundry\b|\bwafer\b|\btsmc\b|\bumc\b|\bsmic\b|\bglobalfoundries\b|\bsamsung (electronics|foundry)\b|\bsk hynix\b|\bmicron\b|\bkioxia\b|\basml\b|\btokyo electron\b|\bapplied materials\b|\blam research\b|\bnvidia\b|\bbroadcom\b|\bcowos\b|advanced packaging|\bhbm\b|high.bandwidth memory|\bdram\b|\bnand\b|\bsilicon photonics\b|\bcpo\b|\bsubstrate\b|\babf\b|\bpcb\b|\bodm\b|\bosat\b|\bfoxconn\b|\bhon hai\b|\bquanta\b|\bwistron\b|\bwiwynn\b|\bpegatron\b|\binventec\b|\bcompal\b|\bdelta electronics\b|ai server|server (order|shipment|rack)|supply chain|\bcapacity (expansion|utilisation|utilization)\b|\bfab\b|\bnode\b.{0,20}\bnm\b|\b[23457]nm\b|lithography|\bepitax|component (maker|shortage|pricing)/i;
+
+export const TRADE_POLICY_RE = /\btariff|\bduties\b|\banti.dumping\b|\bexport (control|curb|ban|licence|license|restriction)|\bimport (curb|ban|quota|restriction)\b|\bentity list\b|\bblacklist\b|\bsanction|\btrade (war|deal|talks|dispute|tension|barrier|policy)\b|\bsection 232\b|\bsection 301\b|\bwto\b|\bchip act\b|\bchips act\b|\btechnology transfer\b|\bdecoupl|\bre.?shor|\bfriend.?shor|\bnearshor|\bsupply.chain security\b|\bcross.strait\b|\bchokepoint\b/i;
+
 export const WORLD_TOPIC_WEIGHTS = [
   // Geopolitics: Iran, Ukraine, Taiwan, Israel/ME, US-China/Russia trade & military
-  { score: 50, re: /\biran(ian)?\b|\bukraina?\b|\bzelensky\b|\bkyiv\b|\btaiwan\b|\bsouth china sea\b|\bpla\b|\bisrael\b|\bgaza\b|\bhamas\b|\bnetanyahu\b|\bidf\b|\bhezbollah\b|\bhouthi\b|\bwest bank\b|\bputin\b|\bkremlin\b|\brussia\b|trade war|export control|chip ban|us.china/i },
+  { score: 50, re: GEOPOLITICS_RE },
+  // Semiconductor & electronics supply chain — the read-through on AI capex and
+  // the subject Taiwan's business papers break first. Scored level with
+  // geopolitics: nothing outranks these two.
+  { score: 50, re: SEMI_SUPPLY_CHAIN_RE },
+  // Trade policy: tariffs, export licensing, entity lists, sanctions, chokepoints
+  { score: 45, re: TRADE_POLICY_RE },
   // Elon Musk and his companies (Tesla, SpaceX, xAI, Starlink, X, DOGE)
   { score: 40, re: /elon musk|\bmusk\b|\btesla\b|\bspacex\b|\bstarlink\b|\bxai\b|\bgrok\b|department of government efficiency/i },
   // Oil, energy & inflationary expectations
@@ -125,6 +142,14 @@ export const BRIEF_CATEGORY_WEIGHT = {
   MACRO:1, OTHER:0,
 };
 export const SIGNAL_STRENGTH = { SP2:3, SN2:3, SP1:2, SN1:2, N:0 };
+
+// Topics that outrank everything else in the company briefings, on top of the
+// category, signal, source and country weights: the semiconductor / electronics
+// supply chain, trade policy, and geopolitics. briefScore had no topic term at
+// all before this, so a supply-chain story competed purely on its signal
+// category — these lift it instead.
+export const BRIEF_PRIORITY_TOPIC_RES = [SEMI_SUPPLY_CHAIN_RE, TRADE_POLICY_RE, GEOPOLITICS_RE];
+export const BRIEF_TOPIC_BOOST = 1.3;
 
 export const BRIEF_COUNTRY_BOOST = 1.4;
 export const BRIEF_COUNTRY_PENALTY = 0.5;

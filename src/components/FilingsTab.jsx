@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { mono } from "../ui.jsx";
-import { callClaude } from "../api.js";
+import { callClaude, MODEL_SYNTHESIZE } from "../api.js";
 import { classifyMicro } from "../utils.js";
 
 const FILING_EXCHANGES = [
@@ -90,7 +90,7 @@ Rules:
 - Each bullet 1-2 sentences, specific and actionable`;
 
   try {
-    return await callClaude(prompt, 2000);
+    return await callClaude(prompt, 2000, {model:MODEL_SYNTHESIZE});
   } catch(e) {
     console.warn("Global filing brief error:", e.message);
     return `Error generating briefing: ${e.message}`;
