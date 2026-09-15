@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 import { OPINION_MAP } from "./data/taxonomy.js";
 import { SOURCES, GN } from "./data/sources.js";
-import { callClaude, mapLimit } from "./api.js";
+import { callClaude, mapLimit, MODEL_CLASSIFY, MODEL_SYNTHESIZE } from "./api.js";
 import { MARKET_CONCERN_NOTE } from "./prompts.js";
 
 // Feeds that are inherently opinion / commentary / columns / analysis / features.
@@ -255,7 +255,7 @@ Below are articles the reader can access. Return ONLY the number of the ONE that
 
 ${candidates.map((a,i)=>`${i}. ${a.translatedTitle||a.title} [${a.source}]`).join("\n")}`;
     try {
-      const raw = await callClaude(prompt, 20);
+      const raw = await callClaude(prompt, 20, {model:MODEL_CLASSIFY});
       const idx = parseInt((raw.match(/-?\d+/)||["-1"])[0], 10);
       if (idx >= 0 && candidates[idx]) {
         const m = candidates[idx];
@@ -314,7 +314,7 @@ ${rules}
 
 Opinion pieces (cite using [REF:N], N = article number):
 ${articles.map((a,i)=>`${i}. ${line(a)}`).join("\n")}`;
-    const text = await callClaude(prompt, 6000, {throwOnError:true, timeoutMs:90000});
+    const text = await callClaude(prompt, 6000, {throwOnError:true, timeoutMs:90000, model:MODEL_SYNTHESIZE});
     return { text, articles: sourceArticles, generatedAt: Date.now() };
   }
 
@@ -324,7 +324,7 @@ ${articles.map((a,i)=>`${i}. ${line(a)}`).join("\n")}`;
     const offset = ci * CHUNK;
     const prompt = `For each opinion piece below, note WHO is arguing it (named columnist/author if present, else the publication) and WHAT their thesis is, in one sentence. Put the article number in parentheses at the end, e.g. "(article 3)". Do not invent authors or quotes.
 ${chunk.map((a,i)=>`${offset+i}. ${line(a)}`).join("\n")}`;
-    return callClaude(prompt, 900, {throwOnError:false});
+    return callClaude(prompt, 900, {throwOnError:false, model:MODEL_CLASSIFY});
   });
 
   const goodSummaries = summaries.filter(s => s && s.trim());
@@ -344,6 +344,6 @@ ${articleIndex}
 
 Notes to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, 6000, {throwOnError:true, timeoutMs:90000});
+  const text = await callClaude(synthPrompt, 6000, {throwOnError:true, timeoutMs:90000, model:MODEL_SYNTHESIZE});
   return { text, articles: sourceArticles, generatedAt: Date.now() };
 }

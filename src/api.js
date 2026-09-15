@@ -1,3 +1,14 @@
+// ─── Model tiers ───────────────────────────────────────────────────────────────
+// Two task shapes cover every prompt in this app: short classification/extraction
+// (tagging, grouping, one-line summaries, a single index pick) and long-form
+// synthesis that needs real editorial judgment (the actual briefs a user reads).
+// Haiku holds quality on the former at a fraction of the cost; the synthesis
+// calls stay on Sonnet, which is also the stronger model of the two tiers.
+// Call sites pass one of these explicitly via callClaude's `model` option —
+// see each call site for why it's tagged the way it is.
+export const MODEL_CLASSIFY = "claude-haiku-4-5";
+export const MODEL_SYNTHESIZE = "claude-sonnet-5";
+
 // ─── Shared async utilities ───────────────────────────────────────────────────
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -27,7 +38,7 @@ export async function mapLimit(items, limit, fn) {
 // and returns "" (legacy callers JSON.parse the result and have their own
 // fallbacks). Pass { throwOnError:true } to surface failures to the UI.
 export async function callClaude(prompt, maxTokens=2000, opts={}) {
-  const { timeoutMs=45000, retries=2, throwOnError=false } = opts;
+  const { timeoutMs=45000, retries=2, throwOnError=false, model=MODEL_SYNTHESIZE } = opts;
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ctl = new AbortController();
@@ -38,7 +49,7 @@ export async function callClaude(prompt, maxTokens=2000, opts={}) {
         headers: { "Content-Type": "application/json" },
         signal: ctl.signal,
         body: JSON.stringify({
-          model: "claude-sonnet-4-6",
+          model,
           max_tokens: maxTokens,
           messages: [{ role: "user", content: prompt }]
         })

@@ -16,7 +16,7 @@ import { GN, NEWS_BRIEF_GROUPS, SOURCES, EM_SOURCES, ALL_MARKET_SOURCES, SOURCE_
 import { COUNTRIES, EM_COUNTRIES, MARKET_REGIONS, MARKETS, MARKET_MAP } from "./data/markets.js";
 import { BRIEF_FORMAT, BRIEF_RULES, WORLD_FORMAT, WORLD_RULES } from "./prompts.js";
 import { mono, RED, labelSm, labelMed, pillBtn, card, HoverButton } from "./ui.jsx";
-import { sleep, backoff, mapLimit, callClaude } from "./api.js";
+import { sleep, backoff, mapLimit, callClaude, MODEL_CLASSIFY, MODEL_SYNTHESIZE } from "./api.js";
 import { SK, EM_SK, sGet, sSet } from "./storage.js";
 import { classifyMicro } from "./utils.js";
 
@@ -219,7 +219,7 @@ async function claudeDedup(articles) {
 Return ONLY a JSON array of index arrays e.g. [[0,3],[1,5]]. Only groups of 2+. Empty array [] if none.
 ${candidates.map((a,i)=>`${i}. [${a.lang}] ${a.translatedTitle||a.title}`).join("\n")}`;
   try {
-    const res=await callClaude(prompt,600);
+    const res=await callClaude(prompt,600,{model:MODEL_CLASSIFY});
     const groups=JSON.parse(res.replace(/```json|```/g,"").trim());
     let updated=[...articles];
     groups.forEach(grp=>{
@@ -309,7 +309,7 @@ Return ONLY a valid JSON array, no markdown. ${withTranslations.length} items:
 ${withTranslations.map((a,i)=>`${i}. ${a._preTranslated}`).join("\n")}`;
 
   try {
-    const text = await callClaude(prompt, 2000);
+    const text = await callClaude(prompt, 2000, {model:MODEL_CLASSIFY});
     const cleaned = text.replace(/```json|```/g,"").trim();
     return JSON.parse(cleaned);
   } catch { 
@@ -422,7 +422,7 @@ ${BRIEF_RULES(effectivePriority)}
 
 Articles (cite using [REF:N] at end of each bullet, N = article number):
 ${articles.map((a,i)=>fmtBriefArticle(a,i)).join("\n")}`;
-    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000});
+    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE});
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
@@ -432,7 +432,7 @@ ${articles.map((a,i)=>fmtBriefArticle(a,i)).join("\n")}`;
     const offset = ci * CHUNK;
     const prompt = `You are a buy-side analyst. For each tagged item below, write ONE sentence: the company or subject, what changed, why it matters, and the implied action (accumulate/trim/watch/avoid). Keep the [CATEGORY] tag at the front of each line and end with the article number in parentheses, e.g. "(article 3)". Prioritise analyst rating changes, management changes, insider/activist signals, management interviews, analyst roundtables and strategic shifts. Flag a macro item only when it reflects a change in regime, trend, or sentiment.
 ${chunk.map((a,i)=>fmtBriefArticle(a, offset+i)).join("\n")}`;
-    return callClaude(prompt, 800, {throwOnError:false});
+    return callClaude(prompt, 800, {throwOnError:false, model:MODEL_CLASSIFY});
   });
 
   const goodSummaries = summaries.filter(s => s && s.trim());
@@ -449,7 +449,7 @@ ${BRIEF_RULES(effectivePriority)}
 
 Summaries to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000});
+  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE});
   return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 
@@ -493,7 +493,7 @@ ${WORLD_RULES}
 
 Items (cite using [REF:N] at end of each bullet, N = item number):
 ${arts.map((a,i)=>fmtWorldArticle(a,i)).join("\n")}`;
-    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000});
+    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE});
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
@@ -501,7 +501,7 @@ ${arts.map((a,i)=>fmtWorldArticle(a,i)).join("\n")}`;
     const offset = ci * CHUNK;
     const prompt = `You are a global markets editor. For each tagged item below, write ONE sentence: the country/region, what happened, and why it matters for markets or the world. Keep the [Country] tag at the front of each line and end with the item number in parentheses, e.g. "(item 3)". Cover macro, policy, geopolitics, regional and corporate news alike.
 ${chunk.map((a,i)=>fmtWorldArticle(a, offset+i)).join("\n")}`;
-    return callClaude(prompt, 800, {throwOnError:false});
+    return callClaude(prompt, 800, {throwOnError:false, model:MODEL_CLASSIFY});
   });
 
   const goodSummaries = summaries.filter(s => s && s.trim());
@@ -519,7 +519,7 @@ ${WORLD_RULES}
 
 Summaries to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000});
+  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE});
   return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 // ═══════════════════════════════════════════════════════════════════════════════

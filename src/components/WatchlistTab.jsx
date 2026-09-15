@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SK, sGet, sSet } from "../storage.js";
-import { callClaude } from "../api.js";
+import { callClaude, MODEL_CLASSIFY, MODEL_SYNTHESIZE } from "../api.js";
 import { Dots, timeAgo } from "./helpers.jsx";
 import ArticleCard from "./ArticleCard.jsx";
 import BriefRenderer from "./BriefRenderer.jsx";
@@ -22,7 +22,7 @@ ${articles.length} headlines:
 ${articles.map((a,i)=>`${i}. ${a.translatedTitle||a.title} [${a.source}, ${a.country}]`).join("\n")}`;
 
   try {
-    const text = await callClaude(prompt, 3000);
+    const text = await callClaude(prompt, 3000, {model:MODEL_CLASSIFY});
     const clean = text.replace(/```json|```/g,"").trim();
     const match = clean.match(/\[[\s\S]*\]/);
     if (!match) return [];
@@ -79,7 +79,7 @@ ${direct.map(a=>`• ${a.translatedTitle||a.title} [${a.source}]`).join("\n")||"
 
 RELATED/INDIRECT (${related.length}):
 ${related.map(a=>`• ${a.translatedTitle||a.title} [${a.source}] — ${a.watchMatches?.find(m=>m.keyword===keyword)?.reason||""}`).join("\n")||"(none)"}`;
-  const text = await callClaude(prompt, 3000);
+  const text = await callClaude(prompt, 3000, {model:MODEL_SYNTHESIZE});
   return text;
 }
 
