@@ -6,7 +6,16 @@
 // calls stay on Sonnet, which is also the stronger model of the two tiers.
 // Call sites pass one of these explicitly via callClaude's `model` option —
 // see each call site for why it's tagged the way it is.
-export const MODEL_CLASSIFY = "claude-haiku-4-5-20251001";
+//
+// MODEL_CLASSIFY was briefly pinned to "claude-haiku-4-5-20251001" — confirmed
+// live that this still fails. Anthropic's current model-ID reference lists the
+// bare alias below as the correct, current Haiku 4.5 ID and explicitly warns
+// against appending a recalled date suffix, so that's the live hypothesis now.
+// If briefs requiring chunking (>25 articles, e.g. Breaking News) still fail
+// after this, the chunk-summary error is now surfaced (see generateWorldBriefing
+// / generateBriefUnlimited / generateOpinionDigest) instead of swallowed into a
+// generic "empty_response" — read that message, it names the real cause.
+export const MODEL_CLASSIFY = "claude-haiku-4-5";
 export const MODEL_SYNTHESIZE = "claude-sonnet-5";
 
 // ─── Shared async utilities ───────────────────────────────────────────────────
@@ -37,8 +46,16 @@ export async function mapLimit(items, limit, fn) {
 // callClaude always returns a string on success. By default it swallows errors
 // and returns "" (legacy callers JSON.parse the result and have their own
 // fallbacks). Pass { throwOnError:true } to surface failures to the UI.
+//
+// Pass { system } (a string) to send stable, repeated instructions — briefing
+// format/rules text that's identical across many calls in a session — as a
+// cached system block instead of folding it into the per-call user prompt.
+// Anthropic caches on an exact prefix match, so this only pays off when the
+// same system text recurs (e.g. the same market-group brief instructions
+// across many groups); a one-off system string just costs the normal price
+// with no benefit, never a penalty.
 export async function callClaude(prompt, maxTokens=2000, opts={}) {
-  const { timeoutMs=45000, retries=2, throwOnError=false, model=MODEL_SYNTHESIZE } = opts;
+  const { timeoutMs=45000, retries=2, throwOnError=false, model=MODEL_SYNTHESIZE, system } = opts;
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ctl = new AbortController();
@@ -51,6 +68,7 @@ export async function callClaude(prompt, maxTokens=2000, opts={}) {
         body: JSON.stringify({
           model,
           max_tokens: maxTokens,
+          ...(system ? { system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }] } : {}),
           messages: [{ role: "user", content: prompt }]
         })
       });
@@ -66,8 +84,9 @@ export async function callClaude(prompt, maxTokens=2000, opts={}) {
 
       const data = await res.json();
       if (data?.type === "error" || data?.error) {
-        lastErr = new Error(data?.error?.message || "api_error");
-        if (attempt < retries) { await sleep(backoff(attempt)); continue; }
+        // Permanent failure (bad model ID, malformed request, auth) — the
+        // request won't change on replay, so don't burn the retry budget.
+        lastErr = new Error(data?.error?.message || `api_${res.status||"error"}`);
         if (throwOnError) throw lastErr;
         return "";
       }

@@ -409,8 +409,12 @@ async function generateBriefUnlimited(articles, label, coveragePriority=null, ma
   const chunks = [];
   for (let i = 0; i < articles.length; i += CHUNK) chunks.push(articles.slice(i, i + CHUNK));
 
+  // Task framing + format/rules is identical across every call that shares the
+  // same coveragePriority (i.e. every per-market group brief, which never pass
+  // one) — sent as a cached system block so repeated brief clicks in a session
+  // don't re-pay full price for this ~1,400-token block each time.
   if (chunks.length === 1) {
-    const prompt = `You are a buy-side analyst producing an ACTIONABLE Company News Intelligence briefing for ${label}. Your job is to help decide what to BUY, TRIM, or AVOID — and to surface signals that are ahead of consensus, not generic news.
+    const system = `You are a buy-side analyst producing an ACTIONABLE Company News Intelligence briefing. Your job is to help decide what to BUY, TRIM, or AVOID — and to surface signals that are ahead of consensus, not generic news.
 
 Each article below is tagged with [SIGNAL CATEGORY] and may include an analyst insight and a description snippet after "::". Use these to judge significance and placement.
 
@@ -418,38 +422,50 @@ Write in this exact format:
 
 ${BRIEF_FORMAT}
 
-${BRIEF_RULES(effectivePriority)}
+${BRIEF_RULES(effectivePriority)}`;
+    const prompt = `Briefing scope: ${label}
 
 Articles (cite using [REF:N] at end of each bullet, N = article number):
 ${articles.map((a,i)=>fmtBriefArticle(a,i)).join("\n")}`;
-    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE});
+    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE, system});
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
   // Summarise chunks with bounded concurrency to avoid rate-limit/overload.
-  // Individual chunk failures degrade gracefully (empty string, filtered below).
-  const summaries = await mapLimit(chunks, 4, (chunk, ci) => {
+  // Individual chunk failures degrade gracefully (empty string, filtered below) —
+  // but if EVERY chunk fails, surface the real upstream error (e.g. a bad model
+  // ID) instead of a generic "empty_response" so it's actually debuggable.
+  const chunkResults = await mapLimit(chunks, 4, async (chunk, ci) => {
     const offset = ci * CHUNK;
     const prompt = `You are a buy-side analyst. For each tagged item below, write ONE sentence: the company or subject, what changed, why it matters, and the implied action (accumulate/trim/watch/avoid). Keep the [CATEGORY] tag at the front of each line and end with the article number in parentheses, e.g. "(article 3)". Prioritise analyst rating changes, management changes, insider/activist signals, management interviews, analyst roundtables and strategic shifts. Flag a macro item only when it reflects a change in regime, trend, or sentiment.
 ${chunk.map((a,i)=>fmtBriefArticle(a, offset+i)).join("\n")}`;
-    return callClaude(prompt, 800, {throwOnError:false, model:MODEL_CLASSIFY});
+    try {
+      return await callClaude(prompt, 800, {throwOnError:true, model:MODEL_CLASSIFY});
+    } catch (e) {
+      return { error: e.message };
+    }
   });
 
+  const summaries = chunkResults.map(r => typeof r === "string" ? r : "");
   const goodSummaries = summaries.filter(s => s && s.trim());
-  if (!goodSummaries.length) throw new Error("empty_response");
+  if (!goodSummaries.length) {
+    const firstErr = chunkResults.find(r => r && r.error)?.error;
+    throw new Error(firstErr || "empty_response");
+  }
 
-  const synthPrompt = `You are a buy-side analyst producing an ACTIONABLE Company News Intelligence briefing for ${label} from the tagged summaries below. Help decide what to BUY, TRIM, or AVOID, and surface ahead-of-consensus signals rather than generic news.
+  const synthSystem = `You are a buy-side analyst producing an ACTIONABLE Company News Intelligence briefing from tagged summaries. Help decide what to BUY, TRIM, or AVOID, and surface ahead-of-consensus signals rather than generic news.
 
 Write in this exact format:
 
 ${BRIEF_FORMAT}
 
 ${BRIEF_RULES(effectivePriority)}
-- The summaries carry [CATEGORY] tags and article numbers in parentheses, e.g. "(article 3)" — use those numbers for [REF:N] citations.
+- The summaries carry [CATEGORY] tags and article numbers in parentheses, e.g. "(article 3)" — use those numbers for [REF:N] citations.`;
+  const synthPrompt = `Briefing scope: ${label}
 
 Summaries to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE});
+  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE, system:synthSystem});
   return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 
@@ -479,8 +495,11 @@ async function generateWorldBriefing(articles, label, maxArticles=null) {
   const chunks = [];
   for (let i = 0; i < arts.length; i += CHUNK) chunks.push(arts.slice(i, i + CHUNK));
 
+  // Task framing + format/rules never varies by call (label is always
+  // "Breaking News") — sent as a cached system block so repeated clicks in a
+  // session don't re-pay full price for this ~1,100-token block each time.
   if (chunks.length === 1) {
-    const prompt = `You are a global markets editor writing a ${label} briefing — a concise roundup of what is happening across the world's markets and economies.
+    const system = `You are a global markets editor writing a ${label} briefing — a concise roundup of what is happening across the world's markets and economies.
 
 Each item below is tagged with its [Country] and may include a description snippet after "::".
 
@@ -489,25 +508,35 @@ Write in this exact format:
 ${WORLD_FORMAT}
 
 ${WORLD_RULES}
-- ${SOURCE_WEIGHTING_NOTE}
-
-Items (cite using [REF:N] at end of each bullet, N = item number):
+- ${SOURCE_WEIGHTING_NOTE}`;
+    const prompt = `Items (cite using [REF:N] at end of each bullet, N = item number):
 ${arts.map((a,i)=>fmtWorldArticle(a,i)).join("\n")}`;
-    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE});
+    const text = await callClaude(prompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE, system});
     return {text, articles: sourceArticles, generatedAt: Date.now()};
   }
 
-  const summaries = await mapLimit(chunks, 4, (chunk, ci) => {
+  // Individual chunk failures degrade gracefully (empty string, filtered below) —
+  // but if EVERY chunk fails, surface the real upstream error (e.g. a bad model
+  // ID) instead of a generic "empty_response" so it's actually debuggable.
+  const chunkResults = await mapLimit(chunks, 4, async (chunk, ci) => {
     const offset = ci * CHUNK;
     const prompt = `You are a global markets editor. For each tagged item below, write ONE sentence: the country/region, what happened, and why it matters for markets or the world. Keep the [Country] tag at the front of each line and end with the item number in parentheses, e.g. "(item 3)". Cover macro, policy, geopolitics, regional and corporate news alike.
 ${chunk.map((a,i)=>fmtWorldArticle(a, offset+i)).join("\n")}`;
-    return callClaude(prompt, 800, {throwOnError:false, model:MODEL_CLASSIFY});
+    try {
+      return await callClaude(prompt, 800, {throwOnError:true, model:MODEL_CLASSIFY});
+    } catch (e) {
+      return { error: e.message };
+    }
   });
 
+  const summaries = chunkResults.map(r => typeof r === "string" ? r : "");
   const goodSummaries = summaries.filter(s => s && s.trim());
-  if (!goodSummaries.length) throw new Error("empty_response");
+  if (!goodSummaries.length) {
+    const firstErr = chunkResults.find(r => r && r.error)?.error;
+    throw new Error(firstErr || "empty_response");
+  }
 
-  const synthPrompt = `You are a global markets editor writing a ${label} briefing from the tagged summaries below — a concise roundup of what is happening across the world.
+  const synthSystem = `You are a global markets editor writing a ${label} briefing from tagged summaries — a concise roundup of what is happening across the world.
 
 Write in this exact format:
 
@@ -515,11 +544,10 @@ ${WORLD_FORMAT}
 
 ${WORLD_RULES}
 - ${SOURCE_WEIGHTING_NOTE}
-- The summaries carry [Country] tags and item numbers in parentheses, e.g. "(item 3)" — use those numbers for [REF:N] citations.
-
-Summaries to synthesise:
+- The summaries carry [Country] tags and item numbers in parentheses, e.g. "(item 3)" — use those numbers for [REF:N] citations.`;
+  const synthPrompt = `Summaries to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE});
+  const text = await callClaude(synthPrompt, BRIEF_MAX_TOKENS, {throwOnError:true, timeoutMs:60000, model:MODEL_SYNTHESIZE, system:synthSystem});
   return {text, articles: sourceArticles, generatedAt: Date.now()};
 }
 // ═══════════════════════════════════════════════════════════════════════════════
