@@ -6,7 +6,7 @@
 // calls stay on Sonnet, which is also the stronger model of the two tiers.
 // Call sites pass one of these explicitly via callClaude's `model` option —
 // see each call site for why it's tagged the way it is.
-export const MODEL_CLASSIFY = "claude-haiku-4-5";
+export const MODEL_CLASSIFY = "claude-haiku-4-5-20251001";
 export const MODEL_SYNTHESIZE = "claude-sonnet-5";
 
 // ─── Shared async utilities ───────────────────────────────────────────────────
