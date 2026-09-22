@@ -18,7 +18,7 @@ import { BRIEF_FORMAT, BRIEF_RULES, WORLD_FORMAT, WORLD_RULES } from "./prompts.
 import { mono, RED, labelSm, labelMed, pillBtn, card, HoverButton } from "./ui.jsx";
 import { sleep, backoff, mapLimit, callClaude, MODEL_CLASSIFY, MODEL_SYNTHESIZE } from "./api.js";
 import { SK, EM_SK, sGet, sSet } from "./storage.js";
-import { classifyMicro } from "./utils.js";
+import { classifyMicro, isCommerceJunk } from "./utils.js";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // NEWS BRIEFS TAB groups → src/data/sources.js
@@ -95,6 +95,9 @@ async function fetchFeed(source) {
         /\bmarket\s+(size|share)\b.{0,50}(forecast|outlook|20\d\d)/i,
       ];
       if (JUNK_PATTERNS.some(p => p.test(title))) return null;
+      const link = g("link") || g("guid");
+      // Affiliate coupon/promo pages that publishers mix into their main feed.
+      if (isCommerceJunk(title, link)) return null;
       const authorEl = item.getElementsByTagName("dc:creator")[0] || item.querySelector("author") || item.querySelector("creator");
       const author = (authorEl?.textContent || "").replace(/<!\[CDATA\[|\]\]>/g,"").replace(/<[^>]+>/g,"").replace(/^\s*by\s+/i,"").trim().slice(0,80);
       return {
@@ -102,7 +105,7 @@ async function fetchFeed(source) {
         title,
         description: g("description").replace(/<[^>]+>/g,"").replace(/<!\[CDATA\[|\]\]>/g,"").trim().slice(0,260),
         author,
-        link: g("link")||g("guid"),
+        link,
         pubDate: g("pubDate")||g("dc:date")||"",
         source: source.name, sourceId: source.id,
         country: source.country, flag: source.flag, lang: source.lang,
@@ -556,7 +559,13 @@ export default function App() {
   useEffect(()=>{
     (async()=>{
       const [arts,bfs,lf,fs]=await Promise.all([sGet(SK.articles),sGet(SK.summaries),sGet(SK.lastFetch),sGet(SK.fontScale)]);
-      if(arts?.length) setAllArticles(arts);
+      // Re-run the commerce filter over cached articles so coupon spam stored
+      // by an earlier session clears on load, not only on the next refetch.
+      if(arts?.length){
+        const cleaned=arts.filter(a=>!isCommerceJunk(a.title,a.link));
+        setAllArticles(cleaned);
+        if(cleaned.length!==arts.length) sSet(SK.articles,cleaned);
+      }
       if(bfs) setBriefs(bfs);
       if(lf)  setLastFetch(lf);
       if(typeof fs==="number") setFontScale(fs);
