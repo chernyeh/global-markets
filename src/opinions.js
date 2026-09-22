@@ -303,47 +303,61 @@ export async function generateOpinionDigest(articles, label) {
 - ${SOURCE_WEIGHTING_NOTE}
 - ATTRIBUTION CONSTRAINT: only the headline and a short description are available — attribute at the columnist/publication level. Do NOT invent quotes, figures, or details not present in the text. Never fabricate an author name.`;
 
+  // Task framing + rules is identical across every call — sent as a cached
+  // system block so repeated brief clicks in a session don't re-pay full price
+  // for this ~1,000-token block each time.
   if (chunks.length === 1) {
-    const prompt = `You are a senior markets editor compiling an opinion round-up for ${label}: a clear map of WHO is saying WHAT across today's opinion and commentary pieces.
+    const system = `You are a senior markets editor compiling an opinion round-up: a clear map of WHO is saying WHAT across today's opinion and commentary pieces.
 
 ## [Short title capturing the dominant debate among the columnists]
 
 [2-3 sentence overview: what are opinion writers most exercised about right now, and where is the sharpest disagreement?]
 
-${rules}
+${rules}`;
+    const prompt = `Round-up scope: ${label}
 
 Opinion pieces (cite using [REF:N], N = article number):
 ${articles.map((a,i)=>`${i}. ${line(a)}`).join("\n")}`;
-    const text = await callClaude(prompt, 6000, {throwOnError:true, timeoutMs:90000, model:MODEL_SYNTHESIZE});
+    const text = await callClaude(prompt, 6000, {throwOnError:true, timeoutMs:90000, model:MODEL_SYNTHESIZE, system});
     return { text, articles: sourceArticles, generatedAt: Date.now() };
   }
 
   // Summarise chunks with bounded concurrency (avoid rate-limit/overload); a
-  // failed chunk degrades to "" and is filtered out below.
-  const summaries = await mapLimit(chunks, 4, (chunk, ci) => {
+  // failed chunk degrades to "" and is filtered out below — but if EVERY chunk
+  // fails, surface the real upstream error instead of a generic "empty_response".
+  const chunkResults = await mapLimit(chunks, 4, async (chunk, ci) => {
     const offset = ci * CHUNK;
     const prompt = `For each opinion piece below, note WHO is arguing it (named columnist/author if present, else the publication) and WHAT their thesis is, in one sentence. Put the article number in parentheses at the end, e.g. "(article 3)". Do not invent authors or quotes.
 ${chunk.map((a,i)=>`${offset+i}. ${line(a)}`).join("\n")}`;
-    return callClaude(prompt, 900, {throwOnError:false, model:MODEL_CLASSIFY});
+    try {
+      return await callClaude(prompt, 900, {throwOnError:true, model:MODEL_CLASSIFY});
+    } catch (e) {
+      return { error: e.message };
+    }
   });
 
+  const summaries = chunkResults.map(r => typeof r === "string" ? r : "");
   const goodSummaries = summaries.filter(s => s && s.trim());
-  if (!goodSummaries.length) throw new Error("empty_response");
+  if (!goodSummaries.length) {
+    const firstErr = chunkResults.find(r => r && r.error)?.error;
+    throw new Error(firstErr || "empty_response");
+  }
 
   const articleIndex = articles.map((a,i)=>`${i}. ${line(a)}`).join("\n");
-  const synthPrompt = `You are a senior markets editor. Synthesise these notes into an opinion round-up for ${label}: WHO is saying WHAT, grouped by theme, with points of agreement and divergence.
+  const synthSystem = `You are a senior markets editor. Synthesise notes into an opinion round-up: WHO is saying WHAT, grouped by theme, with points of agreement and divergence.
 
 ## [Short title capturing the dominant debate]
 
 [2-3 sentence overview of what opinion writers are focused on and where they most disagree.]
 
-${rules}
+${rules}`;
+  const synthPrompt = `Round-up scope: ${label}
 
 Article index (use N in [REF:N]):
 ${articleIndex}
 
 Notes to synthesise:
 ${goodSummaries.map((s,i)=>`[Chunk ${i+1}]: ${s}`).join("\n")}`;
-  const text = await callClaude(synthPrompt, 6000, {throwOnError:true, timeoutMs:90000, model:MODEL_SYNTHESIZE});
+  const text = await callClaude(synthPrompt, 6000, {throwOnError:true, timeoutMs:90000, model:MODEL_SYNTHESIZE, system:synthSystem});
   return { text, articles: sourceArticles, generatedAt: Date.now() };
 }
