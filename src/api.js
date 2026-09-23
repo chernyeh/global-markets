@@ -6,15 +6,6 @@
 // calls stay on Sonnet, which is also the stronger model of the two tiers.
 // Call sites pass one of these explicitly via callClaude's `model` option —
 // see each call site for why it's tagged the way it is.
-//
-// MODEL_CLASSIFY was briefly pinned to "claude-haiku-4-5-20251001" — confirmed
-// live that this still fails. Anthropic's current model-ID reference lists the
-// bare alias below as the correct, current Haiku 4.5 ID and explicitly warns
-// against appending a recalled date suffix, so that's the live hypothesis now.
-// If briefs requiring chunking (>25 articles, e.g. Breaking News) still fail
-// after this, the chunk-summary error is now surfaced (see generateWorldBriefing
-// / generateBriefUnlimited / generateOpinionDigest) instead of swallowed into a
-// generic "empty_response" — read that message, it names the real cause.
 export const MODEL_CLASSIFY = "claude-haiku-4-5";
 export const MODEL_SYNTHESIZE = "claude-sonnet-5";
 
@@ -54,8 +45,14 @@ export async function mapLimit(items, limit, fn) {
 // same system text recurs (e.g. the same market-group brief instructions
 // across many groups); a one-off system string just costs the normal price
 // with no benefit, never a penalty.
+//
+// Sonnet 5 runs adaptive thinking when `thinking` is omitted (Sonnet 4.6 ran
+// it off). Thinking shares max_tokens with the answer and adds latency against
+// the 60s serverless cap, so synthesis calls turn it off explicitly — the same
+// behaviour these prompts were tuned on. Haiku 4.5 is thinking-off by default.
 export async function callClaude(prompt, maxTokens=2000, opts={}) {
   const { timeoutMs=45000, retries=2, throwOnError=false, model=MODEL_SYNTHESIZE, system } = opts;
+  const thinking = opts.thinking ?? (model === MODEL_SYNTHESIZE ? { type: "disabled" } : undefined);
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ctl = new AbortController();
@@ -68,6 +65,7 @@ export async function callClaude(prompt, maxTokens=2000, opts={}) {
         body: JSON.stringify({
           model,
           max_tokens: maxTokens,
+          ...(thinking ? { thinking } : {}),
           ...(system ? { system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }] } : {}),
           messages: [{ role: "user", content: prompt }]
         })
@@ -91,8 +89,9 @@ export async function callClaude(prompt, maxTokens=2000, opts={}) {
         return "";
       }
 
-      const text = data.content?.[0]?.text;
-      if (typeof text !== "string") {
+      // The answer isn't always content[0] — a thinking block can come first.
+      const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+      if (!text) {
         if (throwOnError) throw new Error("empty_response");
         return "";
       }
