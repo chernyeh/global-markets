@@ -16,7 +16,7 @@ import { GN, NEWS_BRIEF_GROUPS, SOURCES, EM_SOURCES, ALL_MARKET_SOURCES, SOURCE_
 import { COUNTRIES, EM_COUNTRIES, MARKET_REGIONS, MARKETS, MARKET_MAP } from "./data/markets.js";
 import { BRIEF_FORMAT, BRIEF_RULES, WORLD_FORMAT, WORLD_RULES } from "./prompts.js";
 import { mono, RED, labelSm, labelMed, pillBtn, card, HoverButton } from "./ui.jsx";
-import { sleep, backoff, mapLimit, callClaude, MODEL_CLASSIFY, MODEL_SYNTHESIZE } from "./api.js";
+import { sleep, backoff, mapLimit, callClaude, MODEL_CLASSIFY, MODEL_SYNTHESIZE, SYNTH_MODELS, DEFAULT_SYNTH_MODEL, setSynthModel } from "./api.js";
 import { SK, EM_SK, sGet, sSet } from "./storage.js";
 import { classifyMicro } from "./utils.js";
 
@@ -580,14 +580,33 @@ export default function App() {
   const [showDupes,     setShowDupes]     = useState(false);
   const [storageReady,  setStorageReady]  = useState(false);
   const [fontScale,     setFontScale]     = useState(1.0);
+  const [synthModel,    setSynthModelState] = useState(DEFAULT_SYNTH_MODEL);
+
+  // Sticky sub-bars sit just below the header, whose height grows when its
+  // controls wrap onto a second line on narrow screens.
+  const headerRef = useRef(null);
+  const [headerH, setHeaderH] = useState(84);
+  useEffect(()=>{
+    const el = headerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(()=>setHeaderH(Math.round(el.getBoundingClientRect().height)));
+    ro.observe(el);
+    return ()=>ro.disconnect();
+  },[]);
+
+  const chooseSynthModel = (id) => {
+    if (!SYNTH_MODELS[id]) return;
+    setSynthModel(id); setSynthModelState(id); sSet(SK.synthModel, id);
+  };
 
   useEffect(()=>{
     (async()=>{
-      const [arts,bfs,lf,fs]=await Promise.all([sGet(SK.articles),sGet(SK.summaries),sGet(SK.lastFetch),sGet(SK.fontScale)]);
+      const [arts,bfs,lf,fs,sm]=await Promise.all([sGet(SK.articles),sGet(SK.summaries),sGet(SK.lastFetch),sGet(SK.fontScale),sGet(SK.synthModel)]);
       if(arts?.length) setAllArticles(arts);
       if(bfs) setBriefs(bfs);
       if(lf)  setLastFetch(lf);
       if(typeof fs==="number") setFontScale(fs);
+      if(SYNTH_MODELS[sm]) { setSynthModel(sm); setSynthModelState(sm); }
       setStatusMsg(""); setStorageReady(true);
     })();
   },[]);
@@ -768,23 +787,33 @@ export default function App() {
         ::-webkit-scrollbar{width:3px;height:3px}
         ::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
         ::-webkit-scrollbar-track{background:transparent}
+        @media(max-width:640px){.gm-model-label{display:none}}
       `}</style>
 
-      <header style={{background:"#fff",borderBottom:"2px solid #1a1a1a",position:"sticky",top:0,zIndex:200}}>
+      <header ref={headerRef} style={{background:"#fff",borderBottom:"2px solid #1a1a1a",position:"sticky",top:0,zIndex:200}}>
         {/* Row 1: logo + controls */}
-        <div style={{maxWidth:1500,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:52,padding:"0 24px"}}>
+        <div style={{maxWidth:1500,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",rowGap:6,minHeight:52,padding:"8px 24px"}}>
           <div style={{fontFamily:"'Spectral',serif",fontSize:21,color:"#1a1a1a",fontWeight:700,letterSpacing:"-0.03em",lineHeight:1,flexShrink:0}}>
             GLOBAL MARKETS
             <span style={{fontFamily:"'DM Mono',monospace",fontSize:7,color:"#aaa",letterSpacing:"0.25em",marginLeft:8,fontWeight:400,verticalAlign:"middle"}}>WIRE</span>
           </div>
 
-          <div style={{display:"flex",alignItems:"center",gap:8,position:"relative"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,position:"relative",marginLeft:"auto"}}>
             {/* Status indicator — always visible */}
             {(isLoading||enriching||statusMsg)&&(
               <span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#888",display:"flex",alignItems:"center",gap:5}}>
                 <Dots/><span style={{display:"none",["@media(min-width:600px)"]:{display:"inline"}}}>{statusMsg||"…"}</span>
               </span>
             )}
+
+            {/* Model that writes every brief (Haiku tagging is unaffected) */}
+            <label title="Model used to write briefs" style={{...pillBtn,gap:4,cursor:"pointer"}}>
+              <span className="gm-model-label" style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#888"}}>briefs:</span>
+              <select value={synthModel} onChange={e=>chooseSynthModel(e.target.value)}
+                style={{border:"none",background:"transparent",fontFamily:"'DM Mono',monospace",fontSize:10,color:"#1a1a1a",cursor:"pointer",outline:"none"}}>
+                {Object.entries(SYNTH_MODELS).map(([id,m])=><option key={id} value={id}>{m.label}</option>)}
+              </select>
+            </label>
 
             {/* Refresh — always visible, primary action */}
             <HoverButton onClick={()=>fetchSources(ALL_MARKET_SOURCES)} disabled={isLoading||enriching}
@@ -838,7 +867,7 @@ export default function App() {
       {/* SUB-NAV */}
       {/* Unified markets filter — tier · region · country */}
       {mainTab==="markets"&&marketsView==="markets"&&(
-        <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:88,zIndex:199}}>
+        <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:headerH+4,zIndex:199}}>
           <div style={{maxWidth:1500,margin:"0 auto",padding:"0 24px"}}>
             {/* Row 1: tier toggle + region chips */}
             <div style={{display:"flex",alignItems:"center",gap:10,overflowX:"auto",WebkitOverflowScrolling:"touch",padding:"7px 0",borderBottom:"1px solid #f0ece4"}}>
@@ -896,7 +925,7 @@ export default function App() {
       )}
 
       {mainTab==="markets"&&marketsView==="sectors"&&(
-        <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:88,zIndex:199,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{background:"#fff",borderBottom:"1px solid #ddd",position:"sticky",top:headerH+4,zIndex:199,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
           <div style={{maxWidth:1500,margin:"0 auto",padding:"0 24px",display:"flex",width:"max-content",minWidth:"100%"}}>
             {[{code:"ALL",label:"All Sectors",icon:"▤",color:"#c0392b"},...MSCI_SECTORS].map(sec=>{
               const cnt=sec.code==="ALL"?canonical.length:canonical.filter(a=>a.sector===sec.code).length;

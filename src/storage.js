@@ -5,6 +5,7 @@ export const SK = {
   watchlist: "gm_watch_v4",
   watchHits: "gm_watchhits_v4",
   fontScale: "gm_fontscale_v1",
+  synthModel: "gm_synthmodel_v1",
 };
 
 export const EM_SK = {
