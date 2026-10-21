@@ -7,7 +7,24 @@
 // Call sites pass one of these explicitly via callClaude's `model` option —
 // see each call site for why it's tagged the way it is.
 export const MODEL_CLASSIFY = "claude-haiku-4-5";
-export const MODEL_SYNTHESIZE = "claude-sonnet-5";
+
+// MODEL_SYNTHESIZE is a tier, not a model ID: callClaude resolves it to the
+// model picked in the header, so one switch moves every brief at once.
+export const MODEL_SYNTHESIZE = "synthesize";
+
+// Per-model request settings. Neither model accepts thinking: {type:"disabled"}
+// (400). Sonnet 5.5's lowest setting is "between_tools", which with no tools
+// means no thinking at all. Opus 5.5 always thinks; effort "low" keeps that
+// short, and since thinking shares max_tokens with the answer it gets headroom.
+export const SYNTH_MODELS = {
+  "claude-sonnet-5-5": { label: "Sonnet 5.5", request: max => ({ max_tokens: max, thinking: { type: "between_tools" } }) },
+  "claude-opus-5-5":   { label: "Opus 5.5",   request: max => ({ max_tokens: max + 4000, output_config: { effort: "low" } }) },
+};
+export const DEFAULT_SYNTH_MODEL = "claude-sonnet-5-5";
+let synthModel = DEFAULT_SYNTH_MODEL;
+export function setSynthModel(id) {
+  if (SYNTH_MODELS[id]) synthModel = id;
+}
 
 // ─── Shared async utilities ───────────────────────────────────────────────────
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -45,14 +62,11 @@ export async function mapLimit(items, limit, fn) {
 // same system text recurs (e.g. the same market-group brief instructions
 // across many groups); a one-off system string just costs the normal price
 // with no benefit, never a penalty.
-//
-// Sonnet 5 runs adaptive thinking when `thinking` is omitted (Sonnet 4.6 ran
-// it off). Thinking shares max_tokens with the answer and adds latency against
-// the 60s serverless cap, so synthesis calls turn it off explicitly — the same
-// behaviour these prompts were tuned on. Haiku 4.5 is thinking-off by default.
 export async function callClaude(prompt, maxTokens=2000, opts={}) {
   const { timeoutMs=45000, retries=2, throwOnError=false, model=MODEL_SYNTHESIZE, system } = opts;
-  const thinking = opts.thinking ?? (model === MODEL_SYNTHESIZE ? { type: "disabled" } : undefined);
+  const synth = model === MODEL_SYNTHESIZE ? SYNTH_MODELS[synthModel] : null;
+  const reqModel = synth ? synthModel : model;
+  const params = synth ? synth.request(maxTokens) : { max_tokens: maxTokens };
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ctl = new AbortController();
@@ -63,9 +77,8 @@ export async function callClaude(prompt, maxTokens=2000, opts={}) {
         headers: { "Content-Type": "application/json" },
         signal: ctl.signal,
         body: JSON.stringify({
-          model,
-          max_tokens: maxTokens,
-          ...(thinking ? { thinking } : {}),
+          model: reqModel,
+          ...params,
           ...(system ? { system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }] } : {}),
           messages: [{ role: "user", content: prompt }]
         })
@@ -85,6 +98,12 @@ export async function callClaude(prompt, maxTokens=2000, opts={}) {
         // Permanent failure (bad model ID, malformed request, auth) — the
         // request won't change on replay, so don't burn the retry budget.
         lastErr = new Error(data?.error?.message || `api_${res.status||"error"}`);
+        if (throwOnError) throw lastErr;
+        return "";
+      }
+
+      if (data.stop_reason === "refusal") {
+        lastErr = new Error(`${SYNTH_MODELS[reqModel]?.label || reqModel} declined this request — try the other model`);
         if (throwOnError) throw lastErr;
         return "";
       }
