@@ -108,6 +108,12 @@ export const SEMI_SUPPLY_CHAIN_RE = /\bsemiconductor|\bchipmaker|\bchip (maker|m
 
 export const TRADE_POLICY_RE = /\btariff|\bduties\b|\banti.dumping\b|\bexport (control|curb|ban|licence|license|restriction)|\bimport (curb|ban|quota|restriction)\b|\bentity list\b|\bblacklist\b|\bsanction|\btrade (war|deal|talks|dispute|tension|barrier|policy)\b|\bsection 232\b|\bsection 301\b|\bwto\b|\bchip act\b|\bchips act\b|\btechnology transfer\b|\bdecoupl|\bre.?shor|\bfriend.?shor|\bnearshor|\bsupply.chain security\b|\bcross.strait\b|\bchokepoint\b/i;
 
+// Political power centres whose decisions move markets: Washington (White
+// House, Congress, the courts, the midterms), Brussels, and Beijing's elite
+// politics. Scored just under geopolitics — a shutdown, a plenum or a Supreme
+// Court tariff ruling is a market event, not background.
+export const POLITICS_RE = /\bwhite house\b|\bcongress(ional)?\b|\bsenate\b|\bhouse (speaker|republicans|democrats|vote|passes|committee)\b|\bspeaker johnson\b|\bgovernment shutdown\b|\bdebt (ceiling|limit)\b|\bappropriations\b|\bcontinuing resolution\b|\breconciliation bill\b|\bsupreme court\b|\bexecutive order\b|\bmidterms?\b|\bimpeach|\bfilibuster\b|\bpentagon\b|\bnational security council\b|\bstate department\b|\brubio\b|\bbessent\b|\bvance\b|\btrump administration\b|\beuropean commission\b|\bvon der leyen\b|\beuropean parliament\b|\beuropean council\b|\bnato\b|\bxi jinping\b|\bpolitburo\b|\bcentral committee\b|\bplenum\b|\bcommunist party\b|\bccp\b|\bnational people's congress\b|\bstate council\b|\bli qiang\b|\bwang yi\b|\bcentral military commission\b|\bbeijing\b.{0,30}\b(warns|vows|rebukes|retaliat|sanction)|\btaiwan affairs office\b|\bmainland affairs council\b|\blai ching.te\b|\bkuomintang\b|\bkmt\b|\bdpp\b/i;
+
 export const WORLD_TOPIC_WEIGHTS = [
   // Geopolitics: Iran, Ukraine, Taiwan, Israel/ME, US-China/Russia trade & military
   { score: 50, re: GEOPOLITICS_RE },
@@ -117,6 +123,8 @@ export const WORLD_TOPIC_WEIGHTS = [
   { score: 50, re: SEMI_SUPPLY_CHAIN_RE },
   // Trade policy: tariffs, export licensing, entity lists, sanctions, chokepoints
   { score: 45, re: TRADE_POLICY_RE },
+  // Washington, Brussels and Beijing politics — see POLITICS_RE
+  { score: 45, re: POLITICS_RE },
   // Elon Musk and his companies (Tesla, SpaceX, xAI, Starlink, X, DOGE)
   { score: 40, re: /elon musk|\bmusk\b|\btesla\b|\bspacex\b|\bstarlink\b|\bxai\b|\bgrok\b|department of government efficiency/i },
   // Oil, energy & inflationary expectations
