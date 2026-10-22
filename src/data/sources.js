@@ -87,6 +87,33 @@ export const NEWS_BRIEF_GROUPS = [
     sources: ["kr_analyst_calls","ked","ktimes","kr_herald","yonhap","focus_tw","reuters_kr","bloom_kr"],
     desc: "Korea Analyst Actions · KED Global · Korea Times · Korea Herald · Yonhap · Focus Taiwan · Reuters Korea · Bloomberg Korea",
   },
+  // Politics & geopolitics — briefed with the world-news briefing rather than
+  // the company brief (briefKind:"world"), which would drop political stories
+  // as non-catalyst noise.
+  {
+    market: "Washington & US Politics",
+    flag: "🏛️",
+    color: "#283593",
+    briefKind: "world",
+    sources: ["politico_politics","politico_congress","politico_playbook","politico_defense","politico_us_gn","politico","wapo_politics_rss","wapo_politics","wapo_natsec","wapo_world","wapo","punchbowl","axios_politics","thehill","semafor_politics"],
+    desc: "Politico Politics · Congress · Playbook · Defense · Economy · Washington Post Politics · National Security · World · Punchbowl News · Axios Politics · The Hill · Semafor Politics — the White House, Congress, the courts, the midterms and US foreign policy",
+  },
+  {
+    market: "Europe Politics & Brussels",
+    flag: "🇪🇺",
+    color: "#0d47a1",
+    briefKind: "world",
+    sources: ["politico_eu_rss","politico_eu_politics","politico_eu","euractiv","reuters_eu","bloom_eu","spiegel_de"],
+    desc: "Politico Europe (RSS + Politics) · Euractiv · Reuters Europe · Bloomberg Europe · Der Spiegel — EU institutions, national elections, NATO, Ukraine, sanctions and trade",
+  },
+  {
+    market: "China & Cross-Strait Politics",
+    flag: "🇨🇳",
+    color: "#b71c1c",
+    briefKind: "world",
+    sources: ["scmp_politics","scmp_diplomacy","scmp_china_politics_gn","scmp_china","zaobao_china","zaobao_china_us","diplomat_china","nikkei_china_politics","caixin","xinhua","peoples_d","globaltimes","ltn_politics","udn_cross_strait","cna_tw_politics","focus_tw_politics","taipei_t_politics","ltn_world","udn_money_trade"],
+    desc: "SCMP China Politics · Diplomacy · 联合早报 Lianhe Zaobao 中国政治 / 中美两岸 · The Diplomat · Nikkei Asia · Caixin · Xinhua · People's Daily · Global Times · 自由時報 LTN 政治 · 聯合報 UDN 兩岸 · 中央社 CNA · Focus Taiwan · Taipei Times — Beijing's elite politics, PLA, US-China and cross-strait relations, read alongside the state-media framing",
+  },
   {
     market: "Taiwan Tech & Supply Chain",
     flag: "🇹🇼",
@@ -123,7 +150,25 @@ export const SOURCES = [
   {id:"seekalpha",tier:3,  desc:"Seeking Alpha Earnings — earnings beats/misses, dividend announcements, and analyst rating changes. Filtered to high-signal corporate events only.",country:"US",name:"Seeking Alpha Earnings",  lang:"en",flag:"🇺🇸",url:GN("site:seekingalpha.com earnings beat miss dividend CEO acquires merger")},
   {id:"prnewswire",tier:3, desc:"PR Newswire — filtered to primary corporate events: earnings results, M&A, dividend changes, and CEO/CFO appointments only.",country:"US",name:"PR Newswire",            lang:"en",flag:"🇺🇸",url:GN("site:prnewswire.com quarterly results OR earnings per share OR acquires OR merger agreement OR dividend OR appoints CEO OR names CFO")},
   {id:"semafor",tier:2,    desc:"Semafor Business — sharp, independently sourced business and finance journalism; well-connected on Wall Street, Washington policy, and global capital flows.",country:"US",name:"Semafor Business",       lang:"en",flag:"🇺🇸",url:GN("site:semafor.com business finance economy markets")},
-  {id:"politico",tier:2,   desc:"Politico Economy — authoritative on US fiscal policy, Fed regulation, trade, and Washington's influence on markets. Essential for policy-driven investment themes.",country:"US",name:"Politico Economy",       lang:"en",flag:"🇺🇸",url:GN("site:politico.com economy finance tax trade regulation")},
+  {id:"politico",tier:2,   desc:"Politico Economy — authoritative on US fiscal policy, Fed regulation, trade, and Washington's influence on markets. Essential for policy-driven investment themes.",country:"US",name:"Politico Economy",       lang:"en",flag:"🇺🇸",url:GN("site:politico.com economy finance tax trade regulation"),limit:15},
+  // ── Washington & US politics ───────────────────────────────────────────────
+  // Politico and the Post are the papers of record on Washington; native desk
+  // RSS where the publisher offers it, each paired with a Google News search as
+  // a backstop (fetchFeed returns [] on a dead feed, so a broken native URL
+  // costs nothing). The midterms, shutdowns, tariffs, sanctions and Fed
+  // appointments all start here before they reach the market wires.
+  {id:"politico_politics",tier:2,desc:"Politico Politics (native RSS) — the main politics desk; White House, campaigns, the administration and the agencies.",country:"US",name:"Politico Politics",lang:"en",flag:"🇺🇸",url:"https://rss.politico.com/politics-news.xml",limit:20},
+  {id:"politico_congress",tier:2,desc:"Politico Congress (native RSS) — Hill reporting on spending fights, shutdowns, tax and trade legislation, and confirmations.",country:"US",name:"Politico Congress",lang:"en",flag:"🇺🇸",url:"https://rss.politico.com/congress.xml",limit:15},
+  {id:"politico_playbook",tier:2,desc:"Politico Playbook (native RSS) — the morning tip-sheet Washington reads first; who is up, who is down, what moves today.",country:"US",name:"Politico Playbook",lang:"en",flag:"🇺🇸",url:"https://rss.politico.com/playbook.xml",limit:10},
+  {id:"politico_defense",tier:2,desc:"Politico Defense (native RSS) — Pentagon, national security, defence budgets, Ukraine, Taiwan and the Middle East from Washington.",country:"US",name:"Politico Defense",lang:"en",flag:"🇺🇸",url:"https://rss.politico.com/defense.xml",limit:12},
+  {id:"politico_us_gn",tier:2,desc:"Politico Washington (Google News) — targeted search over politico.com for the White House, Congress, the courts, trade, sanctions and China; backstop to the native desk feeds.",country:"US",name:"Politico Washington",lang:"en",flag:"🇺🇸",url:GN("site:politico.com (\"White House\" OR Congress OR Senate OR House OR Trump OR \"Supreme Court\" OR tariff OR sanctions OR China OR Pentagon OR midterms)"),limit:20},
+  {id:"wapo_politics_rss",tier:2,desc:"Washington Post Politics (native RSS) — the Post's politics desk; White House, Congress, the courts and the campaign.",country:"US",name:"Washington Post Politics (RSS)",lang:"en",flag:"🇺🇸",url:"https://feeds.washingtonpost.com/rss/politics",paywall:true,limit:20},
+  {id:"wapo_natsec",tier:2,desc:"Washington Post National Security — Pentagon, intelligence, sanctions and US policy on China, Russia, Iran, Ukraine and Taiwan.",country:"US",name:"Washington Post National Security",lang:"en",flag:"🇺🇸",url:GN("site:washingtonpost.com (\"national security\" OR Pentagon OR intelligence OR sanctions) (China OR Russia OR Iran OR Ukraine OR Taiwan OR Israel)"),paywall:true,limit:15},
+  {id:"wapo_world",tier:2,desc:"Washington Post World (native RSS) — foreign desk; geopolitics and US foreign policy as seen from Washington.",country:"US",name:"Washington Post World",lang:"en",flag:"🇺🇸",url:"https://feeds.washingtonpost.com/rss/world",paywall:true,limit:12},
+  {id:"punchbowl",tier:2,desc:"Punchbowl News — Capitol Hill insider reporting on leadership, appropriations, tax and financial-services legislation; often first on what Congress will actually pass.",country:"US",name:"Punchbowl News",lang:"en",flag:"🇺🇸",url:GN("site:punchbowl.news"),paywall:true,limit:10},
+  {id:"axios_politics",tier:2,desc:"Axios Politics — short, well-sourced scoops on the White House, Congress and the administration's policy agenda.",country:"US",name:"Axios Politics",lang:"en",flag:"🇺🇸",url:GN("site:axios.com (\"White House\" OR Congress OR Senate OR Trump OR administration OR midterms)"),limit:12},
+  {id:"thehill",tier:2,desc:"The Hill — high-volume Washington coverage of Congress, the White House, the courts and the campaign.",country:"US",name:"The Hill",lang:"en",flag:"🇺🇸",url:GN("site:thehill.com (\"White House\" OR Congress OR Senate OR administration OR \"Supreme Court\" OR tariff OR sanctions)"),limit:12},
+  {id:"semafor_politics",tier:2,desc:"Semafor Politics & Security — Washington and geopolitics reporting with an explicit split between the news and the reporter's view.",country:"US",name:"Semafor Politics",lang:"en",flag:"🇺🇸",url:GN("site:semafor.com (politics OR Washington OR \"White House\" OR Congress OR security OR China)"),limit:12},
   // ── Analyst Actions & Investment Ideas (US) ───────────────────────────────
   {id:"benzinga_upgrades",tier:2,desc:"Benzinga Analyst Upgrades — real-time feed of Wall Street analyst upgrades with price target changes. One of the best open RSS sources for actionable broker calls on US-listed stocks.",country:"US",name:"Benzinga Upgrades",lang:"en",flag:"🇺🇸",url:"https://www.benzinga.com/analyst-ratings/upgrades/feed",limit:15},
   {id:"benzinga_downgrades",tier:2,desc:"Benzinga Analyst Downgrades — real-time feed of Wall Street analyst downgrades with price target changes. Essential for tracking deteriorating broker sentiment on US stocks.",country:"US",name:"Benzinga Downgrades",lang:"en",flag:"🇺🇸",url:"https://www.benzinga.com/analyst-ratings/downgrades/feed",limit:15},
@@ -250,6 +295,14 @@ export const SOURCES = [
   {id:"ltn_world",tier:2,prominent:true,desc:"LTN 國際 (native RSS) — international desk; US-China friction, tariffs and cross-strait geopolitics from Taipei.",country:"TW",name:"自由時報 LTN 國際 (RSS)",lang:"zh",flag:"🇹🇼",url:"https://news.ltn.com.tw/rss/world.xml",limit:15},
   {id:"ltn_ec",tier:2,prominent:true,desc:"自由財經 (LTN business vertical) — targeted search over ec.ltn.com.tw for markets, industry and economic policy.",country:"TW",name:"自由財經 LTN EC",lang:"zh",flag:"🇹🇼",url:GN("site:ec.ltn.com.tw","zh-TW","TW","TW:zh-Hant"),limit:20},
   {id:"ltn_semi",tier:2,prominent:true,desc:"LTN semiconductor, trade & geopolitics — targeted search over ltn.com.tw for TSMC and the chip supply chain, tariffs, export controls and cross-strait tension.",country:"TW",name:"自由時報 LTN 半導體地緣",lang:"zh",flag:"🇹🇼",url:GN("site:ltn.com.tw (台積電 OR 半導體 OR 晶圓 OR 供應鏈 OR 關稅 OR 出口管制 OR 美中 OR 地緣政治)","zh-TW","TW","TW:zh-Hant"),limit:20},
+  // Taiwan politics & cross-strait — the same papers' political desks. LTN's
+  // politics slug follows the site's /list/breakingnews/politics path, like the
+  // other LTN feeds above.
+  {id:"ltn_politics",tier:2,prominent:true,desc:"LTN 政治 (native RSS) — Liberty Times politics desk; Legislative Yuan, the Lai administration, KMT/DPP and cross-strait policy.",country:"TW",name:"自由時報 LTN 政治 (RSS)",lang:"zh",flag:"🇹🇼",url:"https://news.ltn.com.tw/rss/politics.xml",limit:15},
+  {id:"udn_cross_strait",tier:2,prominent:true,desc:"聯合報 兩岸 UDN cross-strait — United Daily News on Beijing-Taipei relations, the TAO and MAC, PLA activity and US-Taiwan ties.",country:"TW",name:"聯合報 UDN 兩岸",lang:"zh",flag:"🇹🇼",url:GN("site:udn.com (兩岸 OR 陸委會 OR 國台辦 OR 共軍 OR 中共 OR 習近平 OR 美台)","zh-TW","TW","TW:zh-Hant"),limit:15},
+  {id:"cna_tw_politics",tier:2,desc:"中央社 CNA politics & cross-strait — Taiwan's national wire on government, defence and China relations; fast on official statements.",country:"TW",name:"中央社 CNA 政治兩岸",lang:"zh",flag:"🇹🇼",url:GN("site:cna.com.tw (政治 OR 兩岸 OR 國台辦 OR 陸委會 OR 國防部 OR 共機)","zh-TW","TW","TW:zh-Hant"),limit:12},
+  {id:"focus_tw_politics",tier:2,desc:"Focus Taiwan politics & cross-strait — CNA's English desk on Taiwan politics, defence and relations with Beijing and Washington.",country:"TW",name:"Focus Taiwan Politics",lang:"en",flag:"🇹🇼",url:GN("site:focustaiwan.tw (politics OR cross-strait OR defense OR PLA OR China)"),limit:12},
+  {id:"taipei_t_politics",tier:2,desc:"Taipei Times politics — Taiwan's main English daily on domestic politics, the PLA and cross-strait tension.",country:"TW",name:"Taipei Times Politics",lang:"en",flag:"🇹🇼",url:GN("site:taipeitimes.com (\"cross-strait\" OR PLA OR KMT OR DPP OR Lai OR \"Legislative Yuan\" OR China)"),paywall:true,limit:12},
   // Wantrich (旺得富) — the China Times group's markets vertical, the tw-market
   // desk the user reads. chinatimes.com publishes no native RSS (RSSHub drives it
   // with a headless browser), so these are Google News searches only.
@@ -314,6 +367,18 @@ export const SOURCES = [
   {id:"peoples_d",tier:2,desc:"People's Daily Economy — the CCP organ; essential for reading between the lines on official policy.",   country:"CN",name:"People's Daily",          lang:"en",flag:"🇨🇳",url:"https://en.people.cn/rss/economy.xml"},
   {id:"reuters_cn",tier:1,desc:"Reuters China; independent and fast on PBOC moves, trade data, and major corporate events.", country:"CN",name:"Reuters China",            lang:"en",flag:"🇨🇳",url:GN("site:reuters.com China economy business finance"),limit:12},
   {id:"bloom_cn",tier:1,desc:"Bloomberg China; authoritative on yuan, PBOC policy, and major index constituents.",   country:"CN",name:"Bloomberg China",          lang:"en",flag:"🇨🇳",url:GN("site:bloomberg.com China markets economy"),paywall:true,limit:12},
+  // ── China politics & diplomacy ─────────────────────────────────────────────
+  // Elite politics, the Party calendar, diplomacy and US-China friction. SCMP's
+  // section feeds 318198 (China Politics) and 318199 (Diplomacy) are native RSS;
+  // the rest are Google News searches. Lianhe Zaobao is the Chinese-language
+  // read from Singapore: well-sourced in Beijing, not under mainland control.
+  {id:"scmp_politics",tier:2,desc:"SCMP China Politics (native RSS) — Xi Jinping, the Politburo, Party plenums, personnel moves, purges and the PLA.",country:"CN",name:"SCMP China Politics",lang:"en",flag:"🇨🇳",url:"https://www.scmp.com/rss/318198/feed",paywall:true,limit:15},
+  {id:"scmp_diplomacy",tier:2,desc:"SCMP Diplomacy (native RSS) — China's foreign relations; US-China talks, summitry, Taiwan, the EU and the Global South.",country:"CN",name:"SCMP Diplomacy",lang:"en",flag:"🇨🇳",url:"https://www.scmp.com/rss/318199/feed",paywall:true,limit:15},
+  {id:"scmp_china_politics_gn",tier:2,desc:"SCMP China politics (Google News) — targeted search over scmp.com for elite politics, the PLA, US-China and cross-strait relations; backstop to the native feeds.",country:"CN",name:"SCMP China Politics (GN)",lang:"en",flag:"🇨🇳",url:GN("site:scmp.com (\"Xi Jinping\" OR Politburo OR plenum OR \"Communist Party\" OR PLA OR \"US-China\" OR Taiwan OR diplomacy OR \"foreign ministry\")"),paywall:true,limit:15},
+  {id:"zaobao_china",tier:2,prominent:true,desc:"联合早报 中国 Lianhe Zaobao China politics — Singapore's Chinese-language daily on Chinese elite politics, Party meetings, personnel, PLA and policy signals. Auto-translated.",country:"CN",name:"联合早报 中国政治",lang:"zh",flag:"🇸🇬",url:GN("site:zaobao.com.sg (习近平 OR 中共 OR 政治局 OR 全会 OR 国务院 OR 李强 OR 解放军 OR 军委 OR 人大 OR 落马)","zh-CN","CN","CN:zh-Hans"),limit:15},
+  {id:"zaobao_china_us",tier:2,prominent:true,desc:"联合早报 中美·两岸 Lianhe Zaobao US-China & cross-strait — China's relations with Washington and Taipei, tariffs, export controls and diplomacy. Auto-translated.",country:"CN",name:"联合早报 中美两岸",lang:"zh",flag:"🇸🇬",url:GN("site:zaobao.com.sg (中美 OR 两岸 OR 台海 OR 台湾 OR 关税 OR 出口管制 OR 外交部 OR 王毅)","zh-CN","CN","CN:zh-Hans"),limit:15},
+  {id:"diplomat_china",tier:2,desc:"The Diplomat China — analysis of Chinese politics, the PLA, foreign policy and cross-strait relations by regional specialists.",country:"CN",name:"The Diplomat (China)",lang:"en",flag:"🇨🇳",url:GN("site:thediplomat.com China (Xi OR CCP OR PLA OR Taiwan OR Beijing)"),limit:10},
+  {id:"nikkei_china_politics",tier:2,desc:"Nikkei Asia China politics — Nikkei's China desk on Xi, the Party, personnel and Beijing's policy direction.",country:"CN",name:"Nikkei Asia China Politics",lang:"en",flag:"🇯🇵",url:GN("site:asia.nikkei.com China (Xi OR \"Communist Party\" OR Politburo OR PLA OR Taiwan)"),paywall:true,limit:10},
   // ── Israel ─────────────────────────────────────────────────────────────────
   {id:"globes_il",tier:2,desc:"Globes — Israel's financial daily of record; essential for TASE, Israeli tech IPOs, and shekel.",  country:"IL",name:"Globes Israel",            lang:"en",flag:"🇮🇱",url:GN("site:en.globes.co.il")},
   {id:"jpost_il",tier:2,desc:"Jerusalem Post Business — Israel's most-read English paper; covers Israeli economy, startups, and US-Israel trade.",   country:"IL",name:"Jerusalem Post Business",  lang:"en",flag:"🇮🇱",url:GN("site:jpost.com business innovation technology")},
@@ -385,6 +450,8 @@ export const SOURCES = [
   {id:"bloom_ch",tier:1,desc:"Bloomberg Switzerland — authoritative on UBS, Credit Suisse aftermath, SNB, and Swiss franc dynamics.",country:"CH",name:"Bloomberg Switzerland",lang:"en",flag:"🇨🇭",url:GN("site:bloomberg.com Switzerland economy markets"),paywall:true},
   // ── Pan-European ───────────────────────────────────────────────────────────
   {id:"politico_eu",tier:2,desc:"Politico Europe — the definitive source on EU legislation, ECB policy, Brussels regulation, and trade; essential for European market-moving policy developments.",country:"EU",name:"Politico Europe",lang:"en",flag:"🇪🇺",url:GN("site:politico.eu economy finance ECB trade regulation eurozone")},
+  {id:"politico_eu_rss",tier:2,desc:"Politico Europe (native RSS) — the full Politico Europe wire; Commission, Parliament, member-state politics, NATO, Ukraine and trade.",country:"EU",name:"Politico Europe (RSS)",lang:"en",flag:"🇪🇺",url:"https://www.politico.eu/feed/",limit:20},
+  {id:"politico_eu_politics",tier:2,desc:"Politico Europe Politics — targeted search over politico.eu for EU institutions, national elections, NATO, Ukraine, sanctions and EU-US / EU-China trade.",country:"EU",name:"Politico Europe Politics",lang:"en",flag:"🇪🇺",url:GN("site:politico.eu (Commission OR Parliament OR Council OR \"von der Leyen\" OR NATO OR Ukraine OR sanctions OR tariff OR China OR election)"),limit:15},
   {id:"euractiv",tier:2,desc:"Euractiv — specialist in EU legislative process, regulatory changes, and European policy debates; deepest coverage of Brussels decisions that move European markets.",country:"EU",name:"Euractiv",lang:"en",flag:"🇪🇺",url:GN("site:euractiv.com economy finance trade regulation energy")},
   {id:"reuters_eu",tier:1,desc:"Reuters Europe — pan-European wire; ECB decisions, eurozone macro data, and major cross-border corporate events.",country:"EU",name:"Reuters Europe",lang:"en",flag:"🇪🇺",url:GN("site:reuters.com Europe eurozone ECB economy")},
   {id:"bloom_eu",tier:1,desc:"Bloomberg Europe — authoritative on ECB, eurozone macro, and major European index constituents.",country:"EU",name:"Bloomberg Europe",lang:"en",flag:"🇪🇺",url:GN("site:bloomberg.com Europe eurozone ECB economy"),paywall:true},

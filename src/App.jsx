@@ -30,8 +30,10 @@ function isMarqueeSource(id) {
   return s.startsWith("bloomberg") || s.startsWith("bloom_") ||
     s.startsWith("wsj") || s.startsWith("reuters") ||
     s === "ft" || s === "ft_alphaville" ||
-    s === "nyt" || s === "wapo" || s === "wapo_politics" || s === "semafor" ||
+    s === "nyt" || s.startsWith("wapo") || s === "semafor" || s === "semafor_politics" ||
+    s.startsWith("politico") || s === "punchbowl" ||
     s === "scmp" || s === "scmp_markets" || s === "scmp_china" ||
+    s === "scmp_politics" || s === "scmp_diplomacy" || s === "scmp_china_politics_gn" ||
     s === "globe_mail" || s === "globe_itm" ||
     s === "guardian" || s === "guardian_au";
 }
@@ -749,10 +751,12 @@ export default function App() {
       return t > 0 && (Date.now() - t) < WINDOW_MS;
     }).sort((a,b) => worldScore(b) - worldScore(a)); // importance-first: geopolitics → oil → AI → Musk → source quality → recency
     const countPerSource = {}, countPerCountry = {};
-    const MAX_PER_SOURCE = 4, MAX_PER_COUNTRY = 18;
+    // The US carries the Washington politics desks on top of its markets feeds,
+    // so it gets a larger share before the per-country cap bites.
+    const MAX_PER_SOURCE = 4, MAX_PER_COUNTRY = 18, COUNTRY_CAP = { US: 28 };
     return raw.filter(a => {
       const ns=(countPerSource[a.sourceId]||0), nc=(countPerCountry[a.country]||0);
-      if(ns>=MAX_PER_SOURCE||nc>=MAX_PER_COUNTRY) return false;
+      if(ns>=MAX_PER_SOURCE||nc>=(COUNTRY_CAP[a.country]??MAX_PER_COUNTRY)) return false;
       countPerSource[a.sourceId]=ns+1; countPerCountry[a.country]=nc+1; return true;
     });
   })();
@@ -952,7 +956,7 @@ export default function App() {
 
         {mainTab==="watchlist"&&<WatchlistTab allArticles={allArticles} setAllArticles={setAllArticles}/>}
         {mainTab==="filings"&&<FilingsTab />}
-        {mainTab==="newsbriefs"&&<NewsBriefsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs} generateBrief={generateBriefUnlimited} briefLoading={briefLoading} setBriefLoading={setBriefLoading} briefError={briefError} setBriefError={setBriefError}/>}
+        {mainTab==="newsbriefs"&&<NewsBriefsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs} generateBrief={generateBriefUnlimited} generateWorldBrief={generateWorldBriefing} briefLoading={briefLoading} setBriefLoading={setBriefLoading} briefError={briefError} setBriefError={setBriefError}/>}
         {mainTab==="opinions"&&<OpinionsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs} setAllArticles={setAllArticles} briefLoading={briefLoading} setBriefLoading={setBriefLoading} briefError={briefError} setBriefError={setBriefError}/>}
         {/* BREAKING / TODAY */}
         {mainTab==="breaking"&&(()=>{

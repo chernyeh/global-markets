@@ -16,7 +16,7 @@ import BriefRenderer from "./BriefRenderer.jsx";
 // keeps the strongest signals. Kept low so the synthesis finishes in time.
 const MASTER_CAP = 70;
 
-export default function NewsBriefsTab({canonical, briefs, setBriefs, generateBrief, briefLoading, setBriefLoading, briefError, setBriefError}) {
+export default function NewsBriefsTab({canonical, briefs, setBriefs, generateBrief, generateWorldBrief, briefLoading, setBriefLoading, briefError, setBriefError}) {
   // How far back (in hours) briefings and article lists reach. 0 = all articles.
   const [windowHours, setWindowHours] = useState(12);
 
@@ -40,7 +40,9 @@ export default function NewsBriefsTab({canonical, briefs, setBriefs, generateBri
     setBriefError(p=>({...p,[key]:null}));
     setBriefLoading(p=>({...p,[key]:true}));
     try {
-      const b = await generateBrief(arts, `${group.flag} ${group.market} Company News`);
+      const b = group.briefKind === "world"
+        ? await generateWorldBrief(arts, `${group.flag} ${group.market}`, MASTER_CAP)
+        : await generateBrief(arts, `${group.flag} ${group.market} Company News`);
       if (!b.text) setBriefError(p=>({...p,[key]:"No briefing returned. Retry."}));
       else setBriefs(p=>{const n={...p,[key]:b};sSet(SK.summaries,n);return n;});
     } catch (e) {
@@ -98,7 +100,8 @@ export default function NewsBriefsTab({canonical, briefs, setBriefs, generateBri
       {[
         { heading:"ANALYST ACTIONS",  color:"#7b1fa2", markets:["Broker Calls & Analyst Actions","Asia Broker Calls & Analyst Actions"] },
         { heading:"IDEAS",            color:"#1565c0", markets:["Ideas & Commentary"] },
-        { heading:"REGIONAL MARKETS", color:"#c0392b", markets:["United States","Canada","United Kingdom","Singapore","Australia","Hong Kong / China","Japan","Korea / Taiwan"] },
+        { heading:"POLITICS & GEOPOLITICS", color:"#283593", markets:["Washington & US Politics","Europe Politics & Brussels","China & Cross-Strait Politics"] },
+        { heading:"REGIONAL MARKETS", color:"#c0392b", markets:["United States","Canada","United Kingdom","Singapore","Australia","Hong Kong / China","Japan","Korea / Taiwan","Taiwan Tech & Supply Chain"] },
         { heading:"GLOBAL",           color:"#1a1a1a", markets:["🌐 Global Overview"] },
       ].map(section => {
         const sectionGroups = section.markets.map(m => NEWS_BRIEF_GROUPS.find(g => g.market === m)).filter(Boolean);
