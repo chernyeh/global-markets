@@ -9,7 +9,7 @@ import FilingsTab from "./components/FilingsTab.jsx";
 import WatchlistTab from "./components/WatchlistTab.jsx";
 import SourcesTab from "./components/SourcesTab.jsx";
 import NewsBriefsTab from "./components/NewsBriefsTab.jsx";
-import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONTEXT_PATTERNS, BRIEF_CATEGORY_WEIGHT, SIGNAL_STRENGTH, BRIEF_COUNTRY_BOOST, BRIEF_COUNTRY_PENALTY, BRIEF_BOOSTED_COUNTRIES, BRIEF_PENALISED_COUNTRIES, BRIEF_PRIORITY_TOPIC_RES, BRIEF_TOPIC_BOOST, WORLD_TOPIC_WEIGHTS, OPINION_MAP } from "./data/taxonomy.js";
+import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONTEXT_PATTERNS, BRIEF_CATEGORY_WEIGHT, SIGNAL_STRENGTH, BRIEF_COUNTRY_BOOST, BRIEF_COUNTRY_PENALTY, BRIEF_BOOSTED_COUNTRIES, BRIEF_PENALISED_COUNTRIES, OPINION_MAP } from "./data/taxonomy.js";
 import { resolveOpinion, SOURCE_WEIGHTING_NOTE } from "./opinions.js";
 import OpinionsTab from "./components/OpinionsTab.jsx";
 import { GN, NEWS_BRIEF_GROUPS, SOURCES, EM_SOURCES, ALL_MARKET_SOURCES, SOURCE_TIER_MAP, PROMINENT_SOURCE_IDS, PROMINENT_SOURCE_BOOST, PROMINENT_SOURCE_WORLD_BONUS } from "./data/sources.js";
@@ -19,6 +19,8 @@ import { mono, RED, labelSm, labelMed, pillBtn, card, HoverButton } from "./ui.j
 import { sleep, backoff, mapLimit, callClaude, MODEL_CLASSIFY, MODEL_SYNTHESIZE, SYNTH_MODELS, DEFAULT_SYNTH_MODEL, setSynthModel } from "./api.js";
 import { SK, EM_SK, sGet, sSet } from "./storage.js";
 import { classifyMicro } from "./utils.js";
+import { setTopicDials, dialsKey, topicMatches, isTopicMuted, isTopicFocused, worldTopicScore, briefTopicBoost, normalizeDialRecords, expireDials, levelsOf, MAX_PER_SOURCE, MAX_PER_SOURCE_FOCUS } from "./topicDials.js";
+import TopicDials from "./components/TopicDials.jsx";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // NEWS BRIEFS TAB groups → src/data/sources.js
@@ -39,11 +41,10 @@ function isMarqueeSource(id) {
 }
 
 
-function worldScore(a) {
-  const text = `${a.translatedTitle || a.title} ${a.description || ""}`;
-  const topicScore = WORLD_TOPIC_WEIGHTS.reduce(
-    (best, t) => t.re.test(text) ? Math.max(best, t.score) : best, 0
-  );
+// Topic weight comes from the TOPICS registry as adjusted by the reader's Focus
+// dials — see src/topicDials.js. Pass d = {} to score with every dial at default.
+function worldScore(a, d) {
+  const topicScore = worldTopicScore(a, d);
   const tier = SOURCE_TIER_MAP[a.sourceId] ?? 3;
   // Prominent regional papers of record rank with the global marquee titles
   // rather than at their nominal tier — see PROMINENT_SOURCE_IDS.
@@ -335,12 +336,10 @@ function briefSourceWeight(a) {
 }
 
 // Semiconductor supply chain, trade policy and geopolitics rank above everything
-// else. Matched on the translated title + description, so non-English headlines
-// are covered once enrichment has run.
-function briefTopicWeight(a) {
-  const text = `${a.translatedTitle || a.title} ${a.description || ""}`;
-  return BRIEF_PRIORITY_TOPIC_RES.some(re => re.test(text)) ? BRIEF_TOPIC_BOOST : 1;
-}
+// else by default; the reader's Focus dials raise, lower or remove each topic's
+// boost (src/topicDials.js). Matched on the translated title + description, so
+// non-English headlines are covered once translation has run.
+const briefTopicWeight = briefTopicBoost;
 
 function briefScore(a, weightCountries=false) {
   const w = BRIEF_CATEGORY_WEIGHT[a.signalCategory] ?? 0;
@@ -359,6 +358,7 @@ function briefScore(a, weightCountries=false) {
 function rankBriefArticles(articles, weightCountries=false) {
   return articles
     .filter(a => {
+      if (isTopicMuted(a)) return false; // reader muted this topic on the Focus dials
       if (!a.signalCategory) return true;
       const w = BRIEF_CATEGORY_WEIGHT[a.signalCategory] ?? 0;
       if (w === 0 && (!a.signal || a.signal === "N") && !a.isMicro) return false;
@@ -397,7 +397,8 @@ async function generateBriefUnlimited(articles, label, coveragePriority=null, ma
 
   // Rank by conviction, drop noise, then cap (master brief) — best signals first.
   let ranked = rankBriefArticles(articles, weightCountries);
-  if (!ranked.length) ranked = articles;
+  if (!ranked.length) ranked = articles.filter(a => !isTopicMuted(a));
+  if (!ranked.length) return {text:"", articles:[]};
   if (maxArticles && ranked.length > maxArticles) ranked = ranked.slice(0, maxArticles);
   articles = ranked;
   const sourceArticles = articles;
@@ -583,6 +584,12 @@ export default function App() {
   const [storageReady,  setStorageReady]  = useState(false);
   const [fontScale,     setFontScale]     = useState(1.0);
   const [synthModel,    setSynthModelState] = useState(DEFAULT_SYNTH_MODEL);
+  // Focus dial records { [topicId]: { level, setAt, pinned } } — see src/topicDials.js
+  const [topicDials,    setTopicDialsState] = useState({});
+  const [showMuted,     setShowMuted]     = useState(false);
+  const [neutralView,   setNeutralView]   = useState(false); // session-only, never saved
+  const [dialNotice,    setDialNotice]    = useState([]);    // Up/Focus settings that just lapsed
+  const [, setDialTick] = useState(0);                       // re-render so countdowns stay current
 
   // Sticky sub-bars sit just below the header, whose height grows when its
   // controls wrap onto a second line on narrow screens.
@@ -601,9 +608,45 @@ export default function App() {
     setSynthModel(id); setSynthModelState(id); sSet(SK.synthModel, id);
   };
 
+  // Module copy first (the scoring functions read it), then React state.
+  const dialsRef = useRef({});
+  const chooseTopicDials = (next) => {
+    const clean = normalizeDialRecords(next);
+    setTopicDials(levelsOf(clean)); dialsRef.current = clean;
+    setTopicDialsState(clean); sSet(SK.topicDials, clean);
+    if (!Object.keys(clean).length) setNeutralView(false); // nothing to compare against
+  };
+  // Lapse Up/Focus settings past 72h and say so in the strip.
+  const lapseDials = (records) => {
+    const { records: kept, expired } = expireDials(records);
+    if (expired.length) setDialNotice(p => [...p.filter(e => !expired.some(x => x.id === e.id)), ...expired]);
+    return kept;
+  };
+  useEffect(()=>{
+    const id = setInterval(()=>{
+      const before = dialsRef.current;
+      const kept = lapseDials(before);
+      if (Object.keys(kept).length !== Object.keys(before).length) chooseTopicDials(kept);
+      setDialTick(t => t + 1);
+    }, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  },[]);
+  const restoreLapsed = () => {
+    const now = Date.now();
+    const next = { ...dialsRef.current };
+    dialNotice.forEach(({ id, level }) => { if (!next[id]) next[id] = { level, setAt: now, pinned: false }; });
+    chooseTopicDials(next); setDialNotice([]);
+  };
+
   useEffect(()=>{
     (async()=>{
-      const [arts,bfs,lf,fs,sm]=await Promise.all([sGet(SK.articles),sGet(SK.summaries),sGet(SK.lastFetch),sGet(SK.fontScale),sGet(SK.synthModel)]);
+      const [arts,bfs,lf,fs,sm,td]=await Promise.all([sGet(SK.articles),sGet(SK.summaries),sGet(SK.lastFetch),sGet(SK.fontScale),sGet(SK.synthModel),sGet(SK.topicDials)]);
+      if(td&&typeof td==="object") {
+        const recs = normalizeDialRecords(td);
+        const kept = lapseDials(recs);
+        setTopicDials(levelsOf(kept)); dialsRef.current = kept; setTopicDialsState(kept);
+        if (JSON.stringify(kept) !== JSON.stringify(td)) sSet(SK.topicDials, kept);
+      }
       if(arts?.length) setAllArticles(arts);
       if(bfs) setBriefs(bfs);
       if(lf)  setLastFetch(lf);
@@ -745,21 +788,50 @@ export default function App() {
   const [windowHours, setWindowHours] = useState(12);
   const [signalFilter, setSignalFilter] = useState("ALL");
   const WINDOW_MS = windowHours * 60 * 60 * 1000;
-  const breakingArts = (() => {
-    const raw = canonical.filter(a => {
-      const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
-      return t > 0 && (Date.now() - t) < WINDOW_MS;
-    }).sort((a,b) => worldScore(b) - worldScore(a)); // importance-first: geopolitics → oil → AI → Musk → source quality → recency
+  // Everything in the window, before topic muting and the source/country caps —
+  // the base for the Focus panel's per-topic counts.
+  const windowArts = canonical.filter(a => {
+    const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt||0);
+    return t > 0 && (Date.now() - t) < WINDOW_MS;
+  });
+  const topicCounts = {};
+  windowArts.forEach(a => topicMatches(a).forEach(t => { topicCounts[t.id] = (topicCounts[t.id]||0) + 1; }));
+  const dialLevels = levelsOf(topicDials);
+  const hasDials = Object.keys(dialLevels).length > 0;
+  const mutedCount = windowArts.filter(a => isTopicMuted(a, dialLevels)).length;
+  // Build the capped, ranked feed for a given set of dial levels ({} = Neutral).
+  const buildBreaking = (d, includeMuted) => {
+    // Importance-first: topic weight (as dialled) → source quality → recency.
+    const raw = windowArts
+      .filter(a => includeMuted || !isTopicMuted(a, d))
+      .map(a => ({ a, s: worldScore(a, d) }))
+      .sort((x,y) => y.s - x.s)
+      .map(x => x.a);
     const countPerSource = {}, countPerCountry = {};
     // The US carries the Washington politics desks on top of its markets feeds,
-    // so it gets a larger share before the per-country cap bites.
-    const MAX_PER_SOURCE = 4, MAX_PER_COUNTRY = 18, COUNTRY_CAP = { US: 28 };
+    // so it gets a larger share before the per-country cap bites. A story on a
+    // Focus topic may use two extra slots of its source's allowance.
+    const MAX_PER_COUNTRY = 18, COUNTRY_CAP = { US: 28 };
     return raw.filter(a => {
       const ns=(countPerSource[a.sourceId]||0), nc=(countPerCountry[a.country]||0);
-      if(ns>=MAX_PER_SOURCE||nc>=(COUNTRY_CAP[a.country]??MAX_PER_COUNTRY)) return false;
+      const srcCap = isTopicFocused(a, d) ? MAX_PER_SOURCE_FOCUS : MAX_PER_SOURCE;
+      if(ns>=srcCap||nc>=(COUNTRY_CAP[a.country]??MAX_PER_COUNTRY)) return false;
       countPerSource[a.sourceId]=ns+1; countPerCountry[a.country]=nc+1; return true;
     });
-  })();
+  };
+  // Neutral view: the feed as it would be with every dial at default, with the
+  // stories your dials keep out marked — the contrary evidence a tilted feed
+  // stops showing you. Only meaningful while some dial is set.
+  const inNeutralView = neutralView && hasDials;
+  const dialledCore = buildBreaking(dialLevels, false);
+  const neutralArts = hasDials ? buildBreaking({}, true) : dialledCore;
+  const dialledIds = new Set(dialledCore.map(a => a.id));
+  const outsideIds = new Set(neutralArts.filter(a => !dialledIds.has(a.id)).map(a => a.id));
+  const breakingArts = inNeutralView ? neutralArts
+    : showMuted && mutedCount ? buildBreaking(dialLevels, true)
+    : dialledCore;
+  // Key of what the visible feed is weighted by — stored on the brief.
+  const feedDialsKey = inNeutralView ? "" : dialsKey(dialLevels);
 
   const briefsTabArts = NEWS_BRIEF_GROUPS.flatMap(g =>
     canonical.filter(a => g.sources.includes(a.sourceId) || g.sources.includes(a.originalSourceId))
@@ -968,7 +1040,7 @@ export default function App() {
                   <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                     <span style={{fontSize:20}}>⚡</span>
                     <div>
-                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>BREAKING · {breakingArts.length} stories · last {windowHours}h{briefs[briefKey]?.generatedAt ? ` · generated ${new Date(briefs[briefKey].generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}</div>
+                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.1em",fontWeight:600}}>BREAKING · {breakingArts.length} stories · last {windowHours}h{briefs[briefKey]?.generatedAt ? ` · generated ${new Date(briefs[briefKey].generatedAt).toLocaleDateString("en-SG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : ""}{briefs[briefKey]?.generatedAt && (briefs[briefKey].dialsKey ?? "") !== feedDialsKey && <span style={{color:"#8a6a20",fontWeight:400}} title="The brief was written under different Focus dials (or the other view) — re-run ✦ brief to match this feed"> · focus changed</span>}</div>
                       <div style={{fontFamily:"'Spectral',serif",fontSize:14,color:"#1a1a1a",fontWeight:600}}>Breaking News Intelligence</div>
                     </div>
                     <div style={{display:"flex",gap:4,marginLeft:8}}>
@@ -986,8 +1058,8 @@ export default function App() {
                       setBriefError(p=>({...p,[briefKey]:null}));
                       setBriefLoading(p=>({...p,[briefKey]:true}));
                       try {
-                        const b=await generateWorldBriefing(breakingArts,"Breaking News",WORLD_BRIEF_CAP);
-                        if(b.text) setBriefs(p=>{const n={...p,[briefKey]:b};sSet(SK.summaries,n);return n;});
+                        const b=await generateWorldBriefing(inNeutralView?breakingArts:breakingArts.filter(a=>!isTopicMuted(a,dialLevels)),"Breaking News",WORLD_BRIEF_CAP);
+                        if(b.text) setBriefs(p=>{const n={...p,[briefKey]:{...b,dialsKey:feedDialsKey}};sSet(SK.summaries,n);return n;});
                         else setBriefError(p=>({...p,[briefKey]:"No briefing returned. Retry."}));
                       } catch(e){ console.warn("breaking brief failed:",e); setBriefError(p=>({...p,[briefKey]:humanizeBriefError(e)})); }
                       finally { setBriefLoading(p=>({...p,[briefKey]:false})); }
@@ -999,7 +1071,11 @@ export default function App() {
                     {briefLoading[briefKey]?<Dots color="#c0392b"/>:"✦ brief"}
                   </button>
                 </div>
-                {briefError[briefKey]&&!briefLoading[briefKey]&&<div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c0392b",marginTop:-2,marginBottom:8}}>⚠ {briefError[briefKey]}</div>}
+                <TopicDials dials={topicDials} onChange={chooseTopicDials} counts={topicCounts} windowHours={windowHours}
+                  mutedCount={mutedCount} showMuted={showMuted} setShowMuted={setShowMuted}
+                  neutralView={inNeutralView} setNeutralView={setNeutralView} outsideCount={outsideIds.size}
+                  lapsed={dialNotice} onRestoreLapsed={restoreLapsed} onDismissLapsed={()=>setDialNotice([])}/>
+                {briefError[briefKey]&&!briefLoading[briefKey]&&<div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c0392b",marginTop:8,marginBottom:8}}>⚠ {briefError[briefKey]}</div>}
                 {briefs[briefKey]&&(
                   <div style={{borderTop:"1px solid #e8e2d6",paddingTop:12}}>
                     <BriefRenderer
@@ -1044,7 +1120,15 @@ export default function App() {
                       <div style={{textAlign:"center",color:"#aaa",fontFamily:"'DM Mono',monospace",fontSize:11,padding:32}}>no {signalFilter!=="ALL"?signalFilter+" ":""}signals — enrich articles first</div>
                     ):(
                       <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                        {signalFiltered.map((art,i)=><ArticleCard key={art.id||i} art={art}/>)}
+                        {signalFiltered.map((art,i)=>inNeutralView&&outsideIds.has(art.id)
+                          ? <div key={art.id||i} title="Your Focus dials keep this story out of your feed"
+                              style={{position:"relative",borderLeft:"2px dotted #8aa8bc",paddingLeft:8}}>
+                              <span style={{position:"absolute",top:0,left:10,fontFamily:"'DM Mono',monospace",fontSize:8,letterSpacing:"0.08em",color:"#6f8ea3"}}>◇ OUTSIDE YOUR FOCUS</span>
+                              <ArticleCard art={art}/>
+                            </div>
+                          : !inNeutralView&&showMuted&&isTopicMuted(art,dialLevels)
+                          ? <div key={art.id||i} style={{opacity:0.45}} title="Hidden by your Focus dials"><ArticleCard art={art}/></div>
+                          : <ArticleCard key={art.id||i} art={art}/>)}
                       </div>
                     )}
                   </div>
