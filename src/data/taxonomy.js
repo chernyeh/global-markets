@@ -98,8 +98,8 @@ export const WEAKNESS_CONTEXT_PATTERNS = /after (disappointing|poor|weak|dismal|
 // WORLD NEWS PRIORITY SCORING — Today tab sort order
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── Priority topic patterns ──────────────────────────────────────────────────
-// Shared by the world/breaking-news ranking (WORLD_TOPIC_WEIGHTS) and the brief
-// ranking (BRIEF_PRIORITY_TOPIC_RES) so one edit moves both. Matched against the
+// Shared by the Breaking-feed ranking and the brief ranking through the TOPICS
+// registry below, so one edit moves both. Matched against the
 // English translated title + description, so they stay ASCII: non-English
 // headlines are translated before scoring.
 export const GEOPOLITICS_RE = /\biran(ian)?\b|\bukraina?\b|\bzelensky\b|\bkyiv\b|\btaiwan\b|\bsouth china sea\b|\bpla\b|\bisrael\b|\bgaza\b|\bhamas\b|\bnetanyahu\b|\bidf\b|\bhezbollah\b|\bhouthi\b|\bwest bank\b|\bputin\b|\bkremlin\b|\brussia\b|trade war|export control|chip ban|us.china/i;
@@ -114,24 +114,59 @@ export const TRADE_POLICY_RE = /\btariff|\bduties\b|\banti.dumping\b|\bexport (c
 // Court tariff ruling is a market event, not background.
 export const POLITICS_RE = /\bwhite house\b|\bcongress(ional)?\b|\bsenate\b|\bhouse (speaker|republicans|democrats|vote|passes|committee)\b|\bspeaker johnson\b|\bgovernment shutdown\b|\bdebt (ceiling|limit)\b|\bappropriations\b|\bcontinuing resolution\b|\breconciliation bill\b|\bsupreme court\b|\bexecutive order\b|\bmidterms?\b|\bimpeach|\bfilibuster\b|\bpentagon\b|\bnational security council\b|\bstate department\b|\brubio\b|\bbessent\b|\bvance\b|\btrump administration\b|\beuropean commission\b|\bvon der leyen\b|\beuropean parliament\b|\beuropean council\b|\bnato\b|\bxi jinping\b|\bpolitburo\b|\bcentral committee\b|\bplenum\b|\bcommunist party\b|\bccp\b|\bnational people's congress\b|\bstate council\b|\bli qiang\b|\bwang yi\b|\bcentral military commission\b|\bbeijing\b.{0,30}\b(warns|vows|rebukes|retaliat|sanction)|\btaiwan affairs office\b|\bmainland affairs council\b|\blai ching.te\b|\bkuomintang\b|\bkmt\b|\bdpp\b/i;
 
-export const WORLD_TOPIC_WEIGHTS = [
-  // Geopolitics: Iran, Ukraine, Taiwan, Israel/ME, US-China/Russia trade & military
-  { score: 50, re: GEOPOLITICS_RE },
-  // Semiconductor & electronics supply chain — the read-through on AI capex and
-  // the subject Taiwan's business papers break first. Scored level with
-  // geopolitics: nothing outranks these two.
-  { score: 50, re: SEMI_SUPPLY_CHAIN_RE },
-  // Trade policy: tariffs, export licensing, entity lists, sanctions, chokepoints
-  { score: 45, re: TRADE_POLICY_RE },
-  // Washington, Brussels and Beijing politics — see POLITICS_RE
-  { score: 45, re: POLITICS_RE },
-  // Elon Musk and his companies (Tesla, SpaceX, xAI, Starlink, X, DOGE)
-  { score: 40, re: /elon musk|\bmusk\b|\btesla\b|\bspacex\b|\bstarlink\b|\bxai\b|\bgrok\b|department of government efficiency/i },
-  // Oil, energy & inflationary expectations
-  { score: 40, re: /oil price|crude oil|\bbrent\b|\bwti\b|\bopec\b|oil supply|oil demand|oil output|lng price|gas price|energy (price|crisis|shock|supply|disruption)/i },
-  // AI buildout, infrastructure, regulation (inc. China/HK)
-  { score: 35, re: /artificial intelligence|generative ai|\bai chip\b|\bai model\b|\bai regulation\b|\bai act\b|\bai infrastructure\b|large language model|\bllm\b|\bdeepseek\b|\bopenai\b|\banthropic\b|\bchatgpt\b|gpu.*data.?center|data.?center.*ai|ai.*data.?center|hyperscaler|compute cluster|foundation model/i },
+// Market-moving topics we don't otherwise detect. Before these existed, a Fed,
+// BoJ or credit headline scored 0 on topic and competed on source alone.
+export const RATES_CB_RE = /\bfed\b|\bfederal reserve\b|\bfomc\b|\bfed chair\b|\bpowell\b|\brate (cut|cuts|hike|hikes|decision|path|outlook)\b|\binterest rates?\b|\bmonetary policy\b|\bcentral bank|\becb\b|\blagarde\b|\bbank of england\b|\bboe\b|\bbank of japan\b|\bboj\b|\bpboc\b|\bpeople's bank of china\b|\breserve bank\b|\brba\b|\bmas\b.{0,20}\b(policy|slope|band)\b|\btreasury yields?\b|\bbond yields?\b|\b10.year yield\b|\byield curve\b|\bgilts?\b|\bjgbs?\b|\bbunds?\b|\bquantitative (easing|tightening)\b/i;
+
+export const MACRO_DATA_RE = /\binflation\b|\bdeflation\b|\bcpi\b|\bppi\b|\bpce\b|\bconsumer prices\b|\bproducer prices\b|\bgdp\b|\bnon.?farm\b|\bpayrolls\b|\bjobs report\b|\bunemployment rate\b|\bjobless claims\b|\bpmi\b|\bretail sales\b|\bindustrial (production|output)\b|\bexports? (rose|fell|grew|slumped|jumped|data)\b|\brecession\b|\bstagflation\b|\beconomic (growth|data|slowdown|contraction)\b|\bconsumer (confidence|sentiment)\b/i;
+
+export const CREDIT_RE = /\bdefault(s|ed)?\b|\bbankrupt|\bchapter 11\b|\binsolven|\bcredit (spread|spreads|market|markets|rating|downgrade|crunch|event|risk)\b|\bjunk (bond|bonds|debt)\b|\bhigh.yield\b|\bprivate credit\b|\bleveraged loans?\b|\bcds\b|\bdebt restructur|\bdistressed (debt|bonds?)\b|\bmoody's\b|\bfitch\b|\bs&p global ratings\b|\bbond (sale|issuance|market rout)\b/i;
+
+export const FX_RE = /\bcurrenc(y|ies)\b|\bforex\b|\bfx\b|\bexchange rate\b|\bdevaluat|\bdollar (index|strength|weakness|rall|slid|slump|surg|fall|rise|gain|drop|jump)|\bdxy\b|\byen\b|\byuan\b|\brenminbi\b|\bsterling\b|\bringgit\b|\brupiah\b|\brupee\b|\bbaht\b|\b(singapore|taiwan|hong kong|australian|aussie|canadian) dollar\b|\beuro (rises|falls|slides|gains|weakens|strengthens|hits)\b/i;
+
+export const CHINA_STIMULUS_RE = /\b(china|chinese|beijing)\b.{0,50}\bstimulus\b|\bstimulus\b.{0,50}\b(china|chinese|beijing)\b|\b(china|chinese)('s)? (property|real estate|housing|developers?)\b|\bevergrande\b|\bcountry garden\b|\bvanke\b|\blocal government (debt|financing)\b|\blgfvs?\b|\bspecial treasury bonds\b|\breserve requirement ratio\b|\brrr\b|\bloan prime rate\b|\blpr\b/i;
+
+export const JAPAN_POLICY_RE = /\bbank of japan\b|\bboj\b|\bueda\b|\bjgbs?\b|\btakaichi\b|\bjapanese government\b|\bjapan('s)? (economy|inflation|gdp|wages|finance ministry)\b|\bshunto\b|\bnikkei (225|average|index|stock average)\b|\btokyo\b.{0,30}\bintervene|\byen intervention\b/i;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOPIC REGISTRY — one entry per dialable topic (Breaking feed + briefs)
+// ═══════════════════════════════════════════════════════════════════════════════
+// score      Breaking-feed weight at a Neutral dial (feed rank = best match +
+//            20% of any other matches, plus the source bonus).
+// briefBoost Multiplier the topic gives company briefings at a Neutral dial.
+//            Only the three topics that already outranked everything in the
+//            briefs carry one; every other topic is neutral (1) there unless
+//            the reader dials it up.
+// group      Column the topic sits in on the Focus panel.
+// The six topics marked NEW had no weight before (scored 0); their defaults sit
+// at or below Oil / AI so that adding them does not reshuffle the feed.
+export const TOPIC_GROUPS = [
+  { id:"geo",   label:"Geopolitics & policy" },
+  { id:"macro", label:"Macro & rates" },
+  { id:"tech",  label:"Tech & themes" },
 ];
+
+export const TOPICS = [
+  { id:"geo",      label:"Geopolitics",     group:"geo",   score:50, briefBoost:1.3, re:GEOPOLITICS_RE },
+  { id:"trade",    label:"Trade policy",    group:"geo",   score:45, briefBoost:1.3, re:TRADE_POLICY_RE },
+  { id:"politics", label:"Politics",        group:"geo",   score:45, briefBoost:1,   re:POLITICS_RE },
+  { id:"china",    label:"China stimulus",  group:"geo",   score:35, briefBoost:1,   re:CHINA_STIMULUS_RE },  // NEW
+  { id:"japan",    label:"Japan policy",    group:"geo",   score:30, briefBoost:1,   re:JAPAN_POLICY_RE },    // NEW
+  { id:"rates",    label:"Rates & CBs",     group:"macro", score:40, briefBoost:1,   re:RATES_CB_RE },        // NEW
+  { id:"macro",    label:"Macro data",      group:"macro", score:35, briefBoost:1,   re:MACRO_DATA_RE },      // NEW
+  { id:"oil",      label:"Oil & energy",    group:"macro", score:40, briefBoost:1,
+    re:/oil price|crude oil|\bbrent\b|\bwti\b|\bopec\b|oil supply|oil demand|oil output|lng price|gas price|energy (price|crisis|shock|supply|disruption)/i },
+  { id:"credit",   label:"Credit",          group:"macro", score:35, briefBoost:1,   re:CREDIT_RE },          // NEW
+  { id:"fx",       label:"FX",              group:"macro", score:30, briefBoost:1,   re:FX_RE },              // NEW
+  // Semiconductor & electronics supply chain — the read-through on AI capex and
+  // the subject Taiwan's business papers break first; level with geopolitics.
+  { id:"semis",    label:"Semis supply chain", group:"tech", score:50, briefBoost:1.3, re:SEMI_SUPPLY_CHAIN_RE },
+  { id:"ai",       label:"AI buildout",     group:"tech",  score:35, briefBoost:1,
+    re:/artificial intelligence|generative ai|\bai chip\b|\bai model\b|\bai regulation\b|\bai act\b|\bai infrastructure\b|large language model|\bllm\b|\bdeepseek\b|\bopenai\b|\banthropic\b|\bchatgpt\b|gpu.*data.?center|data.?center.*ai|ai.*data.?center|hyperscaler|compute cluster|foundation model/i },
+  { id:"musk",     label:"Musk companies",  group:"tech",  score:40, briefBoost:1,
+    re:/elon musk|\bmusk\b|\btesla\b|\bspacex\b|\bstarlink\b|\bxai\b|\bgrok\b|department of government efficiency/i },
+];
+export const TOPIC_MAP = Object.fromEntries(TOPICS.map(t => [t.id, t]));
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BRIEF SCORING WEIGHTS
@@ -151,13 +186,6 @@ export const BRIEF_CATEGORY_WEIGHT = {
 };
 export const SIGNAL_STRENGTH = { SP2:3, SN2:3, SP1:2, SN1:2, N:0 };
 
-// Topics that outrank everything else in the company briefings, on top of the
-// category, signal, source and country weights: the semiconductor / electronics
-// supply chain, trade policy, and geopolitics. briefScore had no topic term at
-// all before this, so a supply-chain story competed purely on its signal
-// category — these lift it instead.
-export const BRIEF_PRIORITY_TOPIC_RES = [SEMI_SUPPLY_CHAIN_RE, TRADE_POLICY_RE, GEOPOLITICS_RE];
-export const BRIEF_TOPIC_BOOST = 1.3;
 
 export const BRIEF_COUNTRY_BOOST = 1.4;
 export const BRIEF_COUNTRY_PENALTY = 0.5;
