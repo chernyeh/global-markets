@@ -34,6 +34,43 @@ const SECONDARY_WEIGHT = 0.2;
 const BRIEF_UP = 1.5;
 const BRIEF_FOCUS = 1.8;
 
+// ─── Decay ─────────────────────────────────────────────────────────────────────
+// Up and Focus fade back to Neutral after 72h unless pinned, so a theme the
+// market has moved on from doesn't keep shaping the feed. Down and Hide are
+// noise filters and persist (hidden stories stay counted in the strip).
+export const DECAY_MS = 72 * 60 * 60 * 1000;
+export const DECAYING = new Set(["up", "focus"]);
+
+// Saved form: { [topicId]: { level, setAt, pinned } }. The first release stored
+// bare level strings — those start their 72h clock on first load.
+export function normalizeDialRecords(raw, now = Date.now()) {
+  const out = {};
+  for (const [id, v] of Object.entries(raw || {})) {
+    const r = typeof v === "string" ? { level: v } : v;
+    if (!TOPIC_MAP[id] || !r || !DIAL_MAP[r.level] || r.level === "neutral") continue;
+    out[id] = { level: r.level, setAt: Number(r.setAt) || now, pinned: !!r.pinned };
+  }
+  return out;
+}
+
+// Milliseconds until a record fades, or null if it never does.
+export function timeLeft(rec, now = Date.now()) {
+  if (!rec || rec.pinned || !DECAYING.has(rec.level)) return null;
+  return Math.max(0, rec.setAt + DECAY_MS - now);
+}
+
+export function expireDials(records, now = Date.now()) {
+  const kept = {}, expired = [];
+  for (const [id, r] of Object.entries(records || {})) {
+    if (timeLeft(r, now) === 0) expired.push({ id, level: r.level });
+    else kept[id] = r;
+  }
+  return { records: kept, expired };
+}
+
+export const levelsOf = records =>
+  Object.fromEntries(Object.entries(records || {}).map(([id, r]) => [id, r.level]));
+
 let dials = {}; // { [topicId]: levelId } — Neutral topics are omitted
 
 export function setTopicDials(next) {
@@ -42,7 +79,9 @@ export function setTopicDials(next) {
   );
   return dials;
 }
-export const dialFor = id => dials[id] || "neutral";
+// Scoring helpers take an optional level map so the Neutral view can rank the
+// same articles with every dial at default ({}) without touching the live dials.
+export const dialFor = (id, d = dials) => d[id] || "neutral";
 // Stable signature of the active dials — stored on a brief so the UI can tell
 // when the dials have moved since it was written.
 export const dialsKey = d => Object.entries(d || dials).sort().map(([k, v]) => `${k}:${v}`).join(",");
@@ -62,16 +101,16 @@ export function topicMatches(a) {
 
 // Hidden when it touches a muted topic and no topic the reader has turned up —
 // a muted "Musk" still lets a Tesla-tariff story through if Trade is on Focus.
-export function isTopicMuted(a) {
+export function isTopicMuted(a, d = dials) {
   const m = topicMatches(a);
-  if (!m.some(t => dialFor(t.id) === "mute")) return false;
-  return !m.some(t => { const l = dialFor(t.id); return l === "up" || l === "focus"; });
+  if (!m.some(t => dialFor(t.id, d) === "mute")) return false;
+  return !m.some(t => { const l = dialFor(t.id, d); return l === "up" || l === "focus"; });
 }
-export const isTopicFocused = a => topicMatches(a).some(t => dialFor(t.id) === "focus");
+export const isTopicFocused = (a, d = dials) => topicMatches(a).some(t => dialFor(t.id, d) === "focus");
 
-export function worldTopicScore(a) {
+export function worldTopicScore(a, d = dials) {
   const vals = topicMatches(a)
-    .map(t => t.score * DIAL_MAP[dialFor(t.id)].feedMult)
+    .map(t => t.score * DIAL_MAP[dialFor(t.id, d)].feedMult)
     .sort((x, y) => y - x);
   if (!vals.length) return 0;
   return vals[0] + SECONDARY_WEIGHT * vals.slice(1).reduce((s, v) => s + v, 0);
