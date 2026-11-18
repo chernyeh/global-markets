@@ -19,7 +19,8 @@ import { mono, RED, labelSm, labelMed, pillBtn, card, HoverButton } from "./ui.j
 import { sleep, backoff, mapLimit, callClaude, MODEL_CLASSIFY, MODEL_SYNTHESIZE, SYNTH_MODELS, DEFAULT_SYNTH_MODEL, setSynthModel } from "./api.js";
 import { SK, EM_SK, sGet, sSet } from "./storage.js";
 import { classifyMicro } from "./utils.js";
-import { setTopicDials, dialsKey, topicMatches, isTopicMuted, isTopicFocused, worldTopicScore, briefTopicBoost, normalizeDialRecords, expireDials, levelsOf, MAX_PER_SOURCE, MAX_PER_SOURCE_FOCUS } from "./topicDials.js";
+import { setTopicDials, dialsKey, topicMatches, isTopicMuted, isTopicFocused, worldTopicScore, briefTopicBoost, normalizeDialRecords, expireDials, levelsOf, setCustomTopics, allTopics, applyPreset, matchPreset, coverageSurges, evalGauges, buildSuggestions, MAX_PER_SOURCE, MAX_PER_SOURCE_FOCUS } from "./topicDials.js";
+import { MARKET_GAUGES } from "./data/taxonomy.js";
 import TopicDials from "./components/TopicDials.jsx";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -590,6 +591,19 @@ export default function App() {
   const [neutralView,   setNeutralView]   = useState(false); // session-only, never saved
   const [dialNotice,    setDialNotice]    = useState([]);    // Up/Focus settings that just lapsed
   const [, setDialTick] = useState(0);                       // re-render so countdowns stay current
+  const [customTopics,  setCustomTopicsState] = useState([]); // [{ id, terms }] — reader-added topics
+  const [presetUndo,    setPresetUndo]    = useState(null);  // dials before the last preset, for undo
+  const [gaugeData,     setGaugeData]     = useState({ status:"idle", quotes:{} }); // /api/gauges
+  // Suggestion keys dismissed with "not now" — kept for the browser-tab session
+  // (survives a reload, not a new tab) so a refresh doesn't re-nag.
+  const [dismissedSugs, setDismissedSugsState] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("gm_dismissed_sugs") || "[]"); } catch { return []; }
+  });
+  const setDismissedSugs = fn => setDismissedSugsState(prev => {
+    const next = typeof fn === "function" ? fn(prev) : fn;
+    try { sessionStorage.setItem("gm_dismissed_sugs", JSON.stringify(next.slice(-50))); } catch { /* storage blocked */ }
+    return next;
+  });
 
   // Sticky sub-bars sit just below the header, whose height grows when its
   // controls wrap onto a second line on narrow screens.
@@ -631,6 +645,39 @@ export default function App() {
     }, 5 * 60 * 1000);
     return () => clearInterval(id);
   },[]);
+  // Custom topics change the topic set, so dials on a removed topic are dropped
+  // and every article re-matches (setCustomTopics clears the match cache).
+  const chooseCustomTopics = (list) => {
+    const clean = setCustomTopics(list);
+    setCustomTopicsState(clean); sSet(SK.customTopics, clean);
+    chooseTopicDials(dialsRef.current);
+  };
+  // Presets replace the dials in one step; keep what was there so it can be undone.
+  const choosePreset = (preset) => {
+    setPresetUndo(dialsRef.current);
+    chooseTopicDials(applyPreset(dialsRef.current, preset));
+  };
+  const undoPreset = () => {
+    if (!presetUndo) return;
+    chooseTopicDials(presetUndo); setPresetUndo(null);
+  };
+  // Market gauges: fetched while the Breaking tab is open, refreshed every
+  // 10 minutes. Failure is quiet — coverage suggestions still work without it.
+  useEffect(()=>{
+    if (mainTab !== "breaking") return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const r = await fetch(`/api/gauges?symbols=${encodeURIComponent(MARKET_GAUGES.map(g=>g.sym).join(","))}`);
+        const data = r.ok ? await r.json() : null;
+        const quotes = data?.gauges || {};
+        if (!cancelled) setGaugeData({ status: Object.values(quotes).some(Boolean) ? "ok" : "unavailable", quotes });
+      } catch { if (!cancelled) setGaugeData(p => ({ ...p, status: p.status === "ok" ? "ok" : "unavailable" })); }
+    };
+    load();
+    const id = setInterval(load, 10 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(id); };
+  },[mainTab]);
   const restoreLapsed = () => {
     const now = Date.now();
     const next = { ...dialsRef.current };
@@ -641,6 +688,9 @@ export default function App() {
   useEffect(()=>{
     (async()=>{
       const [arts,bfs,lf,fs,sm,td]=await Promise.all([sGet(SK.articles),sGet(SK.summaries),sGet(SK.lastFetch),sGet(SK.fontScale),sGet(SK.synthModel),sGet(SK.topicDials)]);
+      // Custom topics first: dial records on them are only valid once they exist.
+      const ct = await sGet(SK.customTopics);
+      if (Array.isArray(ct)) setCustomTopicsState(setCustomTopics(ct));
       if(td&&typeof td==="object") {
         const recs = normalizeDialRecords(td);
         const kept = lapseDials(recs);
@@ -797,6 +847,17 @@ export default function App() {
   const topicCounts = {};
   windowArts.forEach(a => topicMatches(a).forEach(t => { topicCounts[t.id] = (topicCounts[t.id]||0) + 1; }));
   const dialLevels = levelsOf(topicDials);
+  // Phase 3 — what the news flow and the tape say deserves a look. The baseline
+  // is every stored headline older than the window.
+  const windowIdSet = new Set(windowArts.map(a => a.id));
+  const { surges: topicSurges, ready: surgeReady } = coverageSurges(windowArts, canonical.filter(a => !windowIdSet.has(a.id)));
+  const gauges = evalGauges(gaugeData.quotes);
+  // "not now" holds for the session until the reasons change: a different gauge
+  // fires, a gauge reverses direction, or a surge appears where there was none.
+  const sugKey = sg => `${sg.id}|${sg.reasons.map(r => r.kind === "surge" ? "surge" : r.text.replace(/[\d.]+/g, "")).join(",")}`;
+  const topicSuggestions = buildSuggestions({ surges: topicSurges, gauges, records: topicDials })
+    .filter(sg => !dismissedSugs.includes(sugKey(sg)));
+  const activePreset = matchPreset(topicDials);
   const hasDials = Object.keys(dialLevels).length > 0;
   const mutedCount = windowArts.filter(a => isTopicMuted(a, dialLevels)).length;
   // Build the capped, ranked feed for a given set of dial levels ({} = Neutral).
@@ -1074,7 +1135,13 @@ export default function App() {
                 <TopicDials dials={topicDials} onChange={chooseTopicDials} counts={topicCounts} windowHours={windowHours}
                   mutedCount={mutedCount} showMuted={showMuted} setShowMuted={setShowMuted}
                   neutralView={inNeutralView} setNeutralView={setNeutralView} outsideCount={outsideIds.size}
-                  lapsed={dialNotice} onRestoreLapsed={restoreLapsed} onDismissLapsed={()=>setDialNotice([])}/>
+                  lapsed={dialNotice} onRestoreLapsed={restoreLapsed} onDismissLapsed={()=>setDialNotice([])}
+                  topics={allTopics()} customTopics={customTopics} onCustomTopicsChange={chooseCustomTopics}
+                  activePreset={activePreset} onPreset={choosePreset} canUndoPreset={!!presetUndo} onUndoPreset={undoPreset}
+                  gauges={gauges} gaugeStatus={gaugeData.status} surges={topicSurges} surgeReady={surgeReady}
+                  suggestions={topicSuggestions}
+                  onAcceptSuggestions={ids=>{const next={...dialsRef.current}; ids.forEach(id=>{next[id]={level:"up",pinned:false};}); chooseTopicDials(next);}}
+                  onDismissSuggestions={()=>setDismissedSugs(p=>[...p,...topicSuggestions.map(sugKey)])}/>
                 {briefError[briefKey]&&!briefLoading[briefKey]&&<div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"#c0392b",marginTop:8,marginBottom:8}}>⚠ {briefError[briefKey]}</div>}
                 {briefs[briefKey]&&(
                   <div style={{borderTop:"1px solid #e8e2d6",paddingTop:12}}>
