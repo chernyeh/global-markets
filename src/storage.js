@@ -7,6 +7,7 @@ export const SK = {
   fontScale: "gm_fontscale_v1",
   synthModel: "gm_synthmodel_v1",
   topicDials: "gm_topicdials_v1",
+  customTopics: "gm_customtopics_v1",
 };
 
 export const EM_SK = {

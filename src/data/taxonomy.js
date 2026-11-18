@@ -128,6 +128,10 @@ export const CHINA_STIMULUS_RE = /\b(china|chinese|beijing)\b.{0,50}\bstimulus\b
 
 export const JAPAN_POLICY_RE = /\bbank of japan\b|\bboj\b|\bueda\b|\bjgbs?\b|\btakaichi\b|\bjapanese government\b|\bjapan('s)? (economy|inflation|gdp|wages|finance ministry)\b|\bshunto\b|\bnikkei (225|average|index|stock average)\b|\btokyo\b.{0,30}\bintervene|\byen intervention\b/i;
 
+// Company results and guidance — scored low by default (corporate news already
+// has its own weighting in the briefs); it exists so Earnings season can be dialled.
+export const EARNINGS_RE = /\bearnings\b|\b(quarterly|annual|half.year|first.half|full.year) (results|profit|loss|revenue|earnings)\b|\bresults\b.{0,30}\b(beat|miss|top|exceed)|\b(beats?|misses|tops|topped|exceeds?) (estimates|forecasts|expectations|consensus)\b|\bguidance\b|\bprofit (warning|forecast|outlook)\b|\b(raises|cuts|lowers|lifts|reaffirms) (its )?(guidance|forecast|outlook)\b|\beps\b|\bnet (profit|income)\b|\boperating profit\b|\brevenue (rose|fell|grew|jumped|slumped|declined)\b/i;
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // TOPIC REGISTRY — one entry per dialable topic (Breaking feed + briefs)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -143,7 +147,8 @@ export const JAPAN_POLICY_RE = /\bbank of japan\b|\bboj\b|\bueda\b|\bjgbs?\b|\bt
 export const TOPIC_GROUPS = [
   { id:"geo",   label:"Geopolitics & policy" },
   { id:"macro", label:"Macro & rates" },
-  { id:"tech",  label:"Tech & themes" },
+  { id:"tech",  label:"Companies & themes" },
+  { id:"custom", label:"Your topics" },   // reader-added keyword topics
 ];
 
 export const TOPICS = [
@@ -165,6 +170,7 @@ export const TOPICS = [
     re:/artificial intelligence|generative ai|\bai chip\b|\bai model\b|\bai regulation\b|\bai act\b|\bai infrastructure\b|large language model|\bllm\b|\bdeepseek\b|\bopenai\b|\banthropic\b|\bchatgpt\b|gpu.*data.?center|data.?center.*ai|ai.*data.?center|hyperscaler|compute cluster|foundation model/i },
   { id:"musk",     label:"Musk companies",  group:"tech",  score:40, briefBoost:1,
     re:/elon musk|\bmusk\b|\btesla\b|\bspacex\b|\bstarlink\b|\bxai\b|\bgrok\b|department of government efficiency/i },
+  { id:"earnings", label:"Earnings",       group:"tech",  score:25, briefBoost:1,   re:EARNINGS_RE },        // NEW (phase 2)
 ];
 export const TOPIC_MAP = Object.fromEntries(TOPICS.map(t => [t.id, t]));
 
@@ -194,3 +200,36 @@ export const BRIEF_BOOSTED_COUNTRIES = new Set([
   "BR","MX","AR","CL","CO","PE", // LatAm cluster
 ]);
 export const BRIEF_PENALISED_COUNTRIES = new Set(["PH","NG","MY","IN"]);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOPIC PRESETS — one click sets several Focus dials for a market regime
+// ═══════════════════════════════════════════════════════════════════════════════
+// Applying a preset sets these dials (fresh 72h clock), returns every other
+// Up / Focus / Down to Neutral, and leaves Hide settings and pinned dials alone.
+export const TOPIC_PRESETS = [
+  { id:"rates",    label:"Rates-driven",          short:"Rates-driven", dials:{ rates:"focus", macro:"up", fx:"up", musk:"down" } },
+  { id:"riskoff",  label:"Geopolitical risk-off", short:"Risk-off",     dials:{ geo:"focus", oil:"up", trade:"up", ai:"down" } },
+  { id:"aicapex",  label:"AI capex",              short:"AI capex",     dials:{ semis:"focus", ai:"up", politics:"down" } },
+  { id:"tradewar", label:"Trade-war escalation",  short:"Trade war",    dials:{ trade:"focus", semis:"up", politics:"up" } },
+  { id:"earnings", label:"Earnings season",       short:"Earnings",     dials:{ earnings:"focus", politics:"down" } },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MARKET GAUGES — daily moves that suggest dialling a topic up
+// ═══════════════════════════════════════════════════════════════════════════════
+// Yahoo Finance symbols read through /api/gauges. A move at or beyond the
+// threshold (vs the previous session's close) suggests the mapped topics.
+// Thresholds are starting assumptions, not calibrated — roughly a 1.5–2σ day
+// for each instrument; tune them once you see how often they fire.
+//   unit "bp" — the quote is a yield in percent; the move is shown in basis points.
+//   upOnly    — only a rise counts (a falling VIX is not news).
+export const MARKET_GAUGES = [
+  { sym:"BZ=F",     label:"Brent",   unit:"pct", threshold:3,   topics:["oil"] },
+  { sym:"^TNX",     label:"UST 10y", unit:"bp",  threshold:10,  topics:["rates"] },
+  { sym:"^VIX",     label:"VIX",     unit:"pct", threshold:15,  topics:["geo"], upOnly:true },
+  { sym:"JPY=X",    label:"USD/JPY", unit:"pct", threshold:1,   topics:["fx","japan"] },
+  { sym:"DX-Y.NYB", label:"DXY",     unit:"pct", threshold:0.8, topics:["fx"] },
+  { sym:"^SOX",     label:"SOX",     unit:"pct", threshold:3,   topics:["semis"] },
+  { sym:"HYG",      label:"HY credit", unit:"pct", threshold:1, topics:["credit"] },
+  { sym:"^HSCE",    label:"HSCEI",   unit:"pct", threshold:3,   topics:["china"] },
+];
