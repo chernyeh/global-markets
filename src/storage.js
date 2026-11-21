@@ -16,6 +16,8 @@ export const SK = {
   macroScen:   "gm_macro_scen_v1",
   macroEvents: "gm_macro_events_v1",
   macroNotify: "gm_macro_notify_v1",
+  macroSpeech: "gm_macro_speech_v1",
+  macroRead:   "gm_macro_read_v1",
 };
 
 export const EM_SK = {

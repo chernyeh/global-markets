@@ -20,6 +20,7 @@
 //   eurostat  Eurostat HICP, ECOICOP ver.2 (prc_hicp_minr)              PRIMARY, no key
 //   gie       GIE AGSI+ EU gas storage (GIE_API_KEY optional)          PRIMARY
 //   fao       FAO Food Price Index (monthly CSV)                       PRIMARY, no key
+//   mpt       Atlanta Fed Market Probability Tracker (SOFR options)    PRIMARY (Atlanta Fed model), no key
 
 export const config = { maxDuration: 30 };
 
@@ -495,6 +496,113 @@ async function fetchFao(ids, { signal, start }) {
   return { series, errors };
 }
 
+// ─── Atlanta Fed Market Probability Tracker (SOFR options) ──────────────────
+// The tracker publishes one Excel workbook (≈7 MB; its DATA sheet is ≈67 MB of
+// XML, rows sorted by date). A minimal zip reader locates the entries; the
+// sheet is stream-inflated and only its tail — the latest weeks — is kept.
+const MPT_URL = "https://www.atlantafed.org/-/media/Project/Atlanta/FRBA/Documents/research-and-data/data/market-probability-tracker/mpt_histdata.xlsx";
+const MPT_FIELDS = new Set(["Rate: mean", "Rate: mode", "Rate: 25th percentile", "Rate: 75th percentile", "Prob: cut", "Prob: hike"]);
+
+export function zipEntries(buf) {
+  let eocd = -1;
+  for (let i = buf.length - 22; i >= Math.max(0, buf.length - 65557); i--) {
+    if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("not a zip file");
+  const count = buf.readUInt16LE(eocd + 10);
+  let p = buf.readUInt32LE(eocd + 16);
+  const out = {};
+  for (let k = 0; k < count; k++) {
+    if (buf.readUInt32LE(p) !== 0x02014b50) throw new Error("bad zip directory");
+    const method = buf.readUInt16LE(p + 10), csize = buf.readUInt32LE(p + 20);
+    const nlen = buf.readUInt16LE(p + 28), elen = buf.readUInt16LE(p + 30), clen = buf.readUInt16LE(p + 32);
+    const local = buf.readUInt32LE(p + 42);
+    const name = buf.toString("utf8", p + 46, p + 46 + nlen);
+    const dataStart = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
+    out[name] = { method, data: buf.subarray(dataStart, dataStart + csize) };
+    p += 46 + nlen + elen + clen;
+  }
+  return out;
+}
+
+async function inflateEntry(entry, { tailBytes = 0 } = {}) {
+  const zlib = await import("node:zlib");
+  if (entry.method === 0) return entry.data.toString("utf8");
+  if (!tailBytes) return zlib.inflateRawSync(entry.data).toString("utf8");
+  // Stream, keeping only the last `tailBytes` of output.
+  return new Promise((resolve, reject) => {
+    const inf = zlib.createInflateRaw();
+    let chunks = [], size = 0;
+    inf.on("data", c => {
+      chunks.push(c); size += c.length;
+      while (size - chunks[0].length >= tailBytes) { size -= chunks[0].length; chunks.shift(); }
+    });
+    inf.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    inf.on("error", reject);
+    inf.end(entry.data);
+  });
+}
+
+const excelDay = n => isoDay(Date.UTC(1899, 11, 30) + Number(n) * DAY);
+
+export function parseMptRows(sheetTail, strings) {
+  const rows = [];
+  const rowRe = /<row [^>]*>([\s\S]*?)<\/row>/g;
+  const cellRe = /<c r="([A-Z]+)\d+"([^>]*?)(?:\/>|>(?:<f>[^<]*<\/f>)?(?:<v>([^<]*)<\/v>)?(?:<is><t>([^<]*)<\/t><\/is>)?<\/c>)/g;
+  let m;
+  while ((m = rowRe.exec(sheetTail))) {
+    const cells = {};
+    let c;
+    cellRe.lastIndex = 0;
+    while ((c = cellRe.exec(m[1]))) {
+      const [, col, attrs, v, t] = c;
+      cells[col] = attrs.includes('t="s"') && v !== undefined ? strings[Number(v)] : (v ?? t ?? "");
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(cells.A || "") || !MPT_FIELDS.has(cells.D)) continue;
+    rows.push({ date: cells.A, start: /^\d+(\.\d+)?$/.test(cells.B) ? excelDay(cells.B) : cells.B, range: cells.C, field: cells.D, value: num(cells.E) });
+  }
+  return rows;
+}
+
+const MPT_KEY = { "Rate: mean": "mean", "Rate: mode": "mode", "Rate: 25th percentile": "p25", "Rate: 75th percentile": "p75", "Prob: cut": "pCut", "Prob: hike": "pHike" };
+export function summariseMpt(rows) {
+  const dates = [...new Set(rows.map(r => r.date))].sort();
+  const snap = date => {
+    if (!date) return null;
+    const byStart = {};
+    let range = null;
+    for (const r of rows) {
+      if (r.date !== date) continue;
+      range = r.range;
+      (byStart[r.start] ||= { start: r.start })[MPT_KEY[r.field]] = r.value;
+    }
+    return { asOf: date, targetRange: range, windows: Object.values(byStart).sort((a, b) => (a.start < b.start ? -1 : 1)) };
+  };
+  const latest = dates[dates.length - 1];
+  const weekAgo = [...dates].reverse().find(d => d <= isoDay(Date.parse(`${latest}T00:00:00Z`) - 7 * DAY));
+  return { ...snap(latest), prior: snap(weekAgo) };
+}
+
+async function fetchMpt(ids, { signal }) {
+  try {
+    const buf = Buffer.from(await (await get(MPT_URL, { signal, ua: BROWSER_UA, timeoutMs: 20000 })).arrayBuffer());
+    const z = zipEntries(buf);
+    const ssXml = await inflateEntry(z["xl/sharedStrings.xml"]);
+    const strings = [...ssXml.matchAll(/<si>([\s\S]*?)<\/si>/g)].map(x => x[1].replace(/<[^>]+>/g, ""));
+    const wb = await inflateEntry(z["xl/workbook.xml"]);
+    const sheets = [...wb.matchAll(/<sheet [^>]*name="([^"]+)"/g)].map(x => x[1]);
+    const dataIdx = sheets.indexOf("DATA");
+    const entry = z[`xl/worksheets/sheet${dataIdx + 1}.xml`];
+    if (dataIdx < 0 || !entry) throw new Error("DATA sheet not found");
+    const tail = await inflateEntry(entry, { tailBytes: 2_500_000 });
+    const s = summariseMpt(parseMptRows(tail.slice(tail.indexOf("<row ")), strings));
+    if (!s.windows?.length) throw new Error("no rows parsed");
+    return { paths: { fed: s }, errors: {} };
+  } catch (e) {
+    return { paths: {}, errors: Object.fromEntries(ids.map(id => [id, e.message])) };
+  }
+}
+
 // ─── Router ─────────────────────────────────────────────────────────────────
 const ADAPTERS = {
   treasury: { fetch: fetchTreasury, tier: "PRIMARY",              ttl: 1800, max: 12, re: /^[nr]\d{1,2}[my]$/ },
@@ -508,6 +616,7 @@ const ADAPTERS = {
   eurostat: { fetch: fetchEurostat, tier: "PRIMARY",              ttl: 21600, max: 30, re: /^[A-Z0-9_]{2,6}:[A-Z0-9_]{2,24}:[A-Z0-9_]{2,16}$/ },
   gie:      { fetch: fetchGie,      tier: "PRIMARY",              ttl: 21600, max: 2,  re: /^eu(:avg5)?$/ },
   fao:      { fetch: fetchFao,      tier: "PRIMARY",              ttl: 43200, max: 6,  re: /^(ffpi|meat|dairy|cereals|oils|sugar)$/ },
+  mpt:      { fetch: fetchMpt,      tier: "PRIMARY",              ttl: 21600, max: 1,  re: /^fed$/ },
 };
 
 export default async function handler(req, res) {

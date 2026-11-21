@@ -23,6 +23,8 @@ in-app alerts.
 | Eurostat | euro-area and country HICP (ECOICOP ver.2, `prc_hicp_minr`) | PRIMARY | none |
 | GIE AGSI+ | EU gas storage and its 5-year same-day average | PRIMARY | `GIE_API_KEY` (optional, higher limits) |
 | FAO | Food Price Index and sub-indices | PRIMARY | none |
+| Atlanta Fed Market Probability Tracker | SOFR-options distribution of the policy rate by 3-month window | PRIMARY (model) | none |
+| Fed and ECB feeds; Google News | speeches, testimony, statements, interviews (incl. German, French, Italian, Spanish press) | PRIMARY / SECONDARY | none |
 
 **Setup** — free keys, added in Vercel → this project → Settings → Environment Variables
 (tick Production, Preview and Development), then Deployments → latest → ⋯ → Redeploy:
@@ -35,8 +37,16 @@ in-app alerts.
 
 No BEA key is needed: PCE series come through FRED.
 
+**Central-bank tracker and Macro read** use the app's existing `ANTHROPIC_KEY`. Every 30 minutes while the
+page is open, new official and trusted-outlet items (at most 40 per run, normally a handful) are classified by
+Haiku in batches of 10: relevance, speaker, stance −2..+2, a quote that must appear verbatim in the source,
+and unanswered questions in interview transcripts. Evidence reads for signals 1, 6, 9 and 15 refresh every
+6 hours and are never applied without your click. The Macro read is written on demand by the brief model
+chosen in the header, from a digest of the page's own numbers.
+
 Registry: `src/data/macroSeries.js` (indicators), `src/data/macroSignals.js` (signals, scenarios),
-`src/data/macroCalendar.js` (meetings and catalysts), `src/data/macroInflation.js` (breadth items, print rows). Logic: `src/macroData.js`, `src/macroSignals.js`,
+`src/data/macroCalendar.js` (meetings and catalysts), `src/data/macroInflation.js` (breadth items, print rows),
+`src/data/macroSpeakers.js` (rosters, feeds, trusted outlets). Tracker: `src/macroSpeech.js`; Macro read: `src/macroRead.js`. Logic: `src/macroData.js`, `src/macroSignals.js`,
 `src/macroAlerts.js`, `src/macroMonitor.js`. UI: `src/components/macro/`.
 
 ---

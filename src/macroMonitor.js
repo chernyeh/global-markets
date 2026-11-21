@@ -12,8 +12,25 @@ import { fetchMacro, mergeMacro, resolveMacro } from "./macroData.js";
 import { evaluateSignals, scenarioTally } from "./macroSignals.js";
 import { updateAlerts, emptyAlertState, unreadCount } from "./macroAlerts.js";
 import { SCENARIOS } from "./data/macroSignals.js";
+import { collectSpeechItems, officialText, pickForClassification, classifyItems, mergeSpeechStore, speechAlerts, evidenceSuggestions } from "./macroSpeech.js";
+import { buildMacroDigest, MACRO_READ_SYSTEM } from "./macroRead.js";
+import { callClaude, MODEL_CLASSIFY, MODEL_SYNTHESIZE, SYNTH_MODELS, getSynthModel } from "./api.js";
 
 export const REFRESH_MS = 10 * 60 * 1000;
+export const SPEECH_MS = 30 * 60 * 1000;     // speaker feeds re-read every 30 minutes
+const EVIDENCE_MS = 6 * 60 * 60 * 1000;      // signal-evidence suggestions every 6 hours
+
+// Text of any feed or page through the app's own proxy (the same one the news uses).
+async function fetchText(url) {
+  const r = await fetch(`/api/rss?url=${encodeURIComponent(url)}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const t = await r.text();
+  if (!t) throw new Error("empty response");
+  return t;
+}
+// Classification calls use Haiku with the instructions sent as a cached system block.
+const classify = (system, prompt) => callClaude(prompt, 3000, { model: MODEL_CLASSIFY, system, throwOnError: true, timeoutMs: 45000 });
+const emptySpeech = () => ({ items: {}, lastRun: 0, error: null, evidence: {}, evidenceAt: 0 });
 const defaultScen = () => ({ weights: Object.fromEntries(SCENARIOS.map(s => [s.id, s.weight])), setAt: null, flipsAt: 0, fromPlaybook: true });
 
 // Keep stored history small: 5 significant decimals is far finer than any source publishes.
@@ -38,6 +55,12 @@ export function useMacroMonitor() {
   const [alertState, setAlertState] = useState(emptyAlertState);
   const [notify, setNotifyState] = useState(false);
   const [ready, setReady] = useState(false);
+  const [speech, setSpeech] = useState(emptySpeech);
+  const [speechBusy, setSpeechBusy] = useState(false);
+  const [read, setRead] = useState(null);
+  const [readBusy, setReadBusy] = useState(false);
+  const speechRef = useRef(emptySpeech());
+  const speechBusyRef = useRef(false);
 
   // Refs mirror state for use inside the async refresh (updated in the setters).
   const rawRef = useRef(null), manualRef = useRef({}), pastedRef = useRef({}), alertRef = useRef(emptyAlertState()), notifyRef = useRef(false);
@@ -92,6 +115,9 @@ export function useMacroMonitor() {
       if (s?.weights) setScenState({ ...defaultScen(), ...s });
       if (Array.isArray(ev)) setUserEventsState(ev);
       if (n === true) { notifyRef.current = true; setNotifyState(true); }
+      const [sp, rd] = await Promise.all([sGet(SK.macroSpeech), sGet(SK.macroRead)]);
+      if (sp?.items) { speechRef.current = { ...emptySpeech(), ...sp }; setSpeech(speechRef.current); }
+      if (rd?.text) setRead(rd);
       setReady(true);
       if (!d?.fetchedAt || Date.now() - d.fetchedAt > REFRESH_MS) refresh();
     })();
@@ -107,6 +133,58 @@ export function useMacroMonitor() {
     }, 60 * 1000);
     return () => clearInterval(id);
   }, [refresh]);
+
+  // Add alerts raised outside the data refresh (speaker shifts, new statements).
+  const appendAlerts = useCallback(list => {
+    if (!list.length) return;
+    const now = Date.now();
+    const stamped = list.map((a, i) => ({ ...a, id: `${now}-s${i}`, at: now, read: false }));
+    const next = { ...alertRef.current, alerts: [...stamped, ...alertRef.current.alerts].slice(0, 120) };
+    alertRef.current = next; setAlertState(next); sSet(SK.macroAlerts, next);
+    if (notifyRef.current && typeof Notification !== "undefined" && Notification.permission === "granted") {
+      stamped.filter(a => a.sev !== "info").slice(0, 3).forEach(a => { try { new Notification(a.title, { body: a.detail, tag: a.ref }); } catch { /* unsupported */ } });
+    }
+  }, []);
+
+  // Speaker tracker: read feeds, fetch official texts, classify new items with
+  // Haiku, store, and alert on shifts. Evidence suggestions every 6 hours.
+  const runSpeech = useCallback(async ({ force = false } = {}) => {
+    if (speechBusyRef.current) return;
+    const prev = speechRef.current;
+    if (!force && Date.now() - (prev.lastRun || 0) < SPEECH_MS) return;
+    speechBusyRef.current = true; setSpeechBusy(true);
+    const now = Date.now();
+    try {
+      const { items, errors } = await collectSpeechItems(fetchText, { now });
+      const todo = pickForClassification(items, prev.items, { now });
+      await Promise.all(todo.filter(it => it.kind === "official").slice(0, 8).map(async it => { it.text = await officialText(it, fetchText); }));
+      const { results, errors: cErr } = todo.length ? await classifyItems(todo, classify) : { results: {}, errors: [] };
+      const store = mergeSpeechStore(prev, todo, results, now);
+      let evidence = prev.evidence || {}, evidenceAt = prev.evidenceAt || 0;
+      if (force || now - evidenceAt > EVIDENCE_MS) {
+        try { evidence = await evidenceSuggestions(fetchText, classify, { now }); evidenceAt = now; } catch { /* keep the last */ }
+      }
+      const failed = [...errors, ...cErr];
+      const next = { items: store, lastRun: now, evidence, evidenceAt,
+        error: failed.length ? `${failed.length} problem${failed.length > 1 ? "s" : ""}: ${failed[0]}` : null,
+        counts: { seen: items.length, classified: Object.keys(results).length, skipped: items.length - todo.length } };
+      speechRef.current = next; setSpeech(next); sSet(SK.macroSpeech, next);
+      appendAlerts(speechAlerts(new Set(Object.keys(results)), store));
+    } catch (e) {
+      const next = { ...prev, lastRun: now, error: e.message };
+      speechRef.current = next; setSpeech(next);
+    } finally {
+      speechBusyRef.current = false; setSpeechBusy(false);
+    }
+  }, [appendAlerts]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const tick = () => { if (typeof document === "undefined" || document.visibilityState === "visible") runSpeech(); };
+    const first = setTimeout(tick, 4000); // let the market data load first
+    const id = setInterval(tick, 60 * 1000);
+    return () => { clearTimeout(first); clearInterval(id); };
+  }, [ready, runSpeech]);
 
   const series = useMemo(() => resolveMacro(raw), [raw]);
   const results = useMemo(() => evaluateSignals(series, { manual, pasted }), [series, manual, pasted]);
@@ -132,6 +210,21 @@ export function useMacroMonitor() {
     const next = { ...alertRef.current, alerts: alertRef.current.alerts.map(a => (all || ids.includes(a.id) ? { ...a, read: true } : a)) };
     alertRef.current = next; setAlertState(next); sSet(SK.macroAlerts, next);
   }, []);
+  // Macro read: the brief model (header picker) over a digest of the page.
+  const generateRead = useCallback(async () => {
+    setReadBusy(true);
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const digest = buildMacroDigest({ series, results, tally, scen, paths: raw?.sources?.cbw?.paths || {},
+        mpt: raw?.sources?.mpt?.paths?.fed || null, speech: speechRef.current, today, userEvents });
+      const text = await callClaude(`DIGEST:\n${digest}`, 1600, { model: MODEL_SYNTHESIZE, system: MACRO_READ_SYSTEM, throwOnError: true, timeoutMs: 60000 });
+      const rec = { text, at: Date.now(), model: SYNTH_MODELS[getSynthModel()]?.label || getSynthModel(), digestChars: digest.length, error: null };
+      setRead(rec); sSet(SK.macroRead, rec);
+    } catch (e) {
+      setRead(r => ({ ...(r || {}), error: e.message }));
+    } finally { setReadBusy(false); }
+  }, [series, results, tally, scen, raw, userEvents]);
+
   const toggleNotify = useCallback(async () => {
     if (notifyRef.current) { notifyRef.current = false; setNotifyState(false); sSet(SK.macroNotify, false); return; }
     if (typeof Notification === "undefined") return;
@@ -149,5 +242,8 @@ export function useMacroMonitor() {
     userEvents, setUserEvents,
     alerts: alertState.alerts, unread: unreadCount(alertState), markRead,
     notify, toggleNotify,
+    mpt: raw?.sources?.mpt?.paths?.fed || null,
+    speech, speechBusy, runSpeech,
+    read, readBusy, generateRead,
   };
 }

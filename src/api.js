@@ -25,6 +25,7 @@ let synthModel = DEFAULT_SYNTH_MODEL;
 export function setSynthModel(id) {
   if (SYNTH_MODELS[id]) synthModel = id;
 }
+export const getSynthModel = () => synthModel;
 
 // ─── Shared async utilities ───────────────────────────────────────────────────
 export const sleep = ms => new Promise(r => setTimeout(r, ms));

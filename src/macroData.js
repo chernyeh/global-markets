@@ -31,7 +31,10 @@ export function buildRequests(registry = MACRO_SERIES, now = Date.now(), { level
     const k = ["treasury", "mof", "yahoo", "cbw", "gie", "fao"].includes(src) ? src : `${src}|${freq}`;
     (groups[k] ||= { src, start: isoDay(now - START_DAYS[freq] * DAY), ids: new Set() }).ids.add(key);
   }
-  if (level === 0 && !only) groups.cbw = { src: "cbw", start: null, ids: new Set(["fed", "ecb"]) };
+  if (level === 0 && !only) {
+    groups.cbw = { src: "cbw", start: null, ids: new Set(["fed", "ecb"]) };
+    groups.mpt = { src: "mpt", start: null, ids: new Set(["fed"]) };
+  }
   return Object.values(groups).map(g => ({ ...g, ids: [...g.ids] }));
 }
 

@@ -15,6 +15,8 @@ import CommodityTiles from "./CommodityTiles.jsx";
 import MacroCalendar from "./MacroCalendar.jsx";
 import AlertInbox from "./AlertInbox.jsx";
 import SourceHealth from "./SourceHealth.jsx";
+import MacroRead from "./MacroRead.jsx";
+import { fedDoneSuggestion } from "../../macroSpeech.js";
 import { C, MONO, SERIF, card, kickerStyle, smallMono, useFs, chipBtn } from "./macroStyles.js";
 import { fmtDate, fmtStamp } from "../../macroFormat.js";
 
@@ -39,6 +41,13 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
   const srcOk = healthList.filter(h => h.ok > 0 && !h.error).length;
   const yahooDown = m.health.yahoo && m.health.yahoo.ok === 0;
   const dataTo = S.ust10y?.lastDate;
+
+  // AI evidence reads for the signals you set: #1 from the classified Fed
+  // statements; #6, #9 and #15 from their news queries.
+  const suggestions = useMemo(() => {
+    const s1 = fedDoneSuggestion(Object.values(m.speech?.items || {}));
+    return { ...(m.speech?.evidence || {}), ...(s1 ? { s1 } : {}) };
+  }, [m.speech]);
 
   const headlines = useMemo(() => {
     const cutoff = now - 24 * 3600 * 1000;
@@ -77,14 +86,17 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
             </button>
           </div>
         </div>
-        <ScenarioStrip tally={m.tally} scen={m.scen} onSave={m.setScenWeights} flipsSinceWeights={m.flipsSinceWeights} />
+        <MacroRead read={m.read} busy={m.readBusy} onGenerate={m.generateRead} />
+        <div style={{ marginTop: 10 }}>
+          <ScenarioStrip tally={m.tally} scen={m.scen} onSave={m.setScenWeights} flipsSinceWeights={m.flipsSinceWeights} />
+        </div>
       </div>
 
       <AlertInbox alerts={m.alerts} unread={m.unread} markRead={m.markRead} notify={m.notify} toggleNotify={m.toggleNotify} />
 
-      <SignalsBoard results={m.results} onSetManual={m.setManual} pasted={m.pasted} setPasted={m.setPasted} now={now} />
+      <SignalsBoard results={m.results} onSetManual={m.setManual} pasted={m.pasted} setPasted={m.setPasted} now={now} suggestions={suggestions} />
 
-      <PolicyPanel today={today} now={now} series={S} paths={m.paths} pasted={m.pasted} setPasted={m.setPasted} />
+      <PolicyPanel today={today} now={now} mpt={m.mpt} speech={m.speech} speechBusy={m.speechBusy} onSpeechRefresh={() => m.runSpeech({ force: true })} series={S} paths={m.paths} pasted={m.pasted} setPasted={m.setPasted} />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(340px,100%),1fr))", gap: 14, marginBottom: 14, alignItems: "start" }}>
         {TABLE_PANELS.filter(p => p.id !== "fx").map(p => (

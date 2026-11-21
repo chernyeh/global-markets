@@ -2,6 +2,47 @@ import { useState } from "react";
 import { FOMC_MEETINGS, ECB_MEETINGS, nextFomc, nextEcb, fedBlackout, ecbQuiet, fmtDay, fmtRange, daysUntil } from "../../data/macroCalendar.js";
 import { C, MONO, SERIF, card, kickerStyle, smallMono, useFs, chipBtn, inputStyle, TIER_COLOR } from "./macroStyles.js";
 import { fmtStamp } from "../../macroFormat.js";
+import SpeakerPanel from "./SpeakerPanel.jsx";
+
+// Atlanta Fed Market Probability Tracker: the SOFR-options distribution of the
+// policy rate for each 3-month window — a PRIMARY second read next to Central
+// Bank Watch's meeting-by-meeting path. Rates in the file are in basis points.
+function MptTable({ mpt, fs }) {
+  if (!mpt?.windows?.length) return null;
+  const rows = mpt.windows.slice(0, 5);
+  const cols = "52px 54px 52px 52px 46px";
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "baseline" }}>
+        <span style={smallMono(fs, C.sub)}>SOFR OPTIONS</span>
+        <span style={smallMono(fs, TIER_COLOR.PRIMARY)}>Atlanta Fed Market Probability Tracker · PRIMARY (model)</span>
+        <span style={smallMono(fs)}>as of {fmtDay(mpt.asOf)} · target {mpt.targetRange?.replace(/bps/g, "").replace(" - ", "–")}bp{mpt.prior ? ` · Δ vs ${fmtDay(mpt.prior.asOf)}` : ""}</span>
+      </div>
+      <div role="table" aria-label="SOFR options implied rates" style={{ marginTop: 2 }}>
+        <div role="row" style={{ display: "grid", gridTemplateColumns: cols, gap: 6, ...smallMono(fs, C.faint), fontSize: fs(8) }}>
+          <span role="columnheader">WINDOW</span><span role="columnheader" style={{ textAlign: "right" }}>MEAN</span>
+          <span role="columnheader" style={{ textAlign: "right" }}>Δ WEEK</span><span role="columnheader" style={{ textAlign: "right" }}>P(HIKE)</span>
+          <span role="columnheader" style={{ textAlign: "right" }}>P(CUT)</span>
+        </div>
+        {rows.map(w => {
+          const p = mpt.prior?.windows?.find(x => x.start === w.start);
+          const d = p && w.mean !== null && p.mean !== null ? w.mean - p.mean : null;
+          return (
+            <div role="row" key={w.start} title={`3-month window from ${w.start}: 25th–75th percentile ${(w.p25 / 100).toFixed(2)}–${(w.p75 / 100).toFixed(2)}%, mode ${(w.mode / 100).toFixed(2)}%`}
+              style={{ display: "grid", gridTemplateColumns: cols, gap: 6, fontFamily: MONO, fontSize: fs(10), color: C.ink, borderBottom: `1px solid ${C.line2}` }}>
+              <span role="cell">{mon(w.start)}</span>
+              <span role="cell" style={{ textAlign: "right", fontWeight: 600 }}>{w.mean !== null ? `${(w.mean / 100).toFixed(2)}%` : "n/a"}</span>
+              <span role="cell" style={{ textAlign: "right", color: d !== null && Math.abs(d) >= 10 ? C.amber : C.sub, fontWeight: d !== null && Math.abs(d) >= 10 ? 700 : 400 }}>{d === null ? "—" : sgnBp(d)}</span>
+              <span role="cell" style={{ textAlign: "right" }}>{w.pHike !== null ? `${w.pHike.toFixed(0)}%` : "n/a"}</span>
+              <span role="cell" style={{ textAlign: "right", color: C.sub }}>{w.pCut !== null ? `${w.pCut.toFixed(0)}%` : "n/a"}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ ...smallMono(fs), marginTop: 2 }}>Mean SOFR expected over each 3-month window; P(hike) = probability the rate is above today's range. Hover a row for the 25th–75th percentile.</div>
+    </div>
+  );
+}
 
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const mon = d => `${MON[Number(d.slice(5, 7)) - 1]}${d.slice(0, 4) !== "2026" ? `-${d.slice(2, 4)}` : ""}`;
@@ -116,7 +157,7 @@ function PasteBox({ bank, cbwNext, pasted, setPasted, fs, now }) {
   );
 }
 
-function BankCard({ bank, today, now, series, path, pasted, setPasted }) {
+function BankCard({ bank, today, now, series, path, pasted, setPasted, mpt, speech, speechBusy, onSpeechRefresh }) {
   const fs = useFs();
   const isFed = bank === "fed";
   const next = isFed ? nextFomc(today) : nextEcb(today);
@@ -192,7 +233,10 @@ function BankCard({ bank, today, now, series, path, pasted, setPasted }) {
         {op?.dropped > 0 && <div style={smallMono(fs)}>{op.dropped} row{op.dropped > 1 ? "s" : ""} dropped — dated off the {isFed ? "Fed's revised (12 Nov)" : "ECB's"} calendar</div>}
       </div>
 
+      {isFed && <MptTable mpt={mpt} fs={fs} />}
       <PasteBox bank={bank} cbwNext={first} pasted={pasted} setPasted={setPasted} fs={fs} now={now} />
+      <SpeakerPanel bank={bank} speech={speech} busy={speechBusy} onRefresh={onSpeechRefresh}
+        blackout={inWin ? `${isFed ? "Fed blackout" : "ECB quiet period"} until ${fmtDay(win.end)} — little or no policy commentary expected` : null} />
       <div style={{ ...smallMono(fs), marginTop: 5 }}>
         Cross-check: {LINKS[bank].map(([l, u], i) => <span key={u}>{i ? " · " : ""}<a href={u} target="_blank" rel="noreferrer" style={{ color: C.blue }}>{l}</a></span>)}
       </div>
@@ -200,7 +244,7 @@ function BankCard({ bank, today, now, series, path, pasted, setPasted }) {
   );
 }
 
-export default function PolicyPanel({ today, now, series, paths, pasted, setPasted }) {
+export default function PolicyPanel({ today, now, series, paths, pasted, setPasted, mpt, speech, speechBusy, onSpeechRefresh }) {
   const fs = useFs();
   const mid = series.ffLo?.last !== null && series.ffLo?.last !== undefined && series.ffHi?.last !== null && series.ffHi?.last !== undefined
     ? (series.ffLo.last + series.ffHi.last) / 2 : paths?.fed?.currentRate ?? null;
@@ -209,8 +253,10 @@ export default function PolicyPanel({ today, now, series, paths, pasted, setPast
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(340px,100%),1fr))", gap: 14 }}>
-        <BankCard bank="fed" today={today} now={now} series={series} path={paths?.fed} pasted={pasted} setPasted={setPasted} />
-        <BankCard bank="ecb" today={today} now={now} series={series} path={paths?.ecb} pasted={pasted} setPasted={setPasted} />
+        <BankCard bank="fed" today={today} now={now} series={series} path={paths?.fed} pasted={pasted} setPasted={setPasted}
+          mpt={mpt} speech={speech} speechBusy={speechBusy} onSpeechRefresh={onSpeechRefresh} />
+        <BankCard bank="ecb" today={today} now={now} series={series} path={paths?.ecb} pasted={pasted} setPasted={setPasted}
+          speech={speech} speechBusy={speechBusy} onSpeechRefresh={onSpeechRefresh} />
       </div>
       {gap !== null && (
         <div style={{ ...smallMono(fs, C.sub), marginTop: 5 }}>

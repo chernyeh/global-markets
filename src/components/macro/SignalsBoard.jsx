@@ -50,7 +50,30 @@ function OatBundPaste({ pasted, setPasted, fs, now }) {
   );
 }
 
-function SignalRow({ sig, result, group, open, onToggle, onSetManual, pasted, setPasted, fs, now }) {
+// The AI's read of the evidence for a signal you set. Shown, never applied:
+// "accept" records it as your call, with the reason as the note.
+function Suggestion({ sig, sug, result, onSetManual, fs }) {
+  if (!sug) return null;
+  const st = STATUS[sug.suggest];
+  const same = result.status === sug.suggest;
+  return (
+    <div style={{ margin: "2px 0 0 38px", fontFamily: MONO, fontSize: fs(9.5), color: C.sub, lineHeight: 1.45 }}>
+      <span style={{ color: C.goldDark, fontWeight: 600 }}>AI READ</span>{" "}
+      {st ? <span style={{ color: C.ink }}>{st.icon} {st.word}</span> : <span>unclear</span>}
+      {" — "}<span style={{ fontFamily: SERIF, fontSize: fs(11.5) }}>{sug.reason}</span>
+      {(sug.evidence || []).map((e, i) => (
+        <a key={i} href={e.link} target="_blank" rel="noreferrer" title={e.title} style={{ color: C.blue, marginLeft: 4 }}>{e.outlet || "source"} {e.date?.slice(5)}</a>
+      ))}
+      {st && !same && (
+        <button onClick={() => onSetManual(sig.id, { status: sug.suggest, note: `accepted AI read: ${sug.reason}`.slice(0, 200) })}
+          style={{ ...chipBtn(false, C.ink), marginLeft: 6 }} title="Record this as your call (you can change it any time)">accept</button>
+      )}
+      {same && <span style={{ color: C.green, marginLeft: 6 }}>matches your call</span>}
+    </div>
+  );
+}
+
+function SignalRow({ sig, result, group, open, onToggle, onSetManual, pasted, setPasted, fs, now, sug }) {
   const st = STATUS[result.status] || STATUS.na;
   const col = statusColor(result.status, group.color);
   return (
@@ -68,6 +91,7 @@ function SignalRow({ sig, result, group, open, onToggle, onSetManual, pasted, se
           </span>
         </span>
       </button>
+      {!sig.auto && <Suggestion sig={sig} sug={sug} result={result} onSetManual={onSetManual} fs={fs} />}
       {open && (
         <div style={{ margin: "4px 0 2px 38px", fontFamily: SERIF, fontSize: fs(11.5), color: C.sub, lineHeight: 1.45 }}>
           <div><b style={{ color: C.ink }}>Met when:</b> {sig.threshold}</div>
@@ -85,7 +109,7 @@ function SignalRow({ sig, result, group, open, onToggle, onSetManual, pasted, se
   );
 }
 
-export default function SignalsBoard({ results, onSetManual, pasted, setPasted, now }) {
+export default function SignalsBoard({ results, onSetManual, pasted, setPasted, now, suggestions = {} }) {
   const fs = useFs();
   const [open, setOpen] = useState(null);
   const counts = s => SIGNALS.filter(x => x.group === s).reduce((a, x) => { const st = results[x.id]?.status; a[st] = (a[st] || 0) + 1; return a; }, {});
@@ -112,7 +136,7 @@ export default function SignalsBoard({ results, onSetManual, pasted, setPasted, 
               {SIGNALS.filter(s => s.group === g.id).map(sig => (
                 <SignalRow key={sig.id} sig={sig} group={g} result={results[sig.id] || { status: "na", value: "—" }}
                   open={open === sig.id} onToggle={() => setOpen(o => (o === sig.id ? null : sig.id))}
-                  onSetManual={onSetManual} pasted={pasted} setPasted={setPasted} fs={fs} now={now} />
+                  onSetManual={onSetManual} pasted={pasted} setPasted={setPasted} fs={fs} now={now} sug={suggestions[sig.id]} />
               ))}
             </div>
           );
