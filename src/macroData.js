@@ -17,17 +17,21 @@ const dayMs = d => Date.parse(`${d}T00:00:00Z`);
 const START_DAYS = { D: 400, M: 1100 };
 
 // Group registry sources into requests: { src, start, ids }.
-export function buildRequests(registry = MACRO_SERIES, now = Date.now()) {
+// Fallbacks are fetched lazily: stage 0 asks every entry's first source; a
+// later stage asks source N only for entries that nothing before it answered.
+export function buildRequests(registry = MACRO_SERIES, now = Date.now(), { level = 0, only = null } = {}) {
   const groups = {};
-  for (const def of Object.values(registry)) {
-    for (const [src, key] of def.src || []) {
-      const freq = def.freq || "D";
-      // Treasury, MoF and Yahoo return a fixed history; one request each.
-      const k = ["treasury", "mof", "yahoo", "cbw"].includes(src) ? src : `${src}|${freq}`;
-      (groups[k] ||= { src, start: isoDay(now - START_DAYS[freq] * DAY), ids: new Set() }).ids.add(key);
-    }
+  for (const [id, def] of Object.entries(registry)) {
+    if (only && !only.has(id)) continue;
+    const pair = (def.src || [])[level];
+    if (!pair) continue;
+    const [src, key] = pair;
+    const freq = def.freq || "D";
+    // Treasury, MoF, Yahoo, GIE and FAO return a fixed history; one request each.
+    const k = ["treasury", "mof", "yahoo", "cbw", "gie", "fao"].includes(src) ? src : `${src}|${freq}`;
+    (groups[k] ||= { src, start: isoDay(now - START_DAYS[freq] * DAY), ids: new Set() }).ids.add(key);
   }
-  groups.cbw = { src: "cbw", start: null, ids: new Set(["fed", "ecb"]) };
+  if (level === 0 && !only) groups.cbw = { src: "cbw", start: null, ids: new Set(["fed", "ecb"]) };
   return Object.values(groups).map(g => ({ ...g, ids: [...g.ids] }));
 }
 
@@ -43,31 +47,48 @@ async function fetchOne(req, timeoutMs) {
   } finally { clearTimeout(timer); }
 }
 
-// → { fetchedAt, sources: { [src]: { series, paths, errors, tier, fetchedAt } }, health: { [src]: {...} } }
-export async function fetchMacro({ timeoutMs = 32000 } = {}) {
-  const reqs = buildRequests();
-  const res = await Promise.allSettled(reqs.map(r => fetchOne(r, timeoutMs)));
+const hasPoints = s => (s?.points || []).some(p => typeof p[1] === "number");
+
+// Runs the staged requests through `fetcher(req) → body` (the API in the
+// browser; the handler itself in tests).
+// → { fetchedAt, sources: { [src]: { series, paths, errors, tier } }, health: { [src]: {...} } }
+export async function collectMacro(fetcher, registry = MACRO_SERIES, now = Date.now()) {
   const sources = {}, health = {};
-  reqs.forEach((req, i) => {
-    const s = (sources[req.src] ||= { series: {}, paths: {}, errors: {} });
-    const h = (health[req.src] ||= { requested: 0, ok: 0, errors: {}, error: null, fetchedAt: null });
-    h.requested += req.ids.length;
-    const r = res[i];
-    if (r.status === "fulfilled") {
-      Object.assign(s.series, r.value.series || {});
-      Object.assign(s.paths, r.value.paths || {});
-      Object.assign(s.errors, r.value.errors || {});
-      Object.assign(h.errors, r.value.errors || {});
-      h.ok += Object.keys(r.value.series || r.value.paths || {}).length;
-      h.fetchedAt = r.value.fetchedAt || Date.now();
-      s.tier = r.value.tier;
-    } else {
-      h.error = r.reason?.name === "AbortError" ? "timeout" : (r.reason?.message || "request failed");
-      req.ids.forEach(id => { h.errors[id] = h.error; });
-    }
-  });
+  const run = async reqs => {
+    const res = await Promise.allSettled(reqs.map(r => fetcher(r)));
+    reqs.forEach((req, i) => {
+      const s = (sources[req.src] ||= { series: {}, paths: {}, errors: {} });
+      const h = (health[req.src] ||= { requested: 0, ok: 0, errors: {}, error: null, fetchedAt: null });
+      h.requested += req.ids.length;
+      const r = res[i];
+      if (r.status === "fulfilled") {
+        Object.assign(s.series, r.value.series || {});
+        Object.assign(s.paths, r.value.paths || {});
+        Object.assign(s.errors, r.value.errors || {});
+        Object.assign(h.errors, r.value.errors || {});
+        h.ok += Object.keys(r.value.series || r.value.paths || {}).length;
+        h.fetchedAt = r.value.fetchedAt || Date.now();
+        s.tier = r.value.tier;
+      } else {
+        const err = r.reason?.name === "AbortError" ? "timeout" : (r.reason?.message || "request failed");
+        if (!h.ok) h.error = err;
+        req.ids.forEach(id => { h.errors[id] = err; s.errors[id] = err; });
+      }
+    });
+  };
+  await run(buildRequests(registry, now));
+  for (let level = 1; level < 3; level++) {
+    const missing = new Set(Object.entries(registry)
+      .filter(([, def]) => !def.derived && def.src?.[level] &&
+        !def.src.slice(0, level).some(([src, key]) => hasPoints(sources[src]?.series?.[key])))
+      .map(([id]) => id));
+    if (!missing.size) break;
+    await run(buildRequests(registry, now, { level, only: missing }));
+  }
   return { fetchedAt: Date.now(), sources, health };
 }
+
+export const fetchMacro = ({ timeoutMs = 32000 } = {}) => collectMacro(req => fetchOne(req, timeoutMs));
 
 // Merge a fresh fetch into the stored one: a source that failed this time keeps
 // its last good series (marked by their own asOf dates), so a transient outage
@@ -119,7 +140,10 @@ function withStats(def, points) {
   };
   // Monthly series: the previous observation *is* the 1-month change; there is no daily one.
   if (def.freq === "M") {
-    return { ...def, points, last, lastDate, prevDate: prev?.[0] || null, chg1d: null, chg1m: prev ? diff(last, prev[1]) : null };
+    const y1 = valueAtOrBefore(points, isoDay(dayMs(lastDate) - 360 * DAY));
+    const yearAgo = y1 && y1[0].slice(0, 7) === isoDay(dayMs(lastDate) - 360 * DAY).slice(0, 7) ? y1 : null;
+    return { ...def, points, last, lastDate, prevDate: prev?.[0] || null, chg1d: null, chg1m: prev ? diff(last, prev[1]) : null,
+             chg1y: yearAgo ? diff(last, yearAgo[1]) : null };
   }
   return {
     ...def, points, last, lastDate,
@@ -164,6 +188,12 @@ export function resolveMacro(raw, registry = MACRO_SERIES) {
     out[id] = { id, ...withStats(def, pts), srcUsed: "derived", inputs: [a, b],
                 fallback: !!(out[a]?.fallback || out[b]?.fallback),
                 error: pts.length ? null : `needs ${[a, b].filter(k => !out[k]?.points?.length).join(" and ")}` };
+  }
+  // Reference lines taken from another series' latest value (e.g. gas storage's 5-year average).
+  for (const s of Object.values(out)) {
+    if (!s.thrFrom) continue;
+    const ref = out[s.thrFrom.id];
+    if (ref?.last !== null && ref?.last !== undefined) s.thr = [...(s.thr || []), { v: ref.last, label: s.thrFrom.label }];
   }
   return out;
 }

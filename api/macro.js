@@ -16,6 +16,10 @@
 //   mof       Japan Ministry of Finance JGB yields                     PRIMARY, no key
 //   yahoo     Yahoo Finance chart endpoint (futures, FX, indices)      SECONDARY-reliable (unofficial API)
 //   cbw       Central Bank Watch market-implied Fed/ECB paths (HTML)   SECONDARY-unverified
+//   bls       BLS API v2 — CPI items, PPI, average prices (BLS_API_KEY) PRIMARY
+//   eurostat  Eurostat HICP, ECOICOP ver.2 (prc_hicp_minr)              PRIMARY, no key
+//   gie       GIE AGSI+ EU gas storage (GIE_API_KEY optional)          PRIMARY
+//   fao       FAO Food Price Index (monthly CSV)                       PRIMARY, no key
 
 export const config = { maxDuration: 30 };
 
@@ -30,7 +34,7 @@ const num = v => {
   return Number.isFinite(n) ? n : null;
 };
 
-async function get(url, { signal, ua = BOT_UA, headers = {}, timeoutMs = 9000 } = {}) {
+async function get(url, { signal, ua = BOT_UA, headers = {}, timeoutMs = 9000, method = "GET", body } = {}) {
   // The request-wide deadline has passed: don't start new fetches (an "abort"
   // listener added to an already-aborted signal would never fire).
   if (signal?.aborted) throw new Error("timeout");
@@ -39,7 +43,7 @@ async function get(url, { signal, ua = BOT_UA, headers = {}, timeoutMs = 9000 } 
   signal?.addEventListener("abort", onAbort);
   const timer = setTimeout(() => ctl.abort(), timeoutMs);
   try {
-    const r = await fetch(url, { signal: ctl.signal, headers: { "User-Agent": ua, ...headers } });
+    const r = await fetch(url, { method, body, signal: ctl.signal, headers: { "User-Agent": ua, ...headers } });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r;
   } finally {
@@ -316,6 +320,181 @@ async function fetchCbw(ids, { signal }) {
   return { paths, errors };
 }
 
+// ─── BLS (CPI items, PPI, average prices) ───────────────────────────────────
+// API v2. With BLS_API_KEY: 50 series per query, 500 queries a day. Without a
+// key BLS allows 25 series and a small daily quota per IP — shared cloud IPs
+// often exhaust it, so the key is effectively required in production.
+// Monthly periods M01–M12 only (M13 is the annual average); "-" marks a month
+// not collected (e.g. Oct 2025, during the federal shutdown).
+export function parseBlsJson(json, ids) {
+  const series = {}, errors = {};
+  if (json?.status !== "REQUEST_SUCCEEDED") {
+    const msg = (json?.message || [])[0] || json?.status || "BLS request failed";
+    ids.forEach(id => { errors[id] = msg.includes("threshold") ? "BLS daily quota reached — add BLS_API_KEY" : msg; });
+    return { series, errors };
+  }
+  for (const s of json.Results?.series || []) {
+    const pts = (s.data || []).filter(o => /^M(0[1-9]|1[0-2])$/.test(o.period))
+      .map(o => [`${o.year}-${o.period.slice(1)}-01`, num(o.value)]);
+    if (pts.some(p => p[1] !== null)) series[s.seriesID] = asSeries(pts);
+  }
+  // BLS lists unknown or empty series in `message` ("Series does not exist for Series X").
+  for (const m of json.message || []) {
+    const id = ids.find(x => m.includes(x));
+    if (id && !series[id]) errors[id] = m.replace(/\s*for Series\s+\S+/i, "").trim();
+  }
+  ids.forEach(id => { if (!series[id] && !errors[id]) errors[id] = "no data"; });
+  return { series, errors };
+}
+
+async function fetchBls(ids, { signal, start }) {
+  const key = process.env.BLS_API_KEY;
+  const per = key ? 50 : 25;
+  const endyear = String(new Date().getUTCFullYear());
+  const startyear = String(Math.max(Number(start.slice(0, 4)), Number(endyear) - (key ? 19 : 9)));
+  const batches = [];
+  for (let i = 0; i < ids.length; i += per) batches.push(ids.slice(i, i + per));
+  const res = await settleLimit(batches, 2, async batch => {
+    const body = JSON.stringify({ seriesid: batch, startyear, endyear, ...(key ? { registrationkey: key } : {}) });
+    const r = await get("https://api.bls.gov/publicAPI/v2/timeseries/data/", { signal, method: "POST", body, timeoutMs: 15000,
+      headers: { "Content-Type": "application/json" } });
+    return parseBlsJson(await r.json(), batch);
+  });
+  const series = {}, errors = {};
+  res.forEach((r, i) => {
+    if (r.ok) { Object.assign(series, r.value.series); Object.assign(errors, r.value.errors); }
+    else batches[i].forEach(id => { errors[id] = r.error; });
+  });
+  return { series, errors };
+}
+
+// ─── Eurostat HICP (ECOICOP ver.2) ──────────────────────────────────────────
+// prc_hicp_minr replaced the ECOICOP ver.1 datasets from January 2026 data
+// (the ECB portal's ICP series and prc_hicp_manr stop at Dec 2025).
+// ids are "GEO:COICOP18:UNIT", e.g. "EA:TOT_X_NRG_FOOD:RCH_A".
+export function parseJsonStat(j, wanted) {
+  const dims = j.id, size = j.size;
+  const idx = d => j.dimension[d].category.index;
+  const times = Object.entries(idx("time")).sort((a, b) => a[1] - b[1]).map(([t]) => t);
+  const series = {};
+  for (const w of wanted) {
+    const coord = { freq: "M", unit: w.unit, coicop18: w.coicop, geo: w.geo };
+    const pts = times.map(t => {
+      let flat = 0;
+      for (let k = 0; k < dims.length; k++) {
+        const d = dims[k];
+        const v = d === "time" ? idx("time")[t] : idx(d)[coord[d]];
+        if (v === undefined) return [null, null];
+        flat = flat * size[k] + v;
+      }
+      return [/^\d{4}-\d{2}$/.test(t) ? `${t}-01` : null, num(j.value?.[flat] ?? j.value?.[String(flat)])];
+    });
+    if (pts.some(p => p[0] && p[1] !== null)) series[w.id] = asSeries(pts);
+  }
+  return series;
+}
+
+async function fetchEurostat(ids, { signal, start }) {
+  const wanted = ids.map(id => { const [geo, coicop, unit] = id.split(":"); return { id, geo, coicop, unit }; });
+  const units = [...new Set(wanted.map(w => w.unit))];
+  const res = await settleLimit(units, 2, async unit => {
+    const ws = wanted.filter(w => w.unit === unit);
+    const qs = [...new Set(ws.map(w => `geo=${w.geo}`)), ...new Set(ws.map(w => `coicop18=${w.coicop}`))].join("&");
+    const url = `https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_minr?format=JSON&lang=EN&unit=${unit}&${qs}&sinceTimePeriod=${start.slice(0, 7)}`;
+    const j = await (await get(url, { signal, timeoutMs: 15000 })).json();
+    if (j.error) throw new Error(j.error?.[0]?.label || j.error?.label || "Eurostat error");
+    return parseJsonStat(j, ws);
+  });
+  const series = {}, errors = {};
+  res.forEach((r, i) => {
+    const ws = wanted.filter(w => w.unit === units[i]);
+    if (r.ok) Object.assign(series, r.value);
+    ws.forEach(w => { if (!series[w.id]) errors[w.id] = r.ok ? "no data" : r.error; });
+  });
+  return { series, errors };
+}
+
+// ─── GIE AGSI+ — EU gas storage ─────────────────────────────────────────────
+// ids: "eu" → % full, daily, ~13 months; "eu:avg5" → the same gas day's
+// average fill over the previous five years (one point, for the reference line).
+async function gieGet(qs, signal) {
+  const key = process.env.GIE_API_KEY;
+  const r = await get(`https://agsi.gie.eu/api?${qs}`, { signal, timeoutMs: 12000, headers: key ? { "x-key": key } : {} });
+  return r.json();
+}
+
+async function fetchGie(ids, { signal, start }) {
+  const series = {}, errors = {};
+  const area = "eu";
+  try {
+    const to = isoDay(Date.now());
+    const pages = await settleLimit([1, 2], 2, page => gieGet(`type=${area}&from=${start}&to=${to}&size=300&page=${page}`, signal));
+    const rows = pages.filter(p => p.ok).flatMap(p => p.value?.data || []);
+    if (!rows.length) throw new Error(pages.find(p => !p.ok)?.error || "no data");
+    const s = asSeries(rows.map(r => [r.gasDayStart, num(r.full)]));
+    if (ids.includes("eu")) series.eu = s;
+    if (ids.includes("eu:avg5") && s.asOf) {
+      const [y, md] = [Number(s.asOf.slice(0, 4)), s.asOf.slice(4)];
+      // One year at a time with a retry: keyless GIE calls get rate-limited, and an
+      // average over whichever years happened to answer would be misleading.
+      const vals = [];
+      for (let k = 1; k <= 5; k++) {
+        let v = null;
+        for (let attempt = 0; attempt < 2 && v === null; attempt++) {
+          if (attempt) await new Promise(r => setTimeout(r, 800));
+          try { v = num((await gieGet(`type=${area}&date=${y - k}${md}`, signal))?.data?.[0]?.full); } catch { v = null; }
+        }
+        if (v === null) break;
+        vals.push(v);
+      }
+      if (vals.length === 5) {
+        series["eu:avg5"] = { points: [[s.asOf, vals.reduce((a, b) => a + b, 0) / 5]], asOf: s.asOf, years: vals };
+      } else errors["eu:avg5"] = `only ${vals.length} of 5 prior years returned — add GIE_API_KEY for higher limits`;
+    }
+  } catch (e) {
+    ids.forEach(id => { if (!series[id]) errors[id] = e.message; });
+  }
+  return { series, errors };
+}
+
+// ─── FAO Food Price Index ───────────────────────────────────────────────────
+// The CSV link carries a changing version suffix, so it is read off the FFPI
+// page first; the plain file name is the fallback.
+const FAO_COLS = { ffpi: "Food Price Index", meat: "Meat", dairy: "Dairy", cereals: "Cereals", oils: "Oils", sugar: "Sugar" };
+export function parseFaoCsv(text) {
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
+  const hi = lines.findIndex(l => /^Date,/.test(l));
+  if (hi < 0) throw new Error("FAO CSV header not found");
+  const head = lines[hi].split(",").map(h => h.trim());
+  const rows = lines.slice(hi + 1).map(l => l.split(",")).filter(c => /^\d{4}-\d{2}$/.test(c[0]));
+  const out = {};
+  for (const [id, col] of Object.entries(FAO_COLS)) {
+    const ci = head.indexOf(col);
+    if (ci >= 0) out[id] = asSeries(rows.map(c => [`${c[0]}-01`, num(c[ci])]));
+  }
+  return out;
+}
+
+async function fetchFao(ids, { signal, start }) {
+  const base = "https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv";
+  let url = `${base}?download=true`;
+  try {
+    const page = await (await get("https://www.fao.org/worldfoodsituation/foodpricesindex/en/", { signal, ua: BROWSER_UA })).text();
+    const m = page.match(/href="([^"]*food_price_indices_data\.csv[^"]*)"/);
+    if (m) url = m[1].replace(/&amp;/g, "&");
+  } catch { /* fall back to the plain file name */ }
+  const series = {}, errors = {};
+  try {
+    const all = parseFaoCsv(await (await get(url, { signal, ua: BROWSER_UA, timeoutMs: 15000 })).text());
+    for (const id of ids) {
+      const s = all[id];
+      if (s) series[id] = asSeries(s.points.filter(p => p[0] >= start.slice(0, 7)));
+      else errors[id] = "column not found";
+    }
+  } catch (e) { ids.forEach(id => { errors[id] = e.message; }); }
+  return { series, errors };
+}
+
 // ─── Router ─────────────────────────────────────────────────────────────────
 const ADAPTERS = {
   treasury: { fetch: fetchTreasury, tier: "PRIMARY",              ttl: 1800, max: 12, re: /^[nr]\d{1,2}[my]$/ },
@@ -325,6 +504,10 @@ const ADAPTERS = {
   mof:      { fetch: fetchMof,      tier: "PRIMARY",              ttl: 3600, max: 6,  re: /^\d{1,2}Y$/ },
   yahoo:    { fetch: fetchYahoo,    tier: "SECONDARY-reliable",   ttl: 300,  max: 60, re: /^[A-Za-z0-9^=.-]{1,15}$/ },
   cbw:      { fetch: fetchCbw,      tier: "SECONDARY-unverified", ttl: 1800, max: 2,  re: /^(fed|ecb)$/ },
+  bls:      { fetch: fetchBls,      tier: "PRIMARY",              ttl: 21600, max: 100, re: /^(CU[SU]R0000[A-Z0-9]{2,8}|WP[SU][A-Z0-9]{2,10}|APU0000[A-Z0-9]{4,8}|PCU[A-Z0-9-]{4,16})$/ },
+  eurostat: { fetch: fetchEurostat, tier: "PRIMARY",              ttl: 21600, max: 30, re: /^[A-Z0-9_]{2,6}:[A-Z0-9_]{2,24}:[A-Z0-9_]{2,16}$/ },
+  gie:      { fetch: fetchGie,      tier: "PRIMARY",              ttl: 21600, max: 2,  re: /^eu(:avg5)?$/ },
+  fao:      { fetch: fetchFao,      tier: "PRIMARY",              ttl: 43200, max: 6,  re: /^(ffpi|meat|dairy|cereals|oils|sugar)$/ },
 };
 
 export default async function handler(req, res) {

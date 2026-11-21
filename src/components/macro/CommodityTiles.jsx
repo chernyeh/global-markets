@@ -21,11 +21,25 @@ function Tile({ s, fs }) {
           <SourceTag s={s} fs={fs} />
         </div>
         <div style={{ fontFamily: MONO, fontSize: fs(9.5), color: C.sub, display: "flex", gap: 8 }}>
-          <span style={{ color: big ? C.amber : C.sub, fontWeight: big ? 700 : 400 }}>1d {fmtChg(s, s.chg1d)}</span>
-          <span>1m {fmtChg(s, s.chg1m)}</span>
+          {s.freq === "M" ? <>
+            <span>1m {fmtChg(s, s.chg1m)}</span>
+            <span>1y {fmtChg(s, s.chg1y)}</span>
+          </> : <>
+            <span style={{ color: big ? C.amber : C.sub, fontWeight: big ? 700 : 400 }}>1d {fmtChg(s, s.chg1d)}</span>
+            <span>1m {fmtChg(s, s.chg1m)}</span>
+          </>}
         </div>
+        {s.thrFrom && s.thr?.length ? (() => {
+          const ref = s.thr[s.thr.length - 1];
+          const gap = s.last - ref.v;
+          return (
+            <div title={ref.label} style={{ fontFamily: MONO, fontSize: fs(9.5), color: Math.abs(gap) >= 5 ? C.amber : C.sub, fontWeight: Math.abs(gap) >= 5 ? 700 : 400 }}>
+              vs {ref.label}: {fmtLevel(s, ref.v)} ({fmtChg({ ...s, chg: "abs" }, gap)})
+            </div>
+          );
+        })() : null}
         <div style={{ marginTop: 3 }}>
-          <Spark points={s.points} thr={s.thr} fmt={v => fmtLevel(s, v)} width={132} height={24} />
+          <Spark points={s.points} thr={s.thr} fmt={v => fmtLevel(s, v)} width={132} height={24} monthly={s.freq === "M"} />
         </div>
       </> : (
         <div style={{ fontFamily: MONO, fontSize: fs(9.5), color: C.faint, padding: "6px 0 14px" }}>

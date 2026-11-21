@@ -8,6 +8,9 @@ import ScenarioStrip from "./ScenarioStrip.jsx";
 import PolicyPanel from "./PolicyPanel.jsx";
 import SeriesTable from "./SeriesTable.jsx";
 import InflationCard from "./InflationCard.jsx";
+import BreadthCard from "./BreadthCard.jsx";
+import GasBaseCard from "./GasBaseCard.jsx";
+import EuroHicpCard from "./EuroHicpCard.jsx";
 import CommodityTiles from "./CommodityTiles.jsx";
 import MacroCalendar from "./MacroCalendar.jsx";
 import AlertInbox from "./AlertInbox.jsx";
@@ -87,13 +90,20 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
         {TABLE_PANELS.filter(p => p.id !== "fx").map(p => (
           <SeriesTable key={p.id} label={p.label} ids={p.ids} series={S} footnote={FOOTNOTES[p.id]} />
         ))}
-        {/* FX is the shortest table; US inflation sits under it so the row stays level */}
+        {/* FX is the shortest table; euro-area HICP sits under it so the row stays level */}
         <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
           {TABLE_PANELS.filter(p => p.id === "fx").map(p => (
             <SeriesTable key={p.id} label={p.label} ids={p.ids} series={S} footnote={FOOTNOTES[p.id]} />
           ))}
-          <InflationCard series={S} />
+          <EuroHicpCard series={S} />
         </div>
+      </div>
+
+      {/* Inflation detail: the prints, the breadth behind them, and what base effects will do next */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(380px,100%),1fr))", gap: 14, marginBottom: 14, alignItems: "start" }}>
+        <InflationCard series={S} />
+        <BreadthCard series={S} />
+        <GasBaseCard series={S} assume={m.pasted?.gasAssume} setAssume={v => m.setPasted("gasAssume", v)} />
       </div>
 
       <div style={{ marginBottom: 14 }}>

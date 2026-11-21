@@ -37,6 +37,7 @@ export function fmtChg(s, v) {
   const a = Math.abs(v);
   if (s.chg === "pct") return `${sign}${a.toFixed(a >= 10 ? 0 : 1)}%`;
   if (s.chg === "bp") return `${sign}${a.toFixed(0)}bp`;
+  if (s.chg === "abs" && s.unit === "%") return `${sign}${a.toFixed(1)}pp`;
   return `${sign}${a.toFixed(Math.min(s.dp ?? 2, 2))}`;
 }
 

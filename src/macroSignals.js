@@ -8,6 +8,7 @@
 
 import { SIGNALS, SCENARIOS } from "./data/macroSignals.js";
 import { monthlyChanges, round1, valueAtOrBefore, isoDay } from "./macroData.js";
+import { breadth } from "./macroInflation.js";
 
 const DAY = 86400000;
 export const PASTE_LIFE_MS = 21 * DAY;
@@ -69,6 +70,21 @@ const EVAL = {
     return { status: d1 && d2 && d3 ? "met" : d1 && d2 ? "partial" : "not",
       value: `3m ann ${a.map(v => v.toFixed(1)).join(" → ")}`, asOf: ch[3].month,
       detail: `${monLabel(ch[0].month)}–${monLabel(ch[3].month)}; each arrow should point lower` };
+  },
+  s4(S) {
+    const b = breadth(S);
+    const L = b.latest;
+    if (!L) {
+      const err = S.sa_SEHC?.error || "";
+      return { status: "na", value: /BLS_API_KEY|FRED_API_KEY|quota/.test(err) ? "needs BLS key" : "no data",
+        detail: "19 Nov note (Aug–Oct): ≈70% by weight · ≈50% by count · ≈45% ex-OER above 3%" };
+    }
+    const prev = b.ann[b.ann.length - 2], three = b.ann[b.ann.length - 4];
+    const status = L.w < 50 && (!three || L.w < three.w) ? "met"
+      : (prev && L.w <= prev.w - 5) || L.w < 60 ? "partial" : "not";
+    return { status, asOf: L.month, lean: L.w >= 70 ? ["sticky"] : undefined,
+      value: `${L.w.toFixed(0)}% by weight · ${L.n.toFixed(0)}% by count · ${L.exOer.toFixed(0)}% ex-OER (3m ann., ${monLabel(L.month)})`,
+      detail: `${L.covN} items, ${L.covW.toFixed(1)}pp of CPI${three ? `; 3 months earlier ${three.w.toFixed(0)}% by weight` : ""}` };
   },
   s5(S) {
     const miss = na(S, ["tp10y"]); if (miss) return miss;

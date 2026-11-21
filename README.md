@@ -19,14 +19,24 @@ in-app alerts.
 | Japan MoF | JGB yields | PRIMARY | none |
 | Yahoo Finance | futures, FX, indices, ETFs | SECONDARY-reliable | none |
 | Central Bank Watch | market-implied Fed/ECB meeting paths | SECONDARY-unverified | none |
+| BLS | CPI items (core-services breadth), aggregates, PPI, average gasoline price | PRIMARY | `BLS_API_KEY` |
+| Eurostat | euro-area and country HICP (ECOICOP ver.2, `prc_hicp_minr`) | PRIMARY | none |
+| GIE AGSI+ | EU gas storage and its 5-year same-day average | PRIMARY | `GIE_API_KEY` (optional, higher limits) |
+| FAO | Food Price Index and sub-indices | PRIMARY | none |
 
-**Setup** — add the free FRED key in Vercel:
-1. Register at https://fredaccount.stlouisfed.org → My Account → API Keys → Request API Key.
-2. Vercel → this project → Settings → Environment Variables → add `FRED_API_KEY` (Production, Preview, Development).
-3. Deployments → latest → ⋯ → Redeploy.
+**Setup** — free keys, added in Vercel → this project → Settings → Environment Variables
+(tick Production, Preview and Development), then Deployments → latest → ⋯ → Redeploy:
+
+| Variable | Register at | Needed for |
+|---|---|---|
+| `FRED_API_KEY` | https://fredaccount.stlouisfed.org → My Account → API Keys | term premium, credit spreads, PCE, alternative cores, IMF commodities, fallbacks |
+| `BLS_API_KEY` | https://data.bls.gov/registrationEngine/ (key arrives by email; click to activate) | CPI items and breadth, PPI, gasoline base effects — BLS refuses keyless calls from shared server IPs |
+| `GIE_API_KEY` | https://agsi.gie.eu → register → key in your account profile | optional: higher rate limits for gas storage |
+
+No BEA key is needed: PCE series come through FRED.
 
 Registry: `src/data/macroSeries.js` (indicators), `src/data/macroSignals.js` (signals, scenarios),
-`src/data/macroCalendar.js` (meetings and catalysts). Logic: `src/macroData.js`, `src/macroSignals.js`,
+`src/data/macroCalendar.js` (meetings and catalysts), `src/data/macroInflation.js` (breadth items, print rows). Logic: `src/macroData.js`, `src/macroSignals.js`,
 `src/macroAlerts.js`, `src/macroMonitor.js`. UI: `src/components/macro/`.
 
 ---

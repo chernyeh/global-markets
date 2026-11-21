@@ -37,11 +37,17 @@ export const SOURCE_META = {
   treasury: { label: "US Treasury",          short: "UST",   tier: "PRIMARY",              url: "https://home.treasury.gov/resource-center/data-chart-center/interest-rates" },
   fred:     { label: "FRED (St. Louis Fed)", short: "FRED",  tier: "PRIMARY",              url: "https://fred.stlouisfed.org/", key: "FRED_API_KEY" },
   ecb:      { label: "ECB Data Portal",      short: "ECB",   tier: "PRIMARY",              url: "https://data.ecb.europa.eu/" },
+  bls:      { label: "BLS",                  short: "BLS",   tier: "PRIMARY",              url: "https://www.bls.gov/data/", key: "BLS_API_KEY" },
+  eurostat: { label: "Eurostat",             short: "ESTAT", tier: "PRIMARY",              url: "https://ec.europa.eu/eurostat/databrowser/view/prc_hicp_minr/default/table" },
+  gie:      { label: "GIE AGSI+",            short: "GIE",   tier: "PRIMARY",              url: "https://agsi.gie.eu/" },
+  fao:      { label: "FAO",                  short: "FAO",   tier: "PRIMARY",              url: "https://www.fao.org/worldfoodsituation/foodpricesindex/en/" },
   bbk:      { label: "Bundesbank",           short: "BBk",   tier: "PRIMARY",              url: "https://www.bundesbank.de/en/statistics/money-and-capital-markets/interest-rates-and-yields" },
   mof:      { label: "Japan MoF",            short: "MoF",   tier: "PRIMARY",              url: "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/" },
   yahoo:    { label: "Yahoo Finance",        short: "Yahoo", tier: "SECONDARY-reliable",   url: "https://finance.yahoo.com/" },
   cbw:      { label: "Central Bank Watch",   short: "CBW",   tier: "SECONDARY-unverified", url: "https://centralbank.watch/" },
 };
+
+import { breadthRegistry } from "./macroInflation.js";
 
 const BUND_10Y = "D.I.ZAR.ZI.EUR.S1311.B.A604.R10XX.R.A.A._Z._Z.A";
 const ECB_10Y = c => `IRS/M.${c}.L.L40.CI.0000.EUR.N.Z`;
@@ -86,10 +92,45 @@ export const MACRO_SERIES = {
   dfr:    { group: "policy", label: "ECB deposit rate", unit: "%", dp: 2, src: [["ecb", "FM/D.U2.EUR.4F.KR.DFR.LEV"], ["fred", "ECBDFR"]] },
   estr:   { group: "policy", label: "€STR", unit: "%", dp: 3, src: [["ecb", "EST/B.EU000A2X2A25.WT"]] },
 
-  // ── US inflation (headline prints; components arrive in Phase 2) ─────────
-  coreCpi:{ group: "inflation", label: "Core CPI index", unit: "idx", dp: 3, freq: "M", src: [["fred", "CPILFESL"]] },
-  cpi:    { group: "inflation", label: "CPI index", unit: "idx", dp: 3, freq: "M", src: [["fred", "CPIAUCSL"]] },
-  corePce:{ group: "inflation", label: "Core PCE index", unit: "idx", dp: 3, freq: "M", src: [["fred", "PCEPILFE"]] },
+  // ── US inflation (BLS first; FRED carries the same data as a fallback) ───
+  // SA indices for m/m and 3-month annualised; NSA for y/y, as BLS publishes.
+  coreCpi:  { group: "inflation", label: "Core CPI (SA)", unit: "idx", dp: 3, freq: "M", src: [["bls", "CUSR0000SA0L1E"], ["fred", "CPILFESL"]] },
+  cpi:      { group: "inflation", label: "CPI (SA)", unit: "idx", dp: 3, freq: "M", src: [["bls", "CUSR0000SA0"], ["fred", "CPIAUCSL"]] },
+  cpiNsa:   { group: "inflation", label: "CPI (NSA)", unit: "idx", dp: 3, freq: "M", src: [["bls", "CUUR0000SA0"], ["fred", "CPIAUCNS"]] },
+  coreNsa:  { group: "inflation", label: "Core CPI (NSA)", unit: "idx", dp: 3, freq: "M", src: [["bls", "CUUR0000SA0L1E"], ["fred", "CPILFENS"]] },
+  coreGoods:{ group: "inflation", label: "Core goods (SA)", unit: "idx", dp: 3, freq: "M", src: [["bls", "CUSR0000SACL1E"], ["fred", "CUSR0000SACL1E"]] },
+  coreServ: { group: "inflation", label: "Core services (SA)", unit: "idx", dp: 3, freq: "M", src: [["bls", "CUSR0000SASLE"], ["fred", "CUSR0000SASLE"]] },
+  superCore:{ group: "inflation", label: "Services less rent of shelter (SA)", unit: "idx", dp: 3, freq: "M", src: [["bls", "CUSR0000SASL2RS"], ["fred", "CUSR0000SASL2RS"]] },
+  shelter:  { group: "inflation", label: "Shelter (SA)", unit: "idx", dp: 3, freq: "M", src: [["bls", "CUSR0000SAH1"], ["fred", "CUSR0000SAH1"]] },
+  foodAway: { group: "inflation", label: "Food away from home (NSA)", unit: "idx", dp: 3, freq: "M", src: [["bls", "CUUR0000SEFV"], ["fred", "CUUR0000SEFV"]] },
+  corePce:  { group: "inflation", label: "Core PCE index", unit: "idx", dp: 3, freq: "M", src: [["fred", "PCEPILFE"]] },
+  pceSuper: { group: "inflation", label: "PCE services ex energy & housing", unit: "idx", dp: 3, freq: "M", src: [["fred", "IA001260M"]] },
+  medCpi:   { group: "inflation", label: "Median CPI", unit: "%", dp: 1, freq: "M", src: [["fred", "MEDCPIM158SFRBCLE"]] },
+  trimCpi:  { group: "inflation", label: "Trimmed-mean CPI", unit: "%", dp: 1, freq: "M", src: [["fred", "TRMMEANCPIM158SFRBCLE"]] },
+  stickyCore:{ group: "inflation", label: "Sticky core CPI y/y", unit: "%", dp: 1, freq: "M", src: [["fred", "CORESTICKM159SFRBATL"]] },
+  trimPce:  { group: "inflation", label: "Trimmed-mean PCE 12m", unit: "%", dp: 1, freq: "M", src: [["fred", "PCETRIM12M159SFRBDAL"]] },
+  ppiFd:    { group: "inflation", label: "PPI final demand (SA)", unit: "idx", dp: 3, freq: "M", src: [["bls", "WPSFD4"], ["fred", "PPIFIS"]] },
+  ppiCore:  { group: "inflation", label: "PPI ex food, energy, trade (SA)", unit: "idx", dp: 3, freq: "M", src: [["bls", "WPSFD49116"], ["fred", "WPSFD49116"]] },
+  ppiCoreNsa:{ group: "inflation", label: "PPI ex food, energy, trade (NSA)", unit: "idx", dp: 3, freq: "M", src: [["bls", "WPUFD49116"], ["fred", "WPUFD49116"]] },
+  diesel:   { group: "inflation", label: "Diesel PPI", unit: "idx", dp: 3, freq: "M", src: [["bls", "WPU057303"], ["fred", "WPU057303"]] },
+  trucking: { group: "inflation", label: "Truck freight PPI", unit: "idx", dp: 3, freq: "M", src: [["bls", "WPU3012"], ["fred", "WPU3012"]] },
+  gasAvg:   { group: "inflation", label: "US gasoline, avg price $/gal", unit: "$", dp: 3, freq: "M", src: [["bls", "APU000074714"], ["fred", "APU000074714"]],
+              note: "BLS average retail price, unleaded regular — the price CPI collects. Base for the base-effect projector." },
+  gasWeekly:{ group: "inflation", label: "US gasoline, weekly $/gal", unit: "$", dp: 3, src: [["fred", "GASREGW"]], note: "EIA weekly retail price via FRED." },
+  ...breadthRegistry(),
+
+  // ── Euro-area HICP (Eurostat, ECOICOP ver.2) ─────────────────────────────
+  ezHicp:   { group: "euro", label: "HICP", unit: "%", dp: 1, freq: "M", chg: "bp", src: [["eurostat", "EA:TOTAL:RCH_A"]] },
+  ezCore:   { group: "euro", label: "Core HICP", unit: "%", dp: 1, freq: "M", chg: "bp", src: [["eurostat", "EA:TOT_X_NRG_FOOD:RCH_A"]] },
+  ezCoreMom:{ group: "euro", label: "Core HICP m/m", unit: "%", dp: 1, freq: "M", src: [["eurostat", "EA:TOT_X_NRG_FOOD:RCH_M"]] },
+  ezServ:   { group: "euro", label: "Services", unit: "%", dp: 1, freq: "M", src: [["eurostat", "EA:SERV:RCH_A"]] },
+  ezNeig:   { group: "euro", label: "Non-energy industrial goods", unit: "%", dp: 1, freq: "M", src: [["eurostat", "EA:IGD_NNRG:RCH_A"]] },
+  ezEnergy: { group: "euro", label: "Energy", unit: "%", dp: 1, freq: "M", src: [["eurostat", "EA:NRG:RCH_A"]] },
+  ezFood:   { group: "euro", label: "Food, alcohol & tobacco", unit: "%", dp: 1, freq: "M", src: [["eurostat", "EA:FOOD:RCH_A"]] },
+  deHicp:   { group: "euro", label: "Germany", unit: "%", dp: 1, freq: "M", src: [["eurostat", "DE:TOTAL:RCH_A"]] },
+  frHicp:   { group: "euro", label: "France", unit: "%", dp: 1, freq: "M", src: [["eurostat", "FR:TOTAL:RCH_A"]] },
+  itHicp:   { group: "euro", label: "Italy", unit: "%", dp: 1, freq: "M", src: [["eurostat", "IT:TOTAL:RCH_A"]] },
+  esHicp:   { group: "euro", label: "Spain", unit: "%", dp: 1, freq: "M", src: [["eurostat", "ES:TOTAL:RCH_A"]] },
 
   // ── Credit & stress ──────────────────────────────────────────────────────
   hyOas:  { group: "credit", label: "HY OAS", unit: "bp", dp: 0, chg: "bp", scale: 100, move: 25, src: [["fred", "BAMLH0A0HYM2"]],
@@ -141,6 +182,10 @@ export const MACRO_SERIES = {
   hh:     { group: "energy", label: "Henry Hub", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "NG=F"], ["fred", "DHHNGSP"]] },
   rbob:   { group: "energy", label: "RBOB gasoline", unit: "$", dp: 3, chg: "pct", src: [["yahoo", "RB=F"]] },
   hoil:   { group: "energy", label: "Heating oil (diesel)", unit: "$", dp: 3, chg: "pct", src: [["yahoo", "HO=F"]] },
+  gasStore:{ group: "energy", label: "EU gas storage % full", unit: "%", dp: 1, chg: "abs", src: [["gie", "eu"]],
+            thrFrom: { id: "gasAvg5", label: "5y avg same day" },
+            note: "GIE AGSI+ EU aggregate. Reference line: average fill on the same gas day over the previous five years." },
+  gasAvg5:{ hidden: true, unit: "%", dp: 1, src: [["gie", "eu:avg5"]] },
   coal:   { group: "energy", label: "Coal API2 (ARA)", unit: "$", dp: 1, chg: "pct", src: [["yahoo", "MTF=F"]],
             note: "Rotterdam coal futures. Ticker unverified from the build sandbox." },
 
@@ -149,6 +194,10 @@ export const MACRO_SERIES = {
   silver: { group: "metals", label: "Silver", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "SI=F"]] },
   copper: { group: "metals", label: "Copper $/lb", unit: "$", dp: 3, chg: "pct", src: [["yahoo", "HG=F"]] },
   alu:    { group: "metals", label: "Aluminium", unit: "$", dp: 0, chg: "pct", src: [["yahoo", "ALI=F"]] },
+  ironOre:{ group: "metals", label: "Iron ore $/t (monthly)", unit: "$", dp: 1, chg: "pct", freq: "M", src: [["fred", "PIORECRUSDM"]],
+            note: "IMF primary commodity price via FRED (China import, 62% Fe). Monthly." },
+  coalAu: { group: "metals", label: "Coal, Australia $/t (monthly)", unit: "$", dp: 1, chg: "pct", freq: "M", src: [["fred", "PCOALAUUSDM"]],
+            note: "IMF primary commodity price via FRED (Newcastle thermal). Monthly." },
   hrc:    { group: "metals", label: "US HRC steel $/t", unit: "$", dp: 0, chg: "pct", src: [["yahoo", "HRC=F"]],
             note: "CME Midwest hot-rolled coil futures. China rebar has no free official feed (Phase 4)." },
 
@@ -161,6 +210,13 @@ export const MACRO_SERIES = {
   coffee: { group: "food", label: "Coffee ¢/lb", unit: "px", dp: 1, chg: "pct", src: [["yahoo", "KC=F"]] },
   cocoa:  { group: "food", label: "Cocoa $/t", unit: "px", dp: 0, chg: "pct", src: [["yahoo", "CC=F"]] },
   cattle: { group: "food", label: "Live cattle ¢/lb", unit: "px", dp: 1, chg: "pct", src: [["yahoo", "LE=F"]] },
+
+  ffpi:   { group: "food", label: "FAO Food Price Index", unit: "idx", dp: 1, chg: "pct", freq: "M", src: [["fao", "ffpi"]], note: "FAO, 2014–16 = 100. Monthly." },
+  faoCereals:{ group: "food", label: "FAO cereals", unit: "idx", dp: 1, chg: "pct", freq: "M", src: [["fao", "cereals"]] },
+  faoOils:{ group: "food", label: "FAO vegetable oils", unit: "idx", dp: 1, chg: "pct", freq: "M", src: [["fao", "oils"]] },
+  faoSugar:{ group: "food", label: "FAO sugar", unit: "idx", dp: 1, chg: "pct", freq: "M", src: [["fao", "sugar"]] },
+  faoDairy:{ group: "food", label: "FAO dairy", unit: "idx", dp: 1, chg: "pct", freq: "M", src: [["fao", "dairy"]] },
+  faoMeat:{ group: "food", label: "FAO meat", unit: "idx", dp: 1, chg: "pct", freq: "M", src: [["fao", "meat"]] },
 
   // ── Rare earths (equity proxies; oxide prices arrive in Phase 4) ─────────
   mp:     { group: "rare", label: "MP Materials", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "MP"]] },
@@ -176,8 +232,8 @@ export const TABLE_PANELS = [
   { id: "fx",     label: "FX", ids: ["dxy", "eurusd", "usdjpy", "usdsgd", "usdcnh", "usdinr", "usdidr", "usdthb", "audusd", "usdnok"] },
 ];
 export const TILE_GROUPS = [
-  { id: "energy", label: "ENERGY",  ids: ["brent", "brentCurve", "wti", "ttf", "hh", "rbob", "hoil", "coal"] },
-  { id: "metals", label: "METALS & STEEL", ids: ["gold", "silver", "copper", "alu", "hrc"] },
-  { id: "food",   label: "FOOD",    ids: ["wheat", "corn", "soy", "rice", "sugar", "coffee", "cocoa", "cattle"] },
+  { id: "energy", label: "ENERGY",  ids: ["brent", "brentCurve", "wti", "ttf", "gasStore", "hh", "rbob", "hoil", "coal"] },
+  { id: "metals", label: "METALS, STEEL & BULKS", ids: ["gold", "silver", "copper", "alu", "hrc", "ironOre", "coalAu"] },
+  { id: "food",   label: "FOOD · FAO indices (monthly) and futures", ids: ["ffpi", "faoCereals", "faoOils", "faoSugar", "faoDairy", "faoMeat", "wheat", "corn", "soy", "rice", "sugar", "coffee", "cocoa", "cattle"] },
   { id: "rare",   label: "RARE EARTHS · equity proxies", ids: ["mp", "lynas", "cnre", "remx"] },
 ];

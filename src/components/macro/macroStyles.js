@@ -35,3 +35,16 @@ export const chipBtn = (active, color = C.red) => ({
   border: `1px solid ${active ? color : "#ddd"}`, background: active ? color : "#fff", color: active ? "#fff" : C.mute,
 });
 export const inputStyle = { fontFamily: MONO, fontSize: 10, padding: "3px 6px", border: "1px solid #ddd", borderRadius: 3, background: "#fff", color: C.ink, outline: "none" };
+
+// Diverging cell tint around a pivot (3% for inflation rates): cool below,
+// neutral near, warm above. Background only — the figure stays in ink.
+export function heat(v, pivot = 3, step = 1) {
+  if (v === null || v === undefined || !Number.isFinite(v)) return "transparent";
+  const d = (v - pivot) / step;
+  if (d >= 2) return "#f4d3cc";
+  if (d >= 1) return "#f9e3dc";
+  if (d > 0) return "#fcf0ea";
+  if (d > -1) return "#f4f2ee";
+  if (d > -2) return "#e8eff5";
+  return "#d9e5ef";
+}

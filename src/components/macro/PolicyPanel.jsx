@@ -157,6 +157,15 @@ function BankCard({ bank, today, now, series, path, pasted, setPasted }) {
         <span style={{ fontFamily: SERIF, fontSize: fs(22), fontWeight: 600, color: C.ink }}>{rateBig}</span>
         {rateSub && <span style={smallMono(fs)}>{rateSub}</span>}
       </div>
+      {!isFed && series.ezHicp?.points?.length > 0 && (
+        <div style={{ fontFamily: MONO, fontSize: fs(10), color: C.sub }}>
+          HICP <b style={{ color: C.ink }}>{series.ezHicp.last.toFixed(1)}%</b>
+          {series.ezCore?.last !== null && series.ezCore?.last !== undefined && <> · core <b style={{ color: C.ink }}>{series.ezCore.last.toFixed(1)}%</b></>}
+          {series.ezServ?.last !== null && series.ezServ?.last !== undefined && <> · services {series.ezServ.last.toFixed(1)}%</>}
+          {series.ezEnergy?.last !== null && series.ezEnergy?.last !== undefined && <> · energy {series.ezEnergy.last.toFixed(1)}%</>}
+          <span style={{ color: C.mute }}> · {mon(series.ezHicp.lastDate)}, Eurostat</span>
+        </div>
+      )}
       {next && (
         <div style={{ fontFamily: SERIF, fontSize: fs(12.5), color: C.sub }}>
           Next decision <b style={{ color: C.ink }}>{isFed ? fmtRange(next.start, next.end) : fmtDay(next.date)}</b>
