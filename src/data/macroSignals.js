@@ -20,12 +20,16 @@
 
 export const SCENARIOS = [
   { id: "disinf", label: "Disinflation on schedule", short: "Disinflation", weight: 40,
+    plain: "Inflation cools by Feb; the 5.36% high holds; 10y ≈4.5–4.75% by mid-2027",
     path: "Core ≤0.2% m/m by Feb; last hike Jan–Mar; the 7 Oct high (5.36%) holds; ≈4.5–4.75% by mid-2027." },
   { id: "sticky", label: "Sticky core + more supply", short: "Sticky + supply", weight: 30,
+    plain: "Core stays ≥0.3% a month and bond supply rises; new 10y high in H1 2027",
     path: "Core ≥0.3% m/m; coupon increases in Feb or May; new 10y high in Q1–Q2 2027." },
   { id: "credit", label: "Credit accident", short: "Credit accident", weight: 20,
+    plain: "AI-debt stress spreads; yields drop abruptly but stocks keep falling",
     path: "AI-debt stress spreads to banks or hyperscalers; abrupt yield peak, 2y falls faster than 10y; stocks keep falling." },
   { id: "fiscal", label: "Fiscal dominance", short: "Fiscal dominance", weight: 10,
+    plain: "Fed eases with inflation unbeaten; breakevens, term premium and gold rise",
     path: "Fed eases under pressure with core unbeaten; breakevens and term premium rise; gold, TIPS, real assets win." },
 ];
 

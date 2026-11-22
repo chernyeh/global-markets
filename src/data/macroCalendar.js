@@ -9,6 +9,9 @@
 // ECB: Governing Council monetary policy meetings (decision day), cross-checked
 //   against the ECB's 2027 reserve-maintenance calendar (30 Jun 2026 release).
 //   https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html (PRIMARY)
+// BoJ: Monetary Policy Meeting schedule for 2026 and 2027, read 22 Nov 2026 from
+//   https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm (PRIMARY). The decision
+//   comes on the second day; "Outlook Report" meetings publish new forecasts.
 // Catalysts: the playbook's dated list (rev 54) and the 19 Nov note's calendar.
 //   Dates marked approx are the playbook's "mid-Jan" / "early Dec" style dates;
 //   replace them with the agency's release-schedule date when published.
@@ -59,11 +62,24 @@ export const MACRO_EVENTS = [
   { date: "2027-05-05", type: "ust",  label: "Treasury May refunding", approx: true },
 ];
 
+export const BOJ_MEETINGS = [
+  { start: "2026-12-17", end: "2026-12-18" },
+  { start: "2027-01-21", end: "2027-01-22", outlook: true },
+  { start: "2027-03-17", end: "2027-03-18" },
+  { start: "2027-04-27", end: "2027-04-28", outlook: true },
+  { start: "2027-06-10", end: "2027-06-11" },
+  { start: "2027-07-21", end: "2027-07-22", outlook: true },
+  { start: "2027-09-21", end: "2027-09-22" },
+  { start: "2027-10-28", end: "2027-10-29", outlook: true },
+  { start: "2027-12-16", end: "2027-12-17" },
+];
+
 export const releaseKey = e => `${e.date}:${e.release.id}:${e.release.ref}`;
 
 export const EVENT_TYPES = {
   fed:  { label: "FED",  color: "#1a1a1a" },
   ecb:  { label: "ECB",  color: "#3a6080" },
+  boj:  { label: "BOJ",  color: "#8b3a62" },
   us:   { label: "US",   color: "#8a6a20" },
   eu:   { label: "EU",   color: "#3a6080" },
   ust:  { label: "UST",  color: "#555" },
@@ -89,6 +105,19 @@ export function fedBlackout(m) {
 // with the press conference. Counted from the decision day, so approximate by a day.
 export function ecbQuiet(m) {
   return { start: iso(ms(m.date) - 7 * DAY), end: m.date, approx: true };
+}
+
+// BoJ: board members stop speaking on policy about two business days before
+// the meeting until it ends (BoJ practice as widely reported; not checked
+// against a BoJ primary document, so shown as approximate). Weekends only are
+// skipped — Japanese holidays are not.
+export function bojBlackout(m) {
+  let t = ms(m.start), n = 0;
+  while (n < 2) { t -= DAY; const d = new Date(t).getUTCDay(); if (d !== 0 && d !== 6) n++; }
+  return { start: iso(t), end: m.end, approx: true };
+}
+export function nextBoj(today) {
+  return BOJ_MEETINGS.find(m => m.end >= today) || null;
 }
 
 export function nextFomc(today) {
@@ -123,6 +152,10 @@ export function buildCalendar(userEvents = []) {
     items.push({ date: m.date, type: "ecb", label: `ECB decision${m.proj ? " + staff projections" : ""}`, note: m.note });
     const q = ecbQuiet(m);
     items.push({ date: q.start, type: "ecb", label: "ECB quiet period begins", minor: true, approx: true });
+  }
+  for (const m of BOJ_MEETINGS) {
+    items.push({ date: m.end, type: "boj", label: `BoJ decision${m.outlook ? " + Outlook Report" : ""} · meeting ${fmtRange(m.start, m.end)}` });
+    items.push({ date: bojBlackout(m).start, type: "boj", label: "BoJ quiet period begins", minor: true, approx: true });
   }
   items.push(...MACRO_EVENTS);
   items.push(...userEvents.map(e => ({ ...e, type: "mine", mine: true })));

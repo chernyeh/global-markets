@@ -81,6 +81,7 @@ export const MACRO_SERIES = {
             note: "Monthly average 10y yields (ECB convergence series). Paste a daily spread on the Signals board to override." },
   btpBund:{ group: "rates", label: "BTP–Bund (monthly)", unit: "bp", dp: 0, chg: "bp", freq: "M", derived: { op: "sub", a: "btp10m", b: "bund10m", scale: 100 } },
   jgb10:  { group: "rates", label: "JGB 10y", unit: "%", dp: 3, chg: "bp", src: [["mof", "10Y"]], thr: [{ v: 3, label: "3.0" }] },
+  jgb2:   { group: "policy", label: "JGB 2y", unit: "%", dp: 3, chg: "bp", src: [["mof", "2Y"]] },
   // inputs for the monthly spreads (not shown on their own)
   oat10m: { hidden: true, unit: "%", dp: 2, freq: "M", src: [["ecb", ECB_10Y("FR")]] },
   bund10m:{ hidden: true, unit: "%", dp: 2, freq: "M", src: [["ecb", ECB_10Y("DE")]] },
@@ -92,6 +93,12 @@ export const MACRO_SERIES = {
   effr:   { group: "policy", label: "EFFR", unit: "%", dp: 2, src: [["fred", "EFFR"]] },
   dfr:    { group: "policy", label: "ECB deposit rate", unit: "%", dp: 2, src: [["ecb", "FM/D.U2.EUR.4F.KR.DFR.LEV"], ["fred", "ECBDFR"]] },
   estr:   { group: "policy", label: "€STR", unit: "%", dp: 3, src: [["ecb", "EST/B.EU000A2X2A25.WT"]] },
+  // Market-implied euro short rates from the ECB's own AAA government yield curve
+  // (instantaneous forwards, daily, PRIMARY). Not OIS: the level carries a small
+  // term premium and AAA-vs-€STR basis, so read the changes, not the level.
+  ezFwd6m:{ group: "policy", label: "Euro rate 6m ahead", unit: "%", dp: 2, chg: "bp", src: [["ecb", "YC/B.U2.EUR.4F.G_N_A.SV_C_YM.IF_6M"]] },
+  ezFwd1y:{ group: "policy", label: "Euro rate 1y ahead", unit: "%", dp: 2, chg: "bp", src: [["ecb", "YC/B.U2.EUR.4F.G_N_A.SV_C_YM.IF_1Y"]] },
+  ezFwd2y:{ group: "policy", label: "Euro rate 2y ahead", unit: "%", dp: 2, chg: "bp", src: [["ecb", "YC/B.U2.EUR.4F.G_N_A.SV_C_YM.IF_2Y"]] },
 
   // ── US inflation (BLS first; FRED carries the same data as a fallback) ───
   // SA indices for m/m and 3-month annualised; NSA for y/y, as BLS publishes.
@@ -238,7 +245,10 @@ export const MACRO_SERIES = {
 export const TABLE_PANELS = [
   { id: "rates",  label: "RATES & YIELDS", ids: ["ust3m", "ust2y", "ust10y", "ust30y", "c2s10s", "real10y", "bei10y", "infl5y5", "tp10y", "impl10y", "bund10", "oatBund", "btpBund", "jgb10"] },
   { id: "credit", label: "CREDIT, STRESS & BREADTH", ids: ["hyOas", "igOas", "cccOas", "stlfsi", "vix", "moveIx", "hyg", "crwv", "orcl", "spx", "ndq", "rut", "ewRatio"] },
-  { id: "fx",     label: "FX", ids: ["dxy", "eurusd", "usdjpy", "usdsgd", "usdcnh", "usdinr", "usdidr", "usdthb", "audusd", "usdnok"] },
+  // INR, IDR and THB sit behind a toggle: the playbook (section 4) uses them only as
+  // oil-importer stress gauges ("treat Indonesia, India and Thailand cautiously until Hormuz clears").
+  { id: "fx",     label: "FX", ids: ["dxy", "eurusd", "usdjpy", "usdcnh", "usdsgd", "audusd", "usdnok"],
+    more: { label: "Asia oil importers", ids: ["usdinr", "usdidr", "usdthb"] } },
 ];
 export const TILE_GROUPS = [
   { id: "energy", label: "ENERGY",  ids: ["brent", "brentCurve", "wti", "ttf", "gasStore", "hh", "rbob", "hoil", "coal"] },

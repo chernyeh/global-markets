@@ -17,16 +17,24 @@ import AlertInbox from "./AlertInbox.jsx";
 import SourceHealth from "./SourceHealth.jsx";
 import MacroRead from "./MacroRead.jsx";
 import SetupPanel from "./SetupPanel.jsx";
+import BottomLine from "./BottomLine.jsx";
+import Tip from "./Tip.jsx";
+import { bottomLine } from "../../macroSummary.js";
 import { fedDoneSuggestion } from "../../macroSpeech.js";
 import { C, MONO, SERIF, card, kickerStyle, smallMono, useFs, chipBtn } from "./macroStyles.js";
 import { fmtDate, fmtStamp } from "../../macroFormat.js";
 
 const HEADLINE_TOPICS = new Set(["rates", "macro", "oil", "credit", "fx"]);
-const FOOTNOTES = {
-  rates: "Hover a row for source and date. OAT–Bund and BTP–Bund are monthly ECB averages; paste a daily spread on signal 8. * = fallback source.",
-  credit: "CoreWeave bond yields and CDS have no free feed — the shares are a proxy. Equal- vs cap-weight rising = breadth improving.",
-  fx: "USD/SGD line at 1.25 = where an unhedged USD T-bill's ≈2pp carry is lost (playbook).",
+// Card notes, shown behind the "i" next to each title.
+const NOTES = {
+  rates: { t: "Rates & yields", d: "US Treasury par curves (PRIMARY) with FRED fallbacks; Bund from the Bundesbank; JGB from Japan's MoF. OAT–Bund and BTP–Bund are monthly ECB averages — paste a daily spread on signal 8.",
+    r: "1D/1M = change in bp (or % for prices). Sparkline = 6 months, with the playbook's threshold line where one applies. SRC tier colour: green PRIMARY, blue SECONDARY-reliable, amber unverified; * = fallback source." },
+  credit: { t: "Credit, stress & breadth", d: "Spreads (ICE BofA via FRED), stress and volatility indices, and the AI-debt bellwethers. CoreWeave's bonds and CDS have no free feed, so the shares stand in.",
+    r: "Spreads up = stress up. Equal- vs cap-weight rising = breadth improving." },
+  fx: { t: "Currencies", d: "Yahoo Finance with FRED fallbacks.", r: "USD/SGD line at 1.25 = where an unhedged USD T-bill's ≈2pp carry over SGD is lost (playbook)." },
 };
+const REGIME = { t: "The regime (playbook, 20 Nov)", d: "An inflation shock with a credit-bust tail — 2022's energy-and-rates shock, 2000's concentration in AI, 2007's early credit cracks.",
+  w: "In this template the equity low comes when bond yields peak, not when the Fed cuts: watch the 10-year and core services inflation, not rate-cut odds." };
 const localDay = ms => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
 // The cover page: conclusions first (scenarios and signals), then the policy
@@ -43,6 +51,9 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
   const yahooDown = m.health.yahoo && m.health.yahoo.ok === 0;
   const dataTo = S.ust10y?.lastDate;
   const dueCount = m.dueDecisions(m.decisions, today).length;
+  const { series: mS, results: mR, paths: mP, userEvents: mE, decisions: mD, dueDecisions: dueFn } = m;
+  const summary = useMemo(() => bottomLine({ S: mS, results: mR, paths: mP, today, userEvents: mE, due: dueFn(mD, today) }),
+    [mS, mR, mP, today, mE, mD, dueFn]);
 
   // AI evidence reads for the signals you set: #1 from the classified Fed
   // statements; #6, #9 and #15 from their news queries.
@@ -68,18 +79,16 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
       <style>{`.gm-macro *{font-family:inherit}.gm-macro .gm-news *{font-family:'Spectral',Georgia,serif}`}</style>
       {/* Header: regime + scenarios */}
       <div style={{ ...card, padding: "14px 16px", marginBottom: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
           <div style={{ minWidth: 0 }}>
-            <div style={kickerStyle(fs)}>
-              MACRO MONITOR · {dataTo ? `data to ${fmtDate(dataTo)}` : "no data yet"} · refreshed {fmtStamp(m.fetchedAt)} · sources {srcOk}/{healthList.length} ok
-              {m.unread > 0 && <span style={{ color: C.ink }}> · {m.unread} new alert{m.unread > 1 ? "s" : ""}</span>}
-              {dueCount > 0 && <span style={{ color: C.ink }}> · ⏰ {dueCount} decision{dueCount > 1 ? "s" : ""} due</span>}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontFamily: SERIF, fontSize: fs(16), color: C.ink, fontWeight: 700 }}>Macro & Policy Monitor</span>
+              <Tip tip={REGIME}><span style={{ fontFamily: SERIF, fontSize: fs(12.5), color: C.sub }}>Regime: inflation shock with a credit-bust tail</span></Tip>
             </div>
-            <div style={{ fontFamily: SERIF, fontSize: fs(16), color: C.ink, fontWeight: 700, marginTop: 1 }}>Macro & Policy Monitor</div>
-            <div style={{ fontFamily: SERIF, fontSize: fs(12.5), color: C.sub, marginTop: 2, maxWidth: 980, lineHeight: 1.45 }}>
-              <b style={{ color: C.ink }}>Regime (playbook, 20 Nov):</b> an inflation shock with a credit-bust tail — 2022's energy-and-rates shock,
-              2000's concentration in AI, 2007's early credit cracks. The equity low in this template comes when bond yields peak, not when the Fed cuts:
-              watch the 10y and core services, not rate-cut odds.
+            <div style={{ ...smallMono(fs), marginTop: 1 }}>
+              {dataTo ? `data to ${fmtDate(dataTo)}` : "no data yet"} · refreshed {fmtStamp(m.fetchedAt)} · sources {srcOk}/{healthList.length} ok
+              {m.unread > 0 && <span style={{ color: C.red }}> · {m.unread} new alert{m.unread > 1 ? "s" : ""}</span>}
+              {dueCount > 0 && <span style={{ color: C.red }}> · ⏰ {dueCount} decision{dueCount > 1 ? "s" : ""} due</span>}
             </div>
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -89,8 +98,9 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
             </button>
           </div>
         </div>
+        <BottomLine rows={summary} />
         <MacroRead read={m.read} busy={m.readBusy} onGenerate={m.generateRead} />
-        <div style={{ marginTop: 10 }}>
+        <div style={{ borderTop: `1px solid ${C.line2}`, marginTop: 8, paddingTop: 8 }}>
           <ScenarioStrip tally={m.tally} scen={m.scen} onSave={m.setScenWeights} flipsSinceWeights={m.flipsSinceWeights} />
         </div>
       </div>
@@ -103,12 +113,12 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(340px,100%),1fr))", gap: 14, marginBottom: 14, alignItems: "start" }}>
         {TABLE_PANELS.filter(p => p.id !== "fx").map(p => (
-          <SeriesTable key={p.id} label={p.label} ids={p.ids} series={S} footnote={FOOTNOTES[p.id]} />
+          <SeriesTable key={p.id} label={p.label} ids={p.ids} series={S} note={NOTES[p.id]} />
         ))}
         {/* FX is the shortest table; euro-area HICP sits under it so the row stays level */}
         <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
           {TABLE_PANELS.filter(p => p.id === "fx").map(p => (
-            <SeriesTable key={p.id} label={p.label} ids={p.ids} series={S} footnote={FOOTNOTES[p.id]} />
+            <SeriesTable key={p.id} label={p.label} ids={p.ids} more={p.more} series={S} note={NOTES[p.id]} />
           ))}
           <EuroHicpCard series={S} />
         </div>

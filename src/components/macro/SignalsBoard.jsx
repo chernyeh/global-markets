@@ -3,6 +3,9 @@ import { SIGNALS, SIGNAL_GROUPS } from "../../data/macroSignals.js";
 import { PASTE_LIFE_MS } from "../../macroSignals.js";
 import { C, MONO, SERIF, card, kickerStyle, smallMono, useFs, chipBtn, inputStyle } from "./macroStyles.js";
 import { fmtStamp } from "../../macroFormat.js";
+import { GROUP_TIPS } from "../../data/macroGlossary.js";
+import Tip from "./Tip.jsx";
+import { InfoTip } from "./SeriesTable.jsx";
 
 const STATUS = {
   met:     { icon: "●", word: "met" },
@@ -52,12 +55,24 @@ function OatBundPaste({ pasted, setPasted, fs, now }) {
 
 // The AI's read of the evidence for a signal you set. Shown, never applied:
 // "accept" records it as your call, with the reason as the note.
+function AiChip({ sug, fs }) {
+  if (!sug) return null;
+  const st = STATUS[sug.suggest];
+  return (
+    <Tip underline={false} tip={{ t: "AI read of the news (not applied)", d: sug.reason, r: "Click the row to see the sources and accept it as your call." }}>
+      <span style={{ fontFamily: MONO, fontSize: fs(8.5), color: C.goldDark, border: `1px solid ${C.gold}55`, borderRadius: 3, padding: "0 4px", marginLeft: 5, whiteSpace: "nowrap" }}>
+        AI: {st ? `${st.icon} ${st.word}` : "unclear"}
+      </span>
+    </Tip>
+  );
+}
+
 function Suggestion({ sig, sug, result, onSetManual, fs }) {
   if (!sug) return null;
   const st = STATUS[sug.suggest];
   const same = result.status === sug.suggest;
   return (
-    <div style={{ margin: "2px 0 0 38px", fontFamily: MONO, fontSize: fs(9.5), color: C.sub, lineHeight: 1.45 }}>
+    <div style={{ marginTop: 3, fontFamily: MONO, fontSize: fs(9.5), color: C.sub, lineHeight: 1.45 }}>
       <span style={{ color: C.goldDark, fontWeight: 600 }}>AI READ</span>{" "}
       {st ? <span style={{ color: C.ink }}>{st.icon} {st.word}</span> : <span>unclear</span>}
       {" — "}<span style={{ fontFamily: SERIF, fontSize: fs(11.5) }}>{sug.reason}</span>
@@ -85,15 +100,17 @@ function SignalRow({ sig, result, group, open, onToggle, onSetManual, pasted, se
         <span style={{ ...smallMono(fs, C.sub), lineHeight: 1.8 }}>{sig.n}</span>
         <span style={{ minWidth: 0 }}>
           <span style={{ fontFamily: SERIF, fontSize: fs(12.5), color: C.ink, fontWeight: result.status === "met" ? 700 : 500 }}>{sig.label}</span>
-          {!sig.auto && <span style={{ ...smallMono(fs, C.goldDark), marginLeft: 5 }}>YOU</span>}
-          <span style={{ display: "block", fontFamily: MONO, fontSize: fs(9.5), color: result.status === "met" ? col : C.mute, lineHeight: 1.45 }}>
+          {!sig.auto && <span title="You set this one (no data feed decides it)" style={{ ...smallMono(fs, C.goldDark), fontSize: fs(8.5), marginLeft: 5 }}>your call</span>}
+          {!sig.auto && !open && <AiChip sug={sug} fs={fs} />}
+          <span title={`${st.word} · ${result.value}`} style={{ display: "block", fontFamily: MONO, fontSize: fs(9.5), color: result.status === "met" ? col : C.mute, lineHeight: 1.45,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: open ? "normal" : "nowrap" }}>
             {st.word} · {result.value}
           </span>
         </span>
       </button>
-      {!sig.auto && <Suggestion sig={sig} sug={sug} result={result} onSetManual={onSetManual} fs={fs} />}
       {open && (
         <div style={{ margin: "4px 0 2px 38px", fontFamily: SERIF, fontSize: fs(11.5), color: C.sub, lineHeight: 1.45 }}>
+          {!sig.auto && <Suggestion sig={sig} sug={sug} result={result} onSetManual={onSetManual} fs={fs} />}
           <div><b style={{ color: C.ink }}>Met when:</b> {sig.threshold}</div>
           <div style={{ marginTop: 2 }}><b style={{ color: group.color }}>→ If met:</b> {sig.action}</div>
           <div style={{ marginTop: 2 }}><b style={{ color: C.goldDark }}>⚑ No action unless:</b> {sig.guard}</div>
@@ -116,10 +133,9 @@ export default function SignalsBoard({ results, onSetManual, pasted, setPasted, 
   return (
     <div style={{ ...card, padding: "12px 14px", marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
-        <span style={kickerStyle(fs)}>SIGNALS BOARD</span>
-        <span style={smallMono(fs)}>
-          from the Bear-Market Playbook (rev 54, 20 Nov) · * = illustrative threshold · ● met ◐ partly ○ not – no data ◇ yours to set · click a signal for its action and guard
-        </span>
+        <span style={kickerStyle(fs)}>PLAYBOOK TRIGGERS<InfoTip tip={{ t: "What this board is for", d: "The Bear-Market Playbook (rev 54, 20 Nov) names in advance the conditions that would change the portfolio. Each column asks one question; each row is one condition, with the action to take if it is met and a \"no action unless\" guard so a single print or headline doesn't trigger a trade.",
+          r: "● met · ◐ partly · ○ not met · – no data · ◇ your call (no feed decides it). * = the playbook's illustrative threshold. Click a row for its action and guard." }} /></span>
+        <span style={smallMono(fs)}>what would make us change the portfolio · click a row for the action</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(250px,100%),1fr))", gap: 14 }}>
         {SIGNAL_GROUPS.map(g => {
@@ -127,10 +143,13 @@ export default function SignalsBoard({ results, onSetManual, pasted, setPasted, 
           return (
             <div key={g.id} style={{ minWidth: 0 }}>
               <div style={{ borderBottom: `2px solid ${g.color}`, paddingBottom: 3, marginBottom: 2 }}>
-                <div style={{ fontFamily: MONO, fontSize: fs(10), fontWeight: 600, letterSpacing: "0.08em", color: g.color }}>{g.label}</div>
+                <Tip tip={GROUP_TIPS[g.id]} underline={false}>
+                  <span style={{ fontFamily: MONO, fontSize: fs(10), fontWeight: 600, letterSpacing: "0.06em", color: g.color }}>{GROUP_TIPS[g.id]?.label || g.label}</span>
+                </Tip>
                 <div style={smallMono(fs)}>
-                  {[c.met && `${c.met} met`, c.partial && `${c.partial} partly`, c.unset && `${c.unset} to set`, c.na && `${c.na} no data`].filter(Boolean).join(" · ") || "none met"}
-                  {" — "}{g.blurb}
+                  <b style={{ color: c.met ? g.color : C.sub }}>{c.met || 0} of {SIGNALS.filter(s => s.group === g.id).length} met</b>
+                  {c.partial ? ` · ${c.partial} partly` : ""}{c.unset ? ` · ${c.unset} yours to set` : ""}
+                  <span style={{ display: "block", color: C.mute }}>{GROUP_TIPS[g.id]?.act}</span>
                 </div>
               </div>
               {SIGNALS.filter(s => s.group === g.id).map(sig => (

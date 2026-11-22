@@ -7,7 +7,7 @@
 // to recall one; the prompt forbids numbers that aren't in it.
 
 import { SIGNALS, SCENARIOS } from "./data/macroSignals.js";
-import { FOMC_MEETINGS, ECB_MEETINGS, buildCalendar, daysUntil } from "./data/macroCalendar.js";
+import { FOMC_MEETINGS, ECB_MEETINGS, BOJ_MEETINGS, buildCalendar, daysUntil } from "./data/macroCalendar.js";
 import { breadth } from "./macroInflation.js";
 import { withShifts, hawkDove, rosterFor } from "./macroSpeech.js";
 import { monthlyChanges, round1 } from "./macroData.js";
@@ -59,7 +59,7 @@ export function buildMacroDigest({ series: S, results, tally, scen, paths, mpt, 
     const m0 = p.meetings[0];
     return `  ${name} (CBW, data ${p.asOf || "date not stated"}): ${sg(m0.stepBp, 1)}bp priced for ${m0.date} (${f(m0.pct, 0)}% move); ${sg(p.totalBp)}bp over ${p.meetings.length} meetings`;
   };
-  lines.push(cbw(paths?.fed, "Fed"), cbw(paths?.ecb, "ECB"));
+  lines.push(cbw(paths?.fed, "Fed"), cbw(paths?.ecb, "ECB"), cbw(paths?.boj, "BoJ"));
   if (mpt?.windows?.length) {
     const w = mpt.windows.slice(0, 4).map(x => {
       const prior = mpt.prior?.windows?.find(p => p.start === x.start);
@@ -69,6 +69,7 @@ export function buildMacroDigest({ series: S, results, tally, scen, paths, mpt, 
   }
   if (S.ffLo?.last !== null && S.ffLo?.last !== undefined) lines.push(`  Fed target ${f(S.ffLo.last)}–${f(S.ffHi?.last)}%`);
   if (S.dfr?.last !== null && S.dfr?.last !== undefined) lines.push(`  ECB deposit rate ${f(S.dfr.last)}%`);
+  if (paths?.boj?.currentRate) lines.push(`  BoJ policy rate ${f(paths.boj.currentRate)}% (CBW); JGB 2y ${f(S.jgb2?.last, 3)}%, 10y ${f(S.jgb10?.last, 3)}% (MoF); USD/JPY ${f(S.usdjpy?.last, 2)}`);
 
   lines.push("INFLATION:");
   if (S.coreCpi?.points?.length) {
@@ -80,10 +81,10 @@ export function buildMacroDigest({ series: S, results, tally, scen, paths, mpt, 
   if (S.ezHicp?.points?.length) lines.push(`  Euro HICP ${f(S.ezHicp.last, 1)}%, core ${f(S.ezCore?.last, 1)}%, services ${f(S.ezServ?.last, 1)}% (Eurostat, ${S.ezHicp.lastDate.slice(0, 7)}); Italy ${f(S.itHicp?.last, 1)}%`);
 
   const items = withShifts(Object.values(speech?.items || {})).filter(it => it.relevant);
-  for (const bank of ["fed", "ecb"]) {
+  for (const bank of ["fed", "ecb", "boj"]) {
     const h = hawkDove(items, bank, { now: Date.parse(`${today}T12:00:00Z`) });
     const recent = items.filter(it => it.bank === bank).sort((a, b) => b.ts - a.ts).slice(0, 5);
-    lines.push(`${bank === "fed" ? "FED" : "ECB"} SPEAKERS (hawk–dove index −2..+2, 21 days, weighted): ${h.value === null ? "n/a" : f(h.value, 2)} from ${h.n} statements`);
+    lines.push(`${bank.toUpperCase()} SPEAKERS (hawk–dove index −2..+2, 21 days, weighted): ${h.value === null ? "n/a" : f(h.value, 2)} from ${h.n} statements`);
     for (const it of recent) {
       const r = rosterFor(it.speaker, it.bank);
       lines.push(`  ${it.date} ${it.speaker}${r ? ` (${r.role}${r.v26 ? ", 2026 voter" : ""})` : ""} via ${(it.outlets || [it.outlet]).slice(0, 3).join(", ")}: stance ${sg(it.stance)}${it.shift ? `, shift ${sg(it.shift)} vs ${it.prev.date}` : ""}${it.quote ? ` — “${it.quote}”` : ` — ${it.title}`}`);
@@ -93,7 +94,7 @@ export function buildMacroDigest({ series: S, results, tally, scen, paths, mpt, 
   lines.push("NEXT 21 DAYS:");
   buildCalendar(userEvents).filter(e => !e.minor && e.date >= today && daysUntil(e.date, today) <= 21)
     .forEach(e => lines.push(`  ${e.date}${e.approx ? " (approx)" : ""} ${e.label}`));
-  const nf = FOMC_MEETINGS.find(m => m.end >= today && !m.noDecision), ne = ECB_MEETINGS.find(m => m.date >= today);
-  if (nf) lines.push(`  next FOMC decision ${nf.end}; next ECB decision ${ne?.date}`);
+  const nf = FOMC_MEETINGS.find(m => m.end >= today && !m.noDecision), ne = ECB_MEETINGS.find(m => m.date >= today), nb = BOJ_MEETINGS.find(m => m.end >= today);
+  if (nf) lines.push(`  next FOMC decision ${nf.end}; next ECB decision ${ne?.date}; next BoJ decision ${nb?.end}`);
   return lines.join("\n");
 }

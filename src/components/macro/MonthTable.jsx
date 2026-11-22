@@ -1,6 +1,8 @@
 import { printValue } from "../../macroInflation.js";
 import { round1 } from "../../macroData.js";
 import { C, MONO, SERIF, smallMono, useFs, heat } from "./macroStyles.js";
+import { GLOSSARY } from "../../data/macroGlossary.js";
+import Tip from "./Tip.jsx";
 
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const mlabel = ym => `${MON[Number(ym.slice(5, 7)) - 1]} ${ym.slice(2, 4)}`.toUpperCase();
@@ -21,9 +23,11 @@ export default function MonthTable({ S, rows, months, pivotFor, label }) {
       {rows.map((r, i) => r.section ? (
         <div key={`s${i}`} role="row" style={{ ...smallMono(fs, C.sub), fontWeight: 600, letterSpacing: "0.08em", padding: "6px 0 1px" }}>{r.section}</div>
       ) : (
-        <div role="row" key={`${r.id}-${r.kind}-${i}`} title={r.note || ""}
+        <div role="row" key={`${r.id}-${r.kind}-${i}`}
           style={{ display: "grid", gridTemplateColumns: cols, gap: 4, padding: "1px 0", borderBottom: `1px solid ${C.line2}`, alignItems: "center" }}>
-          <span role="cell" style={{ fontFamily: SERIF, fontSize: fs(11.5), color: S[r.id]?.points?.length ? C.ink : C.faint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+          <span role="cell" style={{ fontFamily: SERIF, fontSize: fs(11.5), color: S[r.id]?.points?.length ? C.ink : C.faint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <Tip tip={GLOSSARY[r.id] || r.note ? { ...(GLOSSARY[r.id] || { t: r.label }), ...(r.note ? { r: r.note } : {}) } : null}>{r.label}</Tip>
+          </span>
           {months.map(m => {
             const { v: raw, note } = printValue(S, r, m);
             const v = raw !== null && r.r1 ? round1(raw) : raw;

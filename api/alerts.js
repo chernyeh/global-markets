@@ -24,6 +24,7 @@ export const config = { maxDuration: 120 };
 const OFFICIAL = [
   { bank: "Fed", url: "https://www.federalreserve.gov/feeds/press_monetary.xml", re: /FOMC statement|Minutes of the Federal Open Market Committee/i },
   { bank: "ECB", url: "https://www.ecb.europa.eu/rss/press.html", re: /monetary policy decisions|monetary policy statement|account of the monetary policy meeting/i },
+  { bank: "BoJ", url: "https://www.boj.or.jp/en/rss/whatsnew.xml", re: /^Statement on Monetary Policy|^Change in the Guideline for Money Market Operations|Summary of Opinions at the Monetary Policy Meeting|Minutes of the Monetary Policy Meeting/i },
 ];
 
 const authorised = req => !!process.env.CRON_SECRET && (req.headers?.authorization || "") === `Bearer ${process.env.CRON_SECRET}`;

@@ -6,7 +6,7 @@
 // GET /api/macro?src=<source>&ids=<id,id,...>[&start=YYYY-MM-DD]
 // → { src, tier, fetchedAt, series: { [id]: { points:[["YYYY-MM-DD", value|null], ...], asOf } },
 //     errors: { [id]: "message" } }
-// The cbw source returns { paths: { fed|ecb: {...} } } instead of series.
+// The cbw source returns { paths: { fed|ecb|boj: {...} } } instead of series.
 //
 // Sources (reliability tags follow the playbook's PRIMARY / SECONDARY scheme):
 //   treasury  US Treasury daily par yield curves, nominal + real       PRIMARY, no key
@@ -282,7 +282,7 @@ async function fetchYahoo(ids, { signal }) {
 // ─── Central Bank Watch: market-implied meeting paths ───────────────────────
 // Parsed strictly from its server-rendered table; if the layout changes the
 // parser returns no rows and the source reports an error rather than guessing.
-const CBW_PAGES = { fed: "federal-reserve", ecb: "european-central-bank" };
+const CBW_PAGES = { fed: "federal-reserve", ecb: "european-central-bank", boj: "bank-of-japan" };
 const MONTHS = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
 const longDate = s => {
   const m = String(s).trim().match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$/);
@@ -306,7 +306,7 @@ export function parseCbw(html) {
   const totalBp = head ? signedNum(head[1]) * (/easing|cuts/i.test(head[2]) ? -1 : 1) : null;
   const text = html.replace(/<script[\s\S]*?<\/script>/g, " ").replace(/<style[\s\S]*?<\/style>/g, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
   const asOfM = text.match(/Data as of ([A-Za-z]+ \d{1,2}, \d{4})/);
-  const rateM = text.match(/Current (?:ECB )?(?:Federal Funds|Deposit Facility) Rate\s*([\d.]+)\s*%/);
+  const rateM = text.match(/Current (?:ECB |BoJ )?(?:Federal Funds|Deposit Facility|Policy) Rate\s*([\d.]+)\s*%/);
   return { meetings, totalBp, asOf: asOfM ? longDate(asOfM[1]) : null, currentRate: rateM ? num(rateM[1]) : null };
 }
 
@@ -580,8 +580,11 @@ export function summariseMpt(rows) {
     return { asOf: date, targetRange: range, windows: Object.values(byStart).sort((a, b) => (a.start < b.start ? -1 : 1)) };
   };
   const latest = dates[dates.length - 1];
-  const weekAgo = [...dates].reverse().find(d => d <= isoDay(Date.parse(`${latest}T00:00:00Z`) - 7 * DAY));
-  return { ...snap(latest), prior: snap(weekAgo) };
+  // Same-window comparisons 1 week, 1 month, 3 months and 6 months back: how
+  // pricing for a given quarter has moved (the file goes back to March 2023).
+  const back = days => [...dates].reverse().find(d => d <= isoDay(Date.parse(`${latest}T00:00:00Z`) - days * DAY));
+  const priors = Object.fromEntries([["w1", 7], ["m1", 30], ["m3", 91], ["m6", 182]].map(([k, n]) => [k, snap(back(n))]));
+  return { ...snap(latest), prior: priors.w1, priors };
 }
 
 async function fetchMpt(ids, { signal }) {
@@ -595,7 +598,8 @@ async function fetchMpt(ids, { signal }) {
     const dataIdx = sheets.indexOf("DATA");
     const entry = z[`xl/worksheets/sheet${dataIdx + 1}.xml`];
     if (dataIdx < 0 || !entry) throw new Error("DATA sheet not found");
-    const tail = await inflateEntry(entry, { tailBytes: 2_500_000 });
+    // ≈60 KB of sheet XML per trading day: 12.5 MB reaches back ≈6½ months.
+    const tail = await inflateEntry(entry, { tailBytes: 12_500_000 });
     const s = summariseMpt(parseMptRows(tail.slice(tail.indexOf("<row ")), strings));
     if (!s.windows?.length) throw new Error("no rows parsed");
     return { paths: { fed: s }, errors: {} };
@@ -633,7 +637,7 @@ const ADAPTERS = {
   bbk:      { fetch: fetchBbk,      tier: "PRIMARY",              ttl: 3600, max: 4,  re: /^[A-Za-z0-9_.]{10,80}$/ },
   mof:      { fetch: fetchMof,      tier: "PRIMARY",              ttl: 3600, max: 6,  re: /^\d{1,2}Y$/ },
   yahoo:    { fetch: fetchYahoo,    tier: "SECONDARY-reliable",   ttl: 300,  max: 60, re: /^[A-Za-z0-9^=.-]{1,15}$/ },
-  cbw:      { fetch: fetchCbw,      tier: "SECONDARY-unverified", ttl: 1800, max: 2,  re: /^(fed|ecb)$/ },
+  cbw:      { fetch: fetchCbw,      tier: "SECONDARY-unverified", ttl: 1800, max: 3,  re: /^(fed|ecb|boj)$/ },
   bls:      { fetch: fetchBls,      tier: "PRIMARY",              ttl: 21600, max: 100, re: /^(CU[SU]R0000[A-Z0-9]{2,8}|WP[SU][A-Z0-9]{2,10}|APU0000[A-Z0-9]{4,8}|PCU[A-Z0-9-]{4,16})$/ },
   eurostat: { fetch: fetchEurostat, tier: "PRIMARY",              ttl: 21600, max: 30, re: /^[A-Z0-9_]{2,6}:[A-Z0-9_]{2,24}:[A-Z0-9_]{2,16}$/ },
   gie:      { fetch: fetchGie,      tier: "PRIMARY",              ttl: 21600, max: 2,  re: /^eu(:avg5)?$/ },

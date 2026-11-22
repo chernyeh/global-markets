@@ -46,6 +46,19 @@ and unanswered questions in interview transcripts. Evidence reads for signals 1,
 6 hours and are never applied without your click. The Macro read is written on demand by the brief model
 chosen in the header, from a digest of the page's own numbers.
 
+**Reading the page** — the header's *Bottom line* answers six questions from the page's own numbers (no
+model involved, `src/macroSummary.js`); the AI read is optional and folded. Every row name, card title and
+small-caps label has a hover (tap on a phone) explanation from `src/data/macroGlossary.js`, so the page
+itself carries little explanatory text. The signals board is titled *Playbook triggers*: each column is a
+question (has the yield peak arrived? can yields go higher? add risk? cut risk? market bottom?) with its
+met-count and the action it unlocks.
+
+**Central banks** — Fed, ECB and Bank of Japan cards: policy rate, next decision (BoJ dates from boj.or.jp,
+PRIMARY), the market-implied path (Central Bank Watch; BoJ rows matched to the BoJ's published dates), and
+how pricing has moved over 1 week, 3 and 6 months — SOFR options (Atlanta Fed) for the Fed, the ECB's AAA
+yield-curve forwards for the ECB, JGB 2y/10y (MoF) for the BoJ. The speaker tracker covers the BoJ Policy
+Board from the BoJ's feed plus Japanese and English press.
+
 **Push alerts and sync (Phase 4)** — a scheduled server check (`api/alerts.js`) runs the same signal and
 alert engine as the browser, adds new FOMC statements and minutes and ECB decisions from the banks' own
 feeds, and reminds you once a day of deferred decisions that fall due. It stores state in Supabase
