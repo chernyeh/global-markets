@@ -22,6 +22,8 @@ import { classifyMicro } from "./utils.js";
 import { setTopicDials, dialsKey, topicMatches, isTopicMuted, isTopicFocused, worldTopicScore, briefTopicBoost, normalizeDialRecords, expireDials, levelsOf, setCustomTopics, allTopics, applyPreset, matchPreset, coverageSurges, evalGauges, buildSuggestions, MAX_PER_SOURCE, MAX_PER_SOURCE_FOCUS } from "./topicDials.js";
 import { MARKET_GAUGES } from "./data/taxonomy.js";
 import TopicDials from "./components/TopicDials.jsx";
+import MacroTab from "./components/macro/MacroTab.jsx";
+import { useMacroMonitor } from "./macroMonitor.js";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // NEWS BRIEFS TAB groups → src/data/sources.js
@@ -567,7 +569,9 @@ function directMatch(art, keyword) {
 const STALE_MS = 45*60*1000;
 
 export default function App() {
-  const [mainTab,       setMainTab]       = useState("breaking");
+  // Macro monitor is the cover page; its data and alerts run on every tab.
+  const [mainTab,       setMainTab]       = useState("macro");
+  const macro = useMacroMonitor();
   const [marketsView,   setMarketsView]   = useState("markets");
   const [activeTier,    setActiveTier]    = useState("ALL"); // ALL | DM | EM
   const [activeRegion,  setActiveRegion]  = useState("ALL");
@@ -902,6 +906,7 @@ export default function App() {
   const opinionCount = canonical.filter(a => resolveOpinion(a).isOpinion).length;
 
   const MAIN_TABS=[
+    {id:"macro",     label:`◈ Macro${macro.unread>0?` (${macro.unread})`:""}`},
     {id:"breaking",  label:`⚡ Breaking${breakingArts.length>0?` (${breakingArts.length})`:""}`},
     {id:"newsbriefs",label:`📰 Intel${briefsTabCount>0?` (${briefsTabCount})`:""}`},
     {id:"opinions",  label:`💬 Opinions${opinionCount>0?` (${opinionCount})`:""}`},
@@ -1087,6 +1092,7 @@ export default function App() {
       {/* BODY */}
       <div style={{maxWidth:1500,margin:"0 auto",padding:"22px 24px"}}>
 
+        {mainTab==="macro"&&<MacroTab m={macro} canonical={canonical} onOpenTab={setMainTab}/>}
         {mainTab==="watchlist"&&<WatchlistTab allArticles={allArticles} setAllArticles={setAllArticles}/>}
         {mainTab==="filings"&&<FilingsTab />}
         {mainTab==="newsbriefs"&&<NewsBriefsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs} generateBrief={generateBriefUnlimited} generateWorldBrief={generateWorldBriefing} briefLoading={briefLoading} setBriefLoading={setBriefLoading} briefError={briefError} setBriefError={setBriefError}/>}

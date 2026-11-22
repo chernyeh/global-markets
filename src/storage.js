@@ -8,6 +8,16 @@ export const SK = {
   synthModel: "gm_synthmodel_v1",
   topicDials: "gm_topicdials_v1",
   customTopics: "gm_customtopics_v1",
+  // Macro monitor (src/macroMonitor.js)
+  macroData:   "gm_macro_data_v1",
+  macroAlerts: "gm_macro_alerts_v1",
+  macroManual: "gm_macro_manual_v1",
+  macroPasted: "gm_macro_pasted_v1",
+  macroScen:   "gm_macro_scen_v1",
+  macroEvents: "gm_macro_events_v1",
+  macroNotify: "gm_macro_notify_v1",
+  macroSpeech: "gm_macro_speech_v1",
+  macroRead:   "gm_macro_read_v1",
 };
 
 export const EM_SK = {
