@@ -1,0 +1,41 @@
+# Scheduled macro-monitor check: calls /api/alerts on the deployed site, which
+# evaluates the signals, stores alerts in Supabase and pushes to Telegram.
+# Vercel's Hobby plan allows one cron a day (vercel.json, 22:17 UTC); this adds
+# hourly runs on weekdays and every 6 hours at weekends.
+#
+# Needs two repository secrets (Settings → Secrets and variables → Actions):
+#   CRON_SECRET  — the same value as CRON_SECRET in Vercel
+#   MONITOR_URL  — the production address, e.g. https://your-app.vercel.app
+name: Macro alerts
+
+on:
+  schedule:
+    - cron: "23 * * * 1-5"
+    - cron: "23 */6 * * 0,6"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: macro-alerts
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run the server alert check
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          MONITOR_URL: ${{ secrets.MONITOR_URL }}
+        run: |
+          if [ -z "$CRON_SECRET" ] || [ -z "$MONITOR_URL" ]; then
+            echo "::notice::CRON_SECRET or MONITOR_URL repository secret not set yet; skipping."
+            exit 0
+          fi
+          code=$(curl -sS -o out.json -w '%{http_code}' --max-time 170 \
+            -H "Authorization: Bearer $CRON_SECRET" "${MONITOR_URL%/}/api/alerts")
+          echo "HTTP $code"
+          head -c 3000 out.json; echo
+          [ "$code" = "200" ]

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Dots } from "../helpers.jsx";
 import { C, MONO, SERIF, smallMono, useFs, chipBtn } from "./macroStyles.js";
 import { fmtStamp } from "../../macroFormat.js";
@@ -10,24 +11,31 @@ function Inline({ text }) {
   return parts.map((p, i) => (p.startsWith("**") && p.endsWith("**") ? <b key={i}>{p.slice(2, -2)}</b> : <span key={i}>{p}</span>));
 }
 
-// Conclusions-first read of the whole page, written on demand by the brief
-// model chosen in the header. It sees only a digest of this page's numbers.
+// Narrative read of the whole page, written on demand by the brief model chosen
+// in the header from a digest of this page's numbers. Folded to its bottom-line
+// sentence by default; the computed Bottom Line above carries the essentials.
 export default function MacroRead({ read, busy, onGenerate }) {
   const fs = useFs();
+  const [open, setOpen] = useState(false);
   const lines = String(read?.text || "").split(/\n+/).map(l => l.trim()).filter(Boolean);
+  const lead = (lines.find(l => l.toUpperCase().startsWith("BOTTOM LINE:")) || lines[0] || "").replace(/^BOTTOM LINE:\s*/i, "").replace(/\*\*/g, "");
   return (
     <div style={{ borderTop: `1px solid ${C.line2}`, marginTop: 8, paddingTop: 8 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-        <span style={{ fontFamily: MONO, fontSize: fs(9), color: C.red, letterSpacing: "0.1em", fontWeight: 600 }}>MACRO READ</span>
+        <span style={{ fontFamily: MONO, fontSize: fs(9), color: C.red, letterSpacing: "0.1em", fontWeight: 600 }}>AI READ</span>
         <span style={smallMono(fs)}>
-          {read?.at ? `written ${fmtStamp(read.at)} by ${read.model || "the brief model"} from this page's data only` : "a conclusions-first read of everything on this page"}
+          {read?.at ? `${fmtStamp(read.at)} · ${read.model || "brief model"} · from this page's data only` : "optional narrative of the whole page, written by the brief model on request"}
         </span>
-        <button onClick={onGenerate} disabled={busy} style={{ ...chipBtn(false, C.red), marginLeft: "auto", padding: "3px 10px", opacity: busy ? 0.6 : 1 }}>
-          {busy ? <Dots /> : read?.text ? "↺ rewrite" : "✦ write macro read"}
-        </button>
+        <span style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+          {lines.length > 0 && <button onClick={() => setOpen(o => !o)} style={chipBtn(open, C.ink)}>{open ? "fold" : "read all ▾"}</button>}
+          <button onClick={onGenerate} disabled={busy} style={{ ...chipBtn(false, C.red), padding: "2px 9px", opacity: busy ? 0.6 : 1 }}>
+            {busy ? <Dots /> : read?.text ? "↺ rewrite" : "✦ write AI read"}
+          </button>
+        </span>
       </div>
+      {!open && lead && <div style={{ fontFamily: SERIF, fontSize: fs(12.5), color: C.ink, lineHeight: 1.45 }}>{lead}</div>}
       {read?.error && <div style={{ ...smallMono(fs, C.red), marginBottom: 4 }}>⚠ {read.error}</div>}
-      {lines.length > 0 && (
+      {open && lines.length > 0 && (
         <div style={{ fontFamily: SERIF, fontSize: fs(13), color: C.ink, lineHeight: 1.5, maxWidth: 1100 }}>
           {lines.map((l, i) => {
             const label = LABELS.find(x => l.toUpperCase().startsWith(x));

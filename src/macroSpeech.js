@@ -13,7 +13,7 @@
 // dropped and the item is flagged. Nothing here ever sets a signal: evidence
 // suggestions are shown for you to accept or ignore.
 
-import { FED_ROSTER, ECB_ROSTER, SPEECH_FEEDS, TRUSTED_OUTLETS, EVIDENCE_QUERIES } from "./data/macroSpeakers.js";
+import { ROSTERS, BANK_NAME, BANK_OUTLET, SPEECH_FEEDS, TRUSTED_OUTLETS, EVIDENCE_QUERIES } from "./data/macroSpeakers.js";
 import { SIGNAL_MAP } from "./data/macroSignals.js";
 
 const DAY = 86400000;
@@ -53,7 +53,7 @@ export function parseRss(xml) {
   return out;
 }
 
-const POLICY_RE = /\b(rate|rates|inflation|policy|hike|hikes|tighten|tightening|eas(e|ing)|cut|cuts|restrictive|neutral|balance sheet|price stability|labou?r market|wage|expectations|Zins|Inflation|taux|inflation|tassi|tipos)\b/i;
+const POLICY_RE = /\b(rate|rates|inflation|policy|hike|hikes|tighten|tightening|eas(e|ing)|cut|cuts|restrictive|neutral|balance sheet|price stability|labou?r market|wage|expectations|Zins|Inflation|taux|inflation|tassi|tipos)\b|利上げ|金利|物価|金融政策/i;
 
 // Main text of a Fed or ECB page, keeping the passages about policy first.
 export function extractArticleText(html, maxChars = 3000, { keepOrder = false } = {}) {
@@ -81,13 +81,14 @@ export async function collectSpeechItems(fetchText, { now = Date.now(), maxAgeDa
     if (r.status !== "fulfilled") { errors.push(`${SPEECH_FEEDS[i].id}: ${r.reason?.message || "failed"}`); return; }
     const { f, items } = r.value;
     for (const it of items) {
-      if (now - it.ts > maxAgeDays * DAY) continue;
+      if (now - it.ts > maxAgeDays * DAY || (f.keep && !f.keep.test(it.title))) continue;
       const key = norm(it.title).replace(/[^a-z0-9 ]/g, "").slice(0, 80);
       if (seen.has(key)) continue;
       seen.add(key);
       const official = f.kind === "official";
       out.push({ ...it, id: hashId(it.link || it.title), bank: f.bank, kind: f.kind, feed: f.id, lang: f.lang || "en",
-        outlet: official ? (f.bank === "fed" ? "Federal Reserve" : "ECB") : it.outlet,
+        link: (it.link || "").replace(/^http:\/\/www\.boj\.or\.jp\//, "https://www.boj.or.jp/"),
+        outlet: official ? BANK_OUTLET[f.bank] : it.outlet,
         trusted: official || trusted(it.outlet) });
     }
   });
@@ -102,23 +103,23 @@ export async function officialText(item, fetchText) {
 }
 
 // ─── Classification ────────────────────────────────────────────────────────
-export const CLASSIFY_SYSTEM = `You classify central-bank communication for an investment monitor. The Fed and the ECB are both in a rate-hiking cycle. For each item return one JSON object with these fields:
+export const CLASSIFY_SYSTEM = `You classify central-bank communication for an investment monitor. The Fed, the ECB and the Bank of Japan are all in a rate-hiking cycle. Items may be in English, German, French, Italian, Spanish or Japanese. For each item return one JSON object with these fields:
 - "id": exactly as given.
-- "relevant": true only if the item reports a named Fed FOMC participant, the FOMC, an ECB Executive Board member, a euro-area national central bank governor, or the ECB Governing Council giving a view on monetary policy (rates, inflation, the balance sheet, the policy outlook). False for supervision, payments, climate, events or ceremonies unless the text also gives a policy view.
-- "speaker": surname as written (e.g. "Waller"); "FOMC" for FOMC statements or minutes; "Governing Council" for ECB decisions; "" if unclear.
+- "relevant": true only if the item reports a named Fed FOMC participant, the FOMC, an ECB Executive Board member, a euro-area national central bank governor, the ECB Governing Council, a Bank of Japan Policy Board member (Governor, Deputy Governor or Board member) or the BoJ Policy Board giving a view on monetary policy (rates, inflation, the balance sheet or JGB purchases, the policy outlook). False for supervision, payments, climate, statistics, events or ceremonies unless the text also gives a policy view.
+- "speaker": surname in Latin letters (e.g. "Waller", "Ueda" — write 植田 as "Ueda"); "FOMC" for FOMC statements or minutes; "Governing Council" for ECB decisions; "Policy Board" for BoJ statements on monetary policy or the Summary of Opinions; "" if unclear.
 - "role": the role stated in the text, else "".
 - "venue": one of speech, interview, testimony, statement, minutes, decision, press_conference, report, news.
 - "stance": integer from -2 to 2 for the policy-rate path the speaker implies: 2 = argues for larger or faster hikes; 1 = leans to further tightening; 0 = balanced, data-dependent with no lean, or no policy view; -1 = leans to pausing or easing sooner; -2 = argues for cuts or an end to hikes now.
-- "quote": up to 30 words copied EXACTLY, character for character, from the TITLE or TEXT, that best shows the stance; "" if none.
+- "quote": up to 30 words copied EXACTLY, character for character, from the TITLE or TEXT (in its original language), that best shows the stance; "" if none.
 - "topics": up to 3 of inflation, labour, growth, energy, balance_sheet, financial_stability, fiscal, fx, rates_path, communication.
-- "endOfHikes": for FOMC statements/minutes, the Fed Chair, ECB decisions or the ECB President only: "yes" if it signals hikes are over, "no" if it signals more, otherwise "unclear". For everyone else "unclear".
+- "endOfHikes": for FOMC statements/minutes, the Fed Chair, ECB decisions, the ECB President, BoJ Policy Board statements or the BoJ Governor only: "yes" if it signals hikes are over, "no" if it signals more, otherwise "unclear". For everyone else "unclear".
 - "nonAnswers": only when the TEXT is a question-and-answer transcript: questions the speaker did not answer directly, each {"q": the question in at most 15 words, "reason": one plausible legitimate reason, e.g. blackout period, avoiding pre-commitment, outside their remit, market sensitivity}. Not answering is not in itself a red flag. Otherwise [].
 Rules: use only the text provided; never invent numbers or quotes; when unsure use stance 0 and relevant false.
 Return ONLY a JSON array, no prose.`;
 
 export function buildClassifyPrompt(batch) {
   return batch.map((it, i) => [
-    `#${i + 1}`, `ID: ${it.id}`, `BANK: ${it.bank === "fed" ? "Federal Reserve" : "ECB"}`,
+    `#${i + 1}`, `ID: ${it.id}`, `BANK: ${BANK_OUTLET[it.bank] || it.bank}`,
     `SOURCE: ${it.outlet || "unknown"} (${it.date})`, `TITLE: ${it.title}`,
     it.text ? `TEXT: ${it.text}` : it.description ? `TEXT: ${it.description}` : null,
   ].filter(Boolean).join("\n")).join("\n\n");
@@ -165,13 +166,13 @@ export async function classifyItems(items, classify, { batchSize = 10 } = {}) {
 // ─── Roster, shifts, index ────────────────────────────────────────────────
 const plain = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 export function rosterFor(speaker, bank) {
-  const list = bank === "fed" ? FED_ROSTER : ECB_ROSTER;
+  const list = ROSTERS[bank] || [];
   const p = plain(speaker);
   if (!p) return null;
   return list.find(r => [r.name, ...(r.aliases || [])].some(n => p.includes(plain(n)))) || null;
 }
 
-const ROLE_WEIGHT = { FOMC: 3, "Governing Council": 3 };
+const ROLE_WEIGHT = { FOMC: 3, "Governing Council": 3, "Policy Board": 3 };
 export function itemWeight(it) {
   if (!it.relevant) return 0;
   const r = rosterFor(it.speaker, it.bank);
@@ -271,7 +272,7 @@ export function speechAlerts(newIds, store) {
         title: `${who} turns ${it.shift > 0 ? "more hawkish" : "more dovish"} (${it.prev.stance > 0 ? "+" : ""}${it.prev.stance} → ${it.stance > 0 ? "+" : ""}${it.stance})`,
         detail: `${it.quote ? `“${it.quote}” — ` : ""}${it.outlet}, ${it.date}. Previous: ${it.prev.date}.` });
     } else if (["statement", "decision", "minutes"].includes(it.venue) && it.kind === "official") {
-      alerts.push({ kind: "speech", ref: it.id, sev: "info", title: `${it.bank === "fed" ? "Fed" : "ECB"}: ${it.title}`,
+      alerts.push({ kind: "speech", ref: it.id, sev: "info", title: `${BANK_NAME[it.bank] || it.bank}: ${it.title}`,
         detail: `Read as ${it.stance > 0 ? "hawkish" : it.stance < 0 ? "dovish" : "neutral"} (${it.stance})${it.endOfHikes !== "unclear" ? `; end of hikes: ${it.endOfHikes}` : ""}.` });
     }
   }

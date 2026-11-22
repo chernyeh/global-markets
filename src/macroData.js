@@ -28,11 +28,11 @@ export function buildRequests(registry = MACRO_SERIES, now = Date.now(), { level
     const [src, key] = pair;
     const freq = def.freq || "D";
     // Treasury, MoF, Yahoo, GIE and FAO return a fixed history; one request each.
-    const k = ["treasury", "mof", "yahoo", "cbw", "gie", "fao"].includes(src) ? src : `${src}|${freq}`;
+    const k = ["treasury", "mof", "yahoo", "cbw", "gie", "fao", "sina"].includes(src) ? src : `${src}|${freq}`;
     (groups[k] ||= { src, start: isoDay(now - START_DAYS[freq] * DAY), ids: new Set() }).ids.add(key);
   }
   if (level === 0 && !only) {
-    groups.cbw = { src: "cbw", start: null, ids: new Set(["fed", "ecb"]) };
+    groups.cbw = { src: "cbw", start: null, ids: new Set(["fed", "ecb", "boj"]) };
     groups.mpt = { src: "mpt", start: null, ids: new Set(["fed"]) };
   }
   return Object.values(groups).map(g => ({ ...g, ids: [...g.ids] }));

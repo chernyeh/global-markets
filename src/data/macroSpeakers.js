@@ -12,6 +12,9 @@
 //   press release, 25 Feb 2026); Lagarde steps down 7 Feb 2027 (ECB, 29 Oct
 //   2026), successor not yet named. National governors as last known; verify.
 //   ECB governors vote on a monthly rotation, so no voter badge is shown.
+// BoJ: Policy Board page, boj.or.jp/en/about/organization/policyboard (PRIMARY,
+//   read 22 Nov 2026): Governor Ueda; Deputy Governors Uchida, Himino; members
+//   Takata, Tamura, Koeda, Masu, Asada, Sato. All nine vote at every meeting.
 //
 // weight: how much a statement moves the hawk–dove index (Chair/President 3,
 // vice chairs / NY Fed / chief economist 2, voters 1.5, others 1; anyone not on
@@ -59,6 +62,21 @@ export const ECB_ROSTER = [
   { name: "Kazāks",    full: "Mārtiņš Kazāks",       role: "Latvijas Banka",        weight: 1, aliases: ["Kazaks"], verify: true },
 ];
 
+export const BOJ_ROSTER = [
+  { name: "Ueda",    full: "Ueda Kazuo",      role: "Governor",        weight: 3,  aliases: ["植田"] },
+  { name: "Uchida",  full: "Uchida Shinichi", role: "Deputy Governor", weight: 2,  aliases: ["内田"] },
+  { name: "Himino",  full: "Himino Ryozo",    role: "Deputy Governor", weight: 2,  aliases: ["氷見野"] },
+  { name: "Takata",  full: "Takata Hajime",   role: "Board member",    weight: 1.5, aliases: ["高田"] },
+  { name: "Tamura",  full: "Tamura Naoki",    role: "Board member",    weight: 1.5, aliases: ["田村"] },
+  { name: "Koeda",   full: "Koeda Junko",     role: "Board member",    weight: 1.5, aliases: ["小枝"] },
+  { name: "Masu",    full: "Masu Kazuyuki",   role: "Board member",    weight: 1.5, aliases: ["増一行", "増委員"] },
+  { name: "Asada",   full: "Asada Toichiro",  role: "Board member",    weight: 1.5, aliases: ["浅田"] },
+  { name: "Sato",    full: "Sato Ayano",      role: "Board member",    weight: 1.5, aliases: ["佐藤綾野"] },
+];
+export const ROSTERS = { fed: FED_ROSTER, ecb: ECB_ROSTER, boj: BOJ_ROSTER };
+export const BANK_NAME = { fed: "Fed", ecb: "ECB", boj: "BoJ" };
+export const BANK_OUTLET = { fed: "Federal Reserve", ecb: "ECB", boj: "Bank of Japan" };
+
 const GN = (q, hl = "en-US", gl = "US", ceid = "US:en") =>
   `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=${hl}&gl=${gl}&ceid=${ceid}`;
 const names = list => list.map(p => p.name).join(" OR ");
@@ -78,6 +96,13 @@ export const SPEECH_FEEDS = [
   { id: "ecb_news_fr", bank: "ecb", kind: "news", lang: "fr", url: GN("(Villeroy OR Lagarde OR Lane) BCE taux when:7d", "fr", "FR", "FR:fr") },
   { id: "ecb_news_it", bank: "ecb", kind: "news", lang: "it", url: GN("(Panetta OR Cipollone OR Lagarde) BCE tassi when:7d", "it", "IT", "IT:it") },
   { id: "ecb_news_es", bank: "ecb", kind: "news", lang: "es", url: GN("(Escrivá OR Lagarde OR Lane) BCE tipos when:7d", "es", "ES", "ES:es") },
+  // BoJ: the bank's English "What's new" feed carries speeches, Diet statements,
+  // policy statements and the Summary of Opinions among statistics releases — keep those only.
+  { id: "boj_official", bank: "boj", kind: "official", url: "https://www.boj.or.jp/en/rss/whatsnew.xml",
+    keep: /Speech|Statement|Remarks|Summary of Opinions|Monetary Policy|Guideline for Money Market|Outlook for Economic Activity|Press Conference|Minutes of the Monetary/i },
+  { id: "boj_news_en", bank: "boj", kind: "news", url: GN(`(${names(BOJ_ROSTER.slice(0, 6))}) BOJ rates when:7d`) },
+  // Japanese press first: board members' remarks and "sources say" pieces often appear in Nikkei, Jiji or Kyodo before English wires.
+  { id: "boj_news_ja", bank: "boj", kind: "news", lang: "ja", url: GN("(植田 OR 内田 OR 氷見野 OR 高田 OR 田村 OR 小枝 OR 浅田) 日銀 利上げ when:7d", "ja", "JP", "JP:ja") },
 ];
 
 // Outlets whose reports count toward the hawk–dove index. Anything else is
@@ -94,6 +119,9 @@ export const TRUSTED_OUTLETS = [
   // Chinese-language and regional outlets for the US–China / rare-earth evidence (signal 9)
   "Xinhua", "新华", "人民日报", "人民网", "Caixin", "财新", "第一财经", "Yicai", "21世纪经济报道", "证券时报", "央视", "CCTV", "China Daily",
   "South China Morning Post", "SCMP", "Nikkei", "日本経済新聞",
+  // Japanese outlets for the BoJ tracker
+  "日経", "時事通信", "時事ドットコム", "Jiji", "共同通信", "Kyodo", "NHK", "朝日新聞", "読売新聞", "毎日新聞", "産経新聞", "ロイター", "ブルームバーグ",
+  "Japan Times", "東洋経済", "QUICK",
 ];
 
 // News queries behind the evidence suggestions for the manual signals.

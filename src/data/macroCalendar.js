@@ -9,6 +9,9 @@
 // ECB: Governing Council monetary policy meetings (decision day), cross-checked
 //   against the ECB's 2027 reserve-maintenance calendar (30 Jun 2026 release).
 //   https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html (PRIMARY)
+// BoJ: Monetary Policy Meeting schedule for 2026 and 2027, read 22 Nov 2026 from
+//   https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm (PRIMARY). The decision
+//   comes on the second day; "Outlook Report" meetings publish new forecasts.
 // Catalysts: the playbook's dated list (rev 54) and the 19 Nov note's calendar.
 //   Dates marked approx are the playbook's "mid-Jan" / "early Dec" style dates;
 //   replace them with the agency's release-schedule date when published.
@@ -38,26 +41,45 @@ export const ECB_MEETINGS = [
   { date: "2027-12-16", proj: true },
 ];
 
+// release: data the monitor checks after the print for the Rule-10 test —
+// series id and measure, the reference month, and which way is "good news"
+// (lower inflation). Consensus is pasted on the calendar row.
+const rel = (id, kind, ref, label, market = "us") => ({ id, kind, ref, label, market, better: "lower" });
 export const MACRO_EVENTS = [
-  { date: "2026-11-25", type: "us",   label: "US October PCE inflation" },
-  { date: "2026-12-02", type: "eu",   label: "Euro-area November flash HICP", approx: true },
-  { date: "2026-12-10", type: "us",   label: "US November CPI — the day after the FOMC" },
-  { date: "2026-12-15", type: "us",   label: "US November PPI", approx: true },
+  { date: "2026-11-25", type: "us",   label: "US October PCE inflation", release: rel("corePce", "mom", "2026-10", "core PCE m/m") },
+  { date: "2026-12-02", type: "eu",   label: "Euro-area November flash HICP", approx: true, release: rel("ezCore", "level", "2026-11", "euro core HICP y/y", "eu") },
+  { date: "2026-12-10", type: "us",   label: "US November CPI — the day after the FOMC", release: rel("coreCpi", "mom", "2026-11", "core CPI m/m") },
+  { date: "2026-12-15", type: "us",   label: "US November PPI", approx: true, release: rel("ppiCore", "mom", "2026-11", "core PPI m/m") },
   { date: "2027-01-10", type: "geo",  label: "US–China truce expires unless extended" },
-  { date: "2027-01-13", type: "us",   label: "US December CPI", approx: true },
+  { date: "2027-01-13", type: "us",   label: "US December CPI", approx: true, release: rel("coreCpi", "mom", "2026-12", "core CPI m/m") },
   { date: "2027-01-21", type: "ust",  label: "New 10y TIPS auction" },
   { date: "2027-01-26", end: "2027-02-06", type: "earn", label: "Hyperscaler Q4 calls — 2027 capex vs ≈$935bn consensus", approx: true },
   { date: "2027-02-03", type: "ust",  label: "Treasury February refunding — coupon sizes", approx: true },
   { date: "2027-02-07", type: "eu",   label: "Lagarde leaves the ECB" },
-  { date: "2027-02-11", type: "us",   label: "US January CPI — start-of-year price resets", approx: true },
+  { date: "2027-02-11", type: "us",   label: "US January CPI — start-of-year price resets", approx: true, release: rel("coreCpi", "mom", "2027-01", "core CPI m/m") },
   { date: "2027-03-01", end: "2027-06-30", type: "us", label: "Oil base effects pull headline CPI down (≈1–1.5pp, note estimate)", approx: true },
   { date: "2027-04-11", type: "geo",  label: "French presidential election, first round (date to be set by decree)", approx: true },
   { date: "2027-05-05", type: "ust",  label: "Treasury May refunding", approx: true },
 ];
 
+export const BOJ_MEETINGS = [
+  { start: "2026-12-17", end: "2026-12-18" },
+  { start: "2027-01-21", end: "2027-01-22", outlook: true },
+  { start: "2027-03-17", end: "2027-03-18" },
+  { start: "2027-04-27", end: "2027-04-28", outlook: true },
+  { start: "2027-06-10", end: "2027-06-11" },
+  { start: "2027-07-21", end: "2027-07-22", outlook: true },
+  { start: "2027-09-21", end: "2027-09-22" },
+  { start: "2027-10-28", end: "2027-10-29", outlook: true },
+  { start: "2027-12-16", end: "2027-12-17" },
+];
+
+export const releaseKey = e => `${e.date}:${e.release.id}:${e.release.ref}`;
+
 export const EVENT_TYPES = {
   fed:  { label: "FED",  color: "#1a1a1a" },
   ecb:  { label: "ECB",  color: "#3a6080" },
+  boj:  { label: "BOJ",  color: "#8b3a62" },
   us:   { label: "US",   color: "#8a6a20" },
   eu:   { label: "EU",   color: "#3a6080" },
   ust:  { label: "UST",  color: "#555" },
@@ -83,6 +105,19 @@ export function fedBlackout(m) {
 // with the press conference. Counted from the decision day, so approximate by a day.
 export function ecbQuiet(m) {
   return { start: iso(ms(m.date) - 7 * DAY), end: m.date, approx: true };
+}
+
+// BoJ: board members stop speaking on policy about two business days before
+// the meeting until it ends (BoJ practice as widely reported; not checked
+// against a BoJ primary document, so shown as approximate). Weekends only are
+// skipped — Japanese holidays are not.
+export function bojBlackout(m) {
+  let t = ms(m.start), n = 0;
+  while (n < 2) { t -= DAY; const d = new Date(t).getUTCDay(); if (d !== 0 && d !== 6) n++; }
+  return { start: iso(t), end: m.end, approx: true };
+}
+export function nextBoj(today) {
+  return BOJ_MEETINGS.find(m => m.end >= today) || null;
 }
 
 export function nextFomc(today) {
@@ -117,6 +152,10 @@ export function buildCalendar(userEvents = []) {
     items.push({ date: m.date, type: "ecb", label: `ECB decision${m.proj ? " + staff projections" : ""}`, note: m.note });
     const q = ecbQuiet(m);
     items.push({ date: q.start, type: "ecb", label: "ECB quiet period begins", minor: true, approx: true });
+  }
+  for (const m of BOJ_MEETINGS) {
+    items.push({ date: m.end, type: "boj", label: `BoJ decision${m.outlook ? " + Outlook Report" : ""} · meeting ${fmtRange(m.start, m.end)}` });
+    items.push({ date: bojBlackout(m).start, type: "boj", label: "BoJ quiet period begins", minor: true, approx: true });
   }
   items.push(...MACRO_EVENTS);
   items.push(...userEvents.map(e => ({ ...e, type: "mine", mine: true })));

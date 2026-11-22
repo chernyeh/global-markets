@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { withShifts, hawkDove, rosterFor, itemWeight } from "../../macroSpeech.js";
-import { STANCE } from "../../data/macroSpeakers.js";
+import { STANCE, BANK_NAME } from "../../data/macroSpeakers.js";
 import Spark from "./Spark.jsx";
 import { C, MONO, SERIF, smallMono, useFs, chipBtn } from "./macroStyles.js";
 import { fmtDate, fmtStamp } from "../../macroFormat.js";
@@ -73,7 +73,8 @@ export default function SpeakerPanel({ bank, speech, busy, onRefresh, blackout }
         : list.map(it => <Statement key={it.id} it={it} fs={fs} />)}
       {items.length > 5 && <button onClick={() => setMore(m => !m)} style={{ ...chipBtn(more, C.ink), marginTop: 4 }}>{more ? "fewer" : `more (${Math.min(items.length, 15) - 5})`}</button>}
       <div style={{ ...smallMono(fs), marginTop: 4, lineHeight: 1.5 }}>
-        Official {bank === "fed" ? "Fed" : "ECB"} speeches read in full; interviews from trusted outlets{bank === "ecb" ? " incl. German, French, Italian and Spanish press" : ""}. Stance and quote by Haiku; quotes checked verbatim against the source.
+        {bank === "boj" ? "BoJ speech and statement titles from the bank's own feed (full texts are PDFs, not read); substance from trusted outlets incl. Japanese press (Nikkei, Jiji, Kyodo, NHK)."
+          : `Official ${BANK_NAME[bank]} texts read in full; reports from trusted outlets${bank === "ecb" ? " incl. German, French, Italian and Spanish press" : ""}.`} Stance and quote by Haiku; quotes checked verbatim against the source.
       </div>
     </div>
   );

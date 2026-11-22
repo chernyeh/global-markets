@@ -6,7 +6,7 @@
 // GET /api/macro?src=<source>&ids=<id,id,...>[&start=YYYY-MM-DD]
 // → { src, tier, fetchedAt, series: { [id]: { points:[["YYYY-MM-DD", value|null], ...], asOf } },
 //     errors: { [id]: "message" } }
-// The cbw source returns { paths: { fed|ecb: {...} } } instead of series.
+// The cbw source returns { paths: { fed|ecb|boj: {...} } } instead of series.
 //
 // Sources (reliability tags follow the playbook's PRIMARY / SECONDARY scheme):
 //   treasury  US Treasury daily par yield curves, nominal + real       PRIMARY, no key
@@ -21,6 +21,7 @@
 //   gie       GIE AGSI+ EU gas storage (GIE_API_KEY optional)          PRIMARY
 //   fao       FAO Food Price Index (monthly CSV)                       PRIMARY, no key
 //   mpt       Atlanta Fed Market Probability Tracker (SOFR options)    PRIMARY (Atlanta Fed model), no key
+//   sina      Sina Finance daily bars, China futures (SHFE/DCE main)   SECONDARY-unverified (unofficial endpoint)
 
 export const config = { maxDuration: 30 };
 
@@ -281,7 +282,7 @@ async function fetchYahoo(ids, { signal }) {
 // ─── Central Bank Watch: market-implied meeting paths ───────────────────────
 // Parsed strictly from its server-rendered table; if the layout changes the
 // parser returns no rows and the source reports an error rather than guessing.
-const CBW_PAGES = { fed: "federal-reserve", ecb: "european-central-bank" };
+const CBW_PAGES = { fed: "federal-reserve", ecb: "european-central-bank", boj: "bank-of-japan" };
 const MONTHS = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
 const longDate = s => {
   const m = String(s).trim().match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$/);
@@ -305,7 +306,7 @@ export function parseCbw(html) {
   const totalBp = head ? signedNum(head[1]) * (/easing|cuts/i.test(head[2]) ? -1 : 1) : null;
   const text = html.replace(/<script[\s\S]*?<\/script>/g, " ").replace(/<style[\s\S]*?<\/style>/g, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
   const asOfM = text.match(/Data as of ([A-Za-z]+ \d{1,2}, \d{4})/);
-  const rateM = text.match(/Current (?:ECB )?(?:Federal Funds|Deposit Facility) Rate\s*([\d.]+)\s*%/);
+  const rateM = text.match(/Current (?:ECB |BoJ )?(?:Federal Funds|Deposit Facility|Policy) Rate\s*([\d.]+)\s*%/);
   return { meetings, totalBp, asOf: asOfM ? longDate(asOfM[1]) : null, currentRate: rateM ? num(rateM[1]) : null };
 }
 
@@ -579,8 +580,11 @@ export function summariseMpt(rows) {
     return { asOf: date, targetRange: range, windows: Object.values(byStart).sort((a, b) => (a.start < b.start ? -1 : 1)) };
   };
   const latest = dates[dates.length - 1];
-  const weekAgo = [...dates].reverse().find(d => d <= isoDay(Date.parse(`${latest}T00:00:00Z`) - 7 * DAY));
-  return { ...snap(latest), prior: snap(weekAgo) };
+  // Same-window comparisons 1 week, 1 month, 3 months and 6 months back: how
+  // pricing for a given quarter has moved (the file goes back to March 2023).
+  const back = days => [...dates].reverse().find(d => d <= isoDay(Date.parse(`${latest}T00:00:00Z`) - days * DAY));
+  const priors = Object.fromEntries([["w1", 7], ["m1", 30], ["m3", 91], ["m6", 182]].map(([k, n]) => [k, snap(back(n))]));
+  return { ...snap(latest), prior: priors.w1, priors };
 }
 
 async function fetchMpt(ids, { signal }) {
@@ -594,13 +598,35 @@ async function fetchMpt(ids, { signal }) {
     const dataIdx = sheets.indexOf("DATA");
     const entry = z[`xl/worksheets/sheet${dataIdx + 1}.xml`];
     if (dataIdx < 0 || !entry) throw new Error("DATA sheet not found");
-    const tail = await inflateEntry(entry, { tailBytes: 2_500_000 });
+    // ≈60 KB of sheet XML per trading day: 12.5 MB reaches back ≈6½ months.
+    const tail = await inflateEntry(entry, { tailBytes: 12_500_000 });
     const s = summariseMpt(parseMptRows(tail.slice(tail.indexOf("<row ")), strings));
     if (!s.windows?.length) throw new Error("no rows parsed");
     return { paths: { fed: s }, errors: {} };
   } catch (e) {
     return { paths: {}, errors: Object.fromEntries(ids.map(id => [id, e.message])) };
   }
+}
+
+// ─── Sina Finance: China commodity futures, daily bars ──────────────────────
+// Continuous main contract (e.g. RB0 = SHFE rebar). Unofficial endpoint used by
+// open-source tools such as akshare; exchange prices, but the roll between
+// contracts can show as a jump. Response is JSONP: var _RB0=([{d,o,h,l,c,...}]).
+export function parseSinaKline(text) {
+  const m = String(text).match(/\(\s*(\[[\s\S]*\])\s*\)/);
+  if (!m) throw new Error("unexpected Sina response");
+  return asSeries(JSON.parse(m[1]).map(r => [r.d, num(r.c)]));
+}
+
+async function fetchSina(ids, { signal, start }) {
+  const res = await settleLimit(ids, 4, async sym => {
+    const url = `https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_${sym}=/InnerFuturesNewService.getDailyKLine?symbol=${sym}`;
+    const s = parseSinaKline(await (await get(url, { signal, ua: BROWSER_UA, headers: { Referer: "https://finance.sina.com.cn/" } })).text());
+    return asSeries(s.points.filter(p => p[0] >= start));
+  });
+  const series = {}, errors = {};
+  ids.forEach((id, i) => { if (res[i].ok) series[id] = res[i].value; else errors[id] = res[i].error; });
+  return { series, errors };
 }
 
 // ─── Router ─────────────────────────────────────────────────────────────────
@@ -611,13 +637,24 @@ const ADAPTERS = {
   bbk:      { fetch: fetchBbk,      tier: "PRIMARY",              ttl: 3600, max: 4,  re: /^[A-Za-z0-9_.]{10,80}$/ },
   mof:      { fetch: fetchMof,      tier: "PRIMARY",              ttl: 3600, max: 6,  re: /^\d{1,2}Y$/ },
   yahoo:    { fetch: fetchYahoo,    tier: "SECONDARY-reliable",   ttl: 300,  max: 60, re: /^[A-Za-z0-9^=.-]{1,15}$/ },
-  cbw:      { fetch: fetchCbw,      tier: "SECONDARY-unverified", ttl: 1800, max: 2,  re: /^(fed|ecb)$/ },
+  cbw:      { fetch: fetchCbw,      tier: "SECONDARY-unverified", ttl: 1800, max: 3,  re: /^(fed|ecb|boj)$/ },
   bls:      { fetch: fetchBls,      tier: "PRIMARY",              ttl: 21600, max: 100, re: /^(CU[SU]R0000[A-Z0-9]{2,8}|WP[SU][A-Z0-9]{2,10}|APU0000[A-Z0-9]{4,8}|PCU[A-Z0-9-]{4,16})$/ },
   eurostat: { fetch: fetchEurostat, tier: "PRIMARY",              ttl: 21600, max: 30, re: /^[A-Z0-9_]{2,6}:[A-Z0-9_]{2,24}:[A-Z0-9_]{2,16}$/ },
   gie:      { fetch: fetchGie,      tier: "PRIMARY",              ttl: 21600, max: 2,  re: /^eu(:avg5)?$/ },
   fao:      { fetch: fetchFao,      tier: "PRIMARY",              ttl: 43200, max: 6,  re: /^(ffpi|meat|dairy|cereals|oils|sugar)$/ },
   mpt:      { fetch: fetchMpt,      tier: "PRIMARY",              ttl: 21600, max: 1,  re: /^fed$/ },
+  sina:     { fetch: fetchSina,     tier: "SECONDARY-unverified", ttl: 3600,  max: 8,  re: /^[A-Z]{1,3}0$/ },
 };
+
+// Server-side use (the scheduled alert check): run one source directly, with
+// the same validation as the HTTP endpoint.
+export async function fetchSourceDirect(src, ids, start, signal) {
+  const ad = ADAPTERS[src];
+  if (!ad) throw new Error(`unknown src "${src}"`);
+  const ok = [...new Set(ids)].filter(s => ad.re.test(s)).slice(0, ad.max);
+  const out = await ad.fetch(ok, { signal, start: start || isoDay(Date.now() - 400 * DAY) });
+  return { src, tier: ad.tier, fetchedAt: Date.now(), ...out };
+}
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");

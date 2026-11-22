@@ -20,12 +20,16 @@
 
 export const SCENARIOS = [
   { id: "disinf", label: "Disinflation on schedule", short: "Disinflation", weight: 40,
+    plain: "Inflation cools by Feb; the 5.36% high holds; 10y ≈4.5–4.75% by mid-2027",
     path: "Core ≤0.2% m/m by Feb; last hike Jan–Mar; the 7 Oct high (5.36%) holds; ≈4.5–4.75% by mid-2027." },
   { id: "sticky", label: "Sticky core + more supply", short: "Sticky + supply", weight: 30,
+    plain: "Core stays ≥0.3% a month and bond supply rises; new 10y high in H1 2027",
     path: "Core ≥0.3% m/m; coupon increases in Feb or May; new 10y high in Q1–Q2 2027." },
   { id: "credit", label: "Credit accident", short: "Credit accident", weight: 20,
+    plain: "AI-debt stress spreads; yields drop abruptly but stocks keep falling",
     path: "AI-debt stress spreads to banks or hyperscalers; abrupt yield peak, 2y falls faster than 10y; stocks keep falling." },
   { id: "fiscal", label: "Fiscal dominance", short: "Fiscal dominance", weight: 10,
+    plain: "Fed eases with inflation unbeaten; breakevens, term premium and gold rise",
     path: "Fed eases under pressure with core unbeaten; breakevens and term premium rise; gold, TIPS, real assets win." },
 ];
 
@@ -138,9 +142,9 @@ export const SIGNALS = [
     supports: [], src: "ICE BofA via FRED; RSP/SPY; VIX",
     action: "Deploy the next tranche of the shopping list (financials, EM, high yield, best-hit cyclicals) once credit leads.",
     guard: "Two-thirds of post-war bears made lower lows after a double-digit rebound — tranche in, don't go all at once." },
-  { id: "s17", n: 17, group: "bottom", label: "Rule 10: good news fails to lift", auto: false, phase: 4,
-    threshold: "A benign print or beat, and bonds/equities do not rally",
-    src: "Release calendar + market reaction — Phase 4",
+  { id: "s17", n: 17, group: "bottom", label: "Rule 10: good news fails to lift", auto: true,
+    threshold: "Latest benign surprise in 30 days (print below your pasted consensus) and, that day, the S&P not up and the 10y not down (Bunds for the euro print); one of the two = partial",
+    src: "Calendar releases (BLS/BEA/Eurostat) vs your pasted consensus; same-day S&P, UST, Bund",
     action: "Red flag: sector over-owned or good news already priced.",
     guard: "Needs a clean surprise vs consensus — paste consensus from your own source." },
 ];

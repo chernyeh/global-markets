@@ -40,6 +40,7 @@ export const SOURCE_META = {
   bls:      { label: "BLS",                  short: "BLS",   tier: "PRIMARY",              url: "https://www.bls.gov/data/", key: "BLS_API_KEY" },
   eurostat: { label: "Eurostat",             short: "ESTAT", tier: "PRIMARY",              url: "https://ec.europa.eu/eurostat/databrowser/view/prc_hicp_minr/default/table" },
   gie:      { label: "GIE AGSI+",            short: "GIE",   tier: "PRIMARY",              url: "https://agsi.gie.eu/" },
+  sina:     { label: "Sina Finance (SHFE/DCE)", short: "Sina", tier: "SECONDARY-unverified", url: "https://finance.sina.com.cn/futuremarket/" },
   fao:      { label: "FAO",                  short: "FAO",   tier: "PRIMARY",              url: "https://www.fao.org/worldfoodsituation/foodpricesindex/en/" },
   bbk:      { label: "Bundesbank",           short: "BBk",   tier: "PRIMARY",              url: "https://www.bundesbank.de/en/statistics/money-and-capital-markets/interest-rates-and-yields" },
   mof:      { label: "Japan MoF",            short: "MoF",   tier: "PRIMARY",              url: "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/" },
@@ -80,6 +81,7 @@ export const MACRO_SERIES = {
             note: "Monthly average 10y yields (ECB convergence series). Paste a daily spread on the Signals board to override." },
   btpBund:{ group: "rates", label: "BTP–Bund (monthly)", unit: "bp", dp: 0, chg: "bp", freq: "M", derived: { op: "sub", a: "btp10m", b: "bund10m", scale: 100 } },
   jgb10:  { group: "rates", label: "JGB 10y", unit: "%", dp: 3, chg: "bp", src: [["mof", "10Y"]], thr: [{ v: 3, label: "3.0" }] },
+  jgb2:   { group: "policy", label: "JGB 2y", unit: "%", dp: 3, chg: "bp", src: [["mof", "2Y"]] },
   // inputs for the monthly spreads (not shown on their own)
   oat10m: { hidden: true, unit: "%", dp: 2, freq: "M", src: [["ecb", ECB_10Y("FR")]] },
   bund10m:{ hidden: true, unit: "%", dp: 2, freq: "M", src: [["ecb", ECB_10Y("DE")]] },
@@ -91,6 +93,12 @@ export const MACRO_SERIES = {
   effr:   { group: "policy", label: "EFFR", unit: "%", dp: 2, src: [["fred", "EFFR"]] },
   dfr:    { group: "policy", label: "ECB deposit rate", unit: "%", dp: 2, src: [["ecb", "FM/D.U2.EUR.4F.KR.DFR.LEV"], ["fred", "ECBDFR"]] },
   estr:   { group: "policy", label: "€STR", unit: "%", dp: 3, src: [["ecb", "EST/B.EU000A2X2A25.WT"]] },
+  // Market-implied euro short rates from the ECB's own AAA government yield curve
+  // (instantaneous forwards, daily, PRIMARY). Not OIS: the level carries a small
+  // term premium and AAA-vs-€STR basis, so read the changes, not the level.
+  ezFwd6m:{ group: "policy", label: "Euro rate 6m ahead", unit: "%", dp: 2, chg: "bp", src: [["ecb", "YC/B.U2.EUR.4F.G_N_A.SV_C_YM.IF_6M"]] },
+  ezFwd1y:{ group: "policy", label: "Euro rate 1y ahead", unit: "%", dp: 2, chg: "bp", src: [["ecb", "YC/B.U2.EUR.4F.G_N_A.SV_C_YM.IF_1Y"]] },
+  ezFwd2y:{ group: "policy", label: "Euro rate 2y ahead", unit: "%", dp: 2, chg: "bp", src: [["ecb", "YC/B.U2.EUR.4F.G_N_A.SV_C_YM.IF_2Y"]] },
 
   // ── US inflation (BLS first; FRED carries the same data as a fallback) ───
   // SA indices for m/m and 3-month annualised; NSA for y/y, as BLS publishes.
@@ -194,6 +202,14 @@ export const MACRO_SERIES = {
   silver: { group: "metals", label: "Silver", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "SI=F"]] },
   copper: { group: "metals", label: "Copper $/lb", unit: "$", dp: 3, chg: "pct", src: [["yahoo", "HG=F"]] },
   alu:    { group: "metals", label: "Aluminium", unit: "$", dp: 0, chg: "pct", src: [["yahoo", "ALI=F"]] },
+  cnRebar:{ group: "metals", label: "China rebar ¥/t (SHFE)", unit: "px", dp: 0, chg: "pct", src: [["sina", "RB0"]],
+            note: "SHFE rebar, continuous main contract, via Sina Finance (unofficial endpoint). China construction demand." },
+  cnHrc:  { group: "metals", label: "China HRC ¥/t (SHFE)", unit: "px", dp: 0, chg: "pct", src: [["sina", "HC0"]],
+            note: "SHFE hot-rolled coil, continuous main contract, via Sina Finance. Compare with US HRC: the export-price gap." },
+  cnOre:  { group: "metals", label: "Iron ore ¥/t (DCE)", unit: "px", dp: 1, chg: "pct", src: [["sina", "I0"]],
+            note: "DCE iron ore, continuous main contract, via Sina Finance. Daily; the IMF series below is monthly in USD." },
+  cnCoke: { group: "metals", label: "Coking coal ¥/t (DCE)", unit: "px", dp: 1, chg: "pct", src: [["sina", "JM0"]],
+            note: "DCE coking coal, continuous main contract, via Sina Finance." },
   ironOre:{ group: "metals", label: "Iron ore $/t (monthly)", unit: "$", dp: 1, chg: "pct", freq: "M", src: [["fred", "PIORECRUSDM"]],
             note: "IMF primary commodity price via FRED (China import, 62% Fe). Monthly." },
   coalAu: { group: "metals", label: "Coal, Australia $/t (monthly)", unit: "$", dp: 1, chg: "pct", freq: "M", src: [["fred", "PCOALAUUSDM"]],
@@ -229,11 +245,14 @@ export const MACRO_SERIES = {
 export const TABLE_PANELS = [
   { id: "rates",  label: "RATES & YIELDS", ids: ["ust3m", "ust2y", "ust10y", "ust30y", "c2s10s", "real10y", "bei10y", "infl5y5", "tp10y", "impl10y", "bund10", "oatBund", "btpBund", "jgb10"] },
   { id: "credit", label: "CREDIT, STRESS & BREADTH", ids: ["hyOas", "igOas", "cccOas", "stlfsi", "vix", "moveIx", "hyg", "crwv", "orcl", "spx", "ndq", "rut", "ewRatio"] },
-  { id: "fx",     label: "FX", ids: ["dxy", "eurusd", "usdjpy", "usdsgd", "usdcnh", "usdinr", "usdidr", "usdthb", "audusd", "usdnok"] },
+  // INR, IDR and THB sit behind a toggle: the playbook (section 4) uses them only as
+  // oil-importer stress gauges ("treat Indonesia, India and Thailand cautiously until Hormuz clears").
+  { id: "fx",     label: "FX", ids: ["dxy", "eurusd", "usdjpy", "usdcnh", "usdsgd", "audusd", "usdnok"],
+    more: { label: "Asia oil importers", ids: ["usdinr", "usdidr", "usdthb"] } },
 ];
 export const TILE_GROUPS = [
   { id: "energy", label: "ENERGY",  ids: ["brent", "brentCurve", "wti", "ttf", "gasStore", "hh", "rbob", "hoil", "coal"] },
-  { id: "metals", label: "METALS, STEEL & BULKS", ids: ["gold", "silver", "copper", "alu", "hrc", "ironOre", "coalAu"] },
+  { id: "metals", label: "METALS, STEEL & BULKS", ids: ["gold", "silver", "copper", "alu", "hrc", "cnHrc", "cnRebar", "cnOre", "cnCoke", "ironOre", "coalAu"] },
   { id: "food",   label: "FOOD · FAO indices (monthly) and futures", ids: ["ffpi", "faoCereals", "faoOils", "faoSugar", "faoDairy", "faoMeat", "wheat", "corn", "soy", "rice", "sugar", "coffee", "cocoa", "cattle"] },
   { id: "rare",   label: "RARE EARTHS · equity proxies", ids: ["mp", "lynas", "cnre", "remx"] },
 ];
