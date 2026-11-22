@@ -16,6 +16,7 @@ import MacroCalendar from "./MacroCalendar.jsx";
 import AlertInbox from "./AlertInbox.jsx";
 import SourceHealth from "./SourceHealth.jsx";
 import MacroRead from "./MacroRead.jsx";
+import SetupPanel from "./SetupPanel.jsx";
 import { fedDoneSuggestion } from "../../macroSpeech.js";
 import { C, MONO, SERIF, card, kickerStyle, smallMono, useFs, chipBtn } from "./macroStyles.js";
 import { fmtDate, fmtStamp } from "../../macroFormat.js";
@@ -41,6 +42,7 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
   const srcOk = healthList.filter(h => h.ok > 0 && !h.error).length;
   const yahooDown = m.health.yahoo && m.health.yahoo.ok === 0;
   const dataTo = S.ust10y?.lastDate;
+  const dueCount = m.dueDecisions(m.decisions, today).length;
 
   // AI evidence reads for the signals you set: #1 from the classified Fed
   // statements; #6, #9 and #15 from their news queries.
@@ -71,6 +73,7 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
             <div style={kickerStyle(fs)}>
               MACRO MONITOR · {dataTo ? `data to ${fmtDate(dataTo)}` : "no data yet"} · refreshed {fmtStamp(m.fetchedAt)} · sources {srcOk}/{healthList.length} ok
               {m.unread > 0 && <span style={{ color: C.ink }}> · {m.unread} new alert{m.unread > 1 ? "s" : ""}</span>}
+              {dueCount > 0 && <span style={{ color: C.ink }}> · ⏰ {dueCount} decision{dueCount > 1 ? "s" : ""} due</span>}
             </div>
             <div style={{ fontFamily: SERIF, fontSize: fs(16), color: C.ink, fontWeight: 700, marginTop: 1 }}>Macro & Policy Monitor</div>
             <div style={{ fontFamily: SERIF, fontSize: fs(12.5), color: C.sub, marginTop: 2, maxWidth: 980, lineHeight: 1.45 }}>
@@ -92,7 +95,7 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
         </div>
       </div>
 
-      <AlertInbox alerts={m.alerts} unread={m.unread} markRead={m.markRead} notify={m.notify} toggleNotify={m.toggleNotify} />
+      <AlertInbox m={m} today={today} />
 
       <SignalsBoard results={m.results} onSetManual={m.setManual} pasted={m.pasted} setPasted={m.setPasted} now={now} suggestions={suggestions} />
 
@@ -124,7 +127,7 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(420px,100%),1fr))", gap: 14, marginBottom: 14, alignItems: "start" }}>
-        <MacroCalendar today={today} userEvents={m.userEvents} setUserEvents={m.setUserEvents} />
+        <MacroCalendar today={today} userEvents={m.userEvents} setUserEvents={m.setUserEvents} series={S} pasted={m.pasted} setPasted={m.setPasted} />
         <div className="gm-news" style={{ ...card, padding: "12px 14px", minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
             <span style={kickerStyle(fs)}>RELATED HEADLINES · LAST 24H</span>
@@ -135,6 +138,8 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
             : <div style={{ ...smallMono(fs), padding: "10px 0" }}>No macro headlines in the last 24 hours yet — feeds load in the background.</div>}
         </div>
       </div>
+
+      <SetupPanel m={m} />
 
       <div style={{ ...card, padding: "8px 14px" }}>
         <SourceHealth health={m.health} />

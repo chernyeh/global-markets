@@ -138,9 +138,9 @@ export const SIGNALS = [
     supports: [], src: "ICE BofA via FRED; RSP/SPY; VIX",
     action: "Deploy the next tranche of the shopping list (financials, EM, high yield, best-hit cyclicals) once credit leads.",
     guard: "Two-thirds of post-war bears made lower lows after a double-digit rebound — tranche in, don't go all at once." },
-  { id: "s17", n: 17, group: "bottom", label: "Rule 10: good news fails to lift", auto: false, phase: 4,
-    threshold: "A benign print or beat, and bonds/equities do not rally",
-    src: "Release calendar + market reaction — Phase 4",
+  { id: "s17", n: 17, group: "bottom", label: "Rule 10: good news fails to lift", auto: true,
+    threshold: "Latest benign surprise in 30 days (print below your pasted consensus) and, that day, the S&P not up and the 10y not down (Bunds for the euro print); one of the two = partial",
+    src: "Calendar releases (BLS/BEA/Eurostat) vs your pasted consensus; same-day S&P, UST, Bund",
     action: "Red flag: sector over-owned or good news already priced.",
     guard: "Needs a clean surprise vs consensus — paste consensus from your own source." },
 ];

@@ -21,6 +21,7 @@
 //   gie       GIE AGSI+ EU gas storage (GIE_API_KEY optional)          PRIMARY
 //   fao       FAO Food Price Index (monthly CSV)                       PRIMARY, no key
 //   mpt       Atlanta Fed Market Probability Tracker (SOFR options)    PRIMARY (Atlanta Fed model), no key
+//   sina      Sina Finance daily bars, China futures (SHFE/DCE main)   SECONDARY-unverified (unofficial endpoint)
 
 export const config = { maxDuration: 30 };
 
@@ -603,6 +604,27 @@ async function fetchMpt(ids, { signal }) {
   }
 }
 
+// ─── Sina Finance: China commodity futures, daily bars ──────────────────────
+// Continuous main contract (e.g. RB0 = SHFE rebar). Unofficial endpoint used by
+// open-source tools such as akshare; exchange prices, but the roll between
+// contracts can show as a jump. Response is JSONP: var _RB0=([{d,o,h,l,c,...}]).
+export function parseSinaKline(text) {
+  const m = String(text).match(/\(\s*(\[[\s\S]*\])\s*\)/);
+  if (!m) throw new Error("unexpected Sina response");
+  return asSeries(JSON.parse(m[1]).map(r => [r.d, num(r.c)]));
+}
+
+async function fetchSina(ids, { signal, start }) {
+  const res = await settleLimit(ids, 4, async sym => {
+    const url = `https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_${sym}=/InnerFuturesNewService.getDailyKLine?symbol=${sym}`;
+    const s = parseSinaKline(await (await get(url, { signal, ua: BROWSER_UA, headers: { Referer: "https://finance.sina.com.cn/" } })).text());
+    return asSeries(s.points.filter(p => p[0] >= start));
+  });
+  const series = {}, errors = {};
+  ids.forEach((id, i) => { if (res[i].ok) series[id] = res[i].value; else errors[id] = res[i].error; });
+  return { series, errors };
+}
+
 // ─── Router ─────────────────────────────────────────────────────────────────
 const ADAPTERS = {
   treasury: { fetch: fetchTreasury, tier: "PRIMARY",              ttl: 1800, max: 12, re: /^[nr]\d{1,2}[my]$/ },
@@ -617,7 +639,18 @@ const ADAPTERS = {
   gie:      { fetch: fetchGie,      tier: "PRIMARY",              ttl: 21600, max: 2,  re: /^eu(:avg5)?$/ },
   fao:      { fetch: fetchFao,      tier: "PRIMARY",              ttl: 43200, max: 6,  re: /^(ffpi|meat|dairy|cereals|oils|sugar)$/ },
   mpt:      { fetch: fetchMpt,      tier: "PRIMARY",              ttl: 21600, max: 1,  re: /^fed$/ },
+  sina:     { fetch: fetchSina,     tier: "SECONDARY-unverified", ttl: 3600,  max: 8,  re: /^[A-Z]{1,3}0$/ },
 };
+
+// Server-side use (the scheduled alert check): run one source directly, with
+// the same validation as the HTTP endpoint.
+export async function fetchSourceDirect(src, ids, start, signal) {
+  const ad = ADAPTERS[src];
+  if (!ad) throw new Error(`unknown src "${src}"`);
+  const ok = [...new Set(ids)].filter(s => ad.re.test(s)).slice(0, ad.max);
+  const out = await ad.fetch(ok, { signal, start: start || isoDay(Date.now() - 400 * DAY) });
+  return { src, tier: ad.tier, fetchedAt: Date.now(), ...out };
+}
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");

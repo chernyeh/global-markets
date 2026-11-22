@@ -38,22 +38,28 @@ export const ECB_MEETINGS = [
   { date: "2027-12-16", proj: true },
 ];
 
+// release: data the monitor checks after the print for the Rule-10 test —
+// series id and measure, the reference month, and which way is "good news"
+// (lower inflation). Consensus is pasted on the calendar row.
+const rel = (id, kind, ref, label, market = "us") => ({ id, kind, ref, label, market, better: "lower" });
 export const MACRO_EVENTS = [
-  { date: "2026-11-25", type: "us",   label: "US October PCE inflation" },
-  { date: "2026-12-02", type: "eu",   label: "Euro-area November flash HICP", approx: true },
-  { date: "2026-12-10", type: "us",   label: "US November CPI — the day after the FOMC" },
-  { date: "2026-12-15", type: "us",   label: "US November PPI", approx: true },
+  { date: "2026-11-25", type: "us",   label: "US October PCE inflation", release: rel("corePce", "mom", "2026-10", "core PCE m/m") },
+  { date: "2026-12-02", type: "eu",   label: "Euro-area November flash HICP", approx: true, release: rel("ezCore", "level", "2026-11", "euro core HICP y/y", "eu") },
+  { date: "2026-12-10", type: "us",   label: "US November CPI — the day after the FOMC", release: rel("coreCpi", "mom", "2026-11", "core CPI m/m") },
+  { date: "2026-12-15", type: "us",   label: "US November PPI", approx: true, release: rel("ppiCore", "mom", "2026-11", "core PPI m/m") },
   { date: "2027-01-10", type: "geo",  label: "US–China truce expires unless extended" },
-  { date: "2027-01-13", type: "us",   label: "US December CPI", approx: true },
+  { date: "2027-01-13", type: "us",   label: "US December CPI", approx: true, release: rel("coreCpi", "mom", "2026-12", "core CPI m/m") },
   { date: "2027-01-21", type: "ust",  label: "New 10y TIPS auction" },
   { date: "2027-01-26", end: "2027-02-06", type: "earn", label: "Hyperscaler Q4 calls — 2027 capex vs ≈$935bn consensus", approx: true },
   { date: "2027-02-03", type: "ust",  label: "Treasury February refunding — coupon sizes", approx: true },
   { date: "2027-02-07", type: "eu",   label: "Lagarde leaves the ECB" },
-  { date: "2027-02-11", type: "us",   label: "US January CPI — start-of-year price resets", approx: true },
+  { date: "2027-02-11", type: "us",   label: "US January CPI — start-of-year price resets", approx: true, release: rel("coreCpi", "mom", "2027-01", "core CPI m/m") },
   { date: "2027-03-01", end: "2027-06-30", type: "us", label: "Oil base effects pull headline CPI down (≈1–1.5pp, note estimate)", approx: true },
   { date: "2027-04-11", type: "geo",  label: "French presidential election, first round (date to be set by decree)", approx: true },
   { date: "2027-05-05", type: "ust",  label: "Treasury May refunding", approx: true },
 ];
+
+export const releaseKey = e => `${e.date}:${e.release.id}:${e.release.ref}`;
 
 export const EVENT_TYPES = {
   fed:  { label: "FED",  color: "#1a1a1a" },

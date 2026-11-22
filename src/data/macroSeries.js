@@ -40,6 +40,7 @@ export const SOURCE_META = {
   bls:      { label: "BLS",                  short: "BLS",   tier: "PRIMARY",              url: "https://www.bls.gov/data/", key: "BLS_API_KEY" },
   eurostat: { label: "Eurostat",             short: "ESTAT", tier: "PRIMARY",              url: "https://ec.europa.eu/eurostat/databrowser/view/prc_hicp_minr/default/table" },
   gie:      { label: "GIE AGSI+",            short: "GIE",   tier: "PRIMARY",              url: "https://agsi.gie.eu/" },
+  sina:     { label: "Sina Finance (SHFE/DCE)", short: "Sina", tier: "SECONDARY-unverified", url: "https://finance.sina.com.cn/futuremarket/" },
   fao:      { label: "FAO",                  short: "FAO",   tier: "PRIMARY",              url: "https://www.fao.org/worldfoodsituation/foodpricesindex/en/" },
   bbk:      { label: "Bundesbank",           short: "BBk",   tier: "PRIMARY",              url: "https://www.bundesbank.de/en/statistics/money-and-capital-markets/interest-rates-and-yields" },
   mof:      { label: "Japan MoF",            short: "MoF",   tier: "PRIMARY",              url: "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/" },
@@ -194,6 +195,14 @@ export const MACRO_SERIES = {
   silver: { group: "metals", label: "Silver", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "SI=F"]] },
   copper: { group: "metals", label: "Copper $/lb", unit: "$", dp: 3, chg: "pct", src: [["yahoo", "HG=F"]] },
   alu:    { group: "metals", label: "Aluminium", unit: "$", dp: 0, chg: "pct", src: [["yahoo", "ALI=F"]] },
+  cnRebar:{ group: "metals", label: "China rebar ¥/t (SHFE)", unit: "px", dp: 0, chg: "pct", src: [["sina", "RB0"]],
+            note: "SHFE rebar, continuous main contract, via Sina Finance (unofficial endpoint). China construction demand." },
+  cnHrc:  { group: "metals", label: "China HRC ¥/t (SHFE)", unit: "px", dp: 0, chg: "pct", src: [["sina", "HC0"]],
+            note: "SHFE hot-rolled coil, continuous main contract, via Sina Finance. Compare with US HRC: the export-price gap." },
+  cnOre:  { group: "metals", label: "Iron ore ¥/t (DCE)", unit: "px", dp: 1, chg: "pct", src: [["sina", "I0"]],
+            note: "DCE iron ore, continuous main contract, via Sina Finance. Daily; the IMF series below is monthly in USD." },
+  cnCoke: { group: "metals", label: "Coking coal ¥/t (DCE)", unit: "px", dp: 1, chg: "pct", src: [["sina", "JM0"]],
+            note: "DCE coking coal, continuous main contract, via Sina Finance." },
   ironOre:{ group: "metals", label: "Iron ore $/t (monthly)", unit: "$", dp: 1, chg: "pct", freq: "M", src: [["fred", "PIORECRUSDM"]],
             note: "IMF primary commodity price via FRED (China import, 62% Fe). Monthly." },
   coalAu: { group: "metals", label: "Coal, Australia $/t (monthly)", unit: "$", dp: 1, chg: "pct", freq: "M", src: [["fred", "PCOALAUUSDM"]],
@@ -233,7 +242,7 @@ export const TABLE_PANELS = [
 ];
 export const TILE_GROUPS = [
   { id: "energy", label: "ENERGY",  ids: ["brent", "brentCurve", "wti", "ttf", "gasStore", "hh", "rbob", "hoil", "coal"] },
-  { id: "metals", label: "METALS, STEEL & BULKS", ids: ["gold", "silver", "copper", "alu", "hrc", "ironOre", "coalAu"] },
+  { id: "metals", label: "METALS, STEEL & BULKS", ids: ["gold", "silver", "copper", "alu", "hrc", "cnHrc", "cnRebar", "cnOre", "cnCoke", "ironOre", "coalAu"] },
   { id: "food",   label: "FOOD · FAO indices (monthly) and futures", ids: ["ffpi", "faoCereals", "faoOils", "faoSugar", "faoDairy", "faoMeat", "wheat", "corn", "soy", "rice", "sugar", "coffee", "cocoa", "cattle"] },
   { id: "rare",   label: "RARE EARTHS · equity proxies", ids: ["mp", "lynas", "cnre", "remx"] },
 ];

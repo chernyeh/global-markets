@@ -18,6 +18,9 @@ export const SK = {
   macroNotify: "gm_macro_notify_v1",
   macroSpeech: "gm_macro_speech_v1",
   macroRead:   "gm_macro_read_v1",
+  macroSyncAt: "gm_macro_syncat_v1",
+  macroDecisions: "gm_macro_decisions_v1",
+  macroServerRead: "gm_macro_srvread_v1",
 };
 
 export const EM_SK = {

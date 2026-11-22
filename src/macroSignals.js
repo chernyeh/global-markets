@@ -9,6 +9,7 @@
 import { SIGNALS, SCENARIOS } from "./data/macroSignals.js";
 import { monthlyChanges, round1, valueAtOrBefore, isoDay } from "./macroData.js";
 import { breadth } from "./macroInflation.js";
+import { rule10Signal } from "./macroRule10.js";
 
 const DAY = 86400000;
 export const PASTE_LIFE_MS = 21 * DAY;
@@ -85,6 +86,9 @@ const EVAL = {
     return { status, asOf: L.month, lean: L.w >= 70 ? ["sticky"] : undefined,
       value: `${L.w.toFixed(0)}% by weight · ${L.n.toFixed(0)}% by count · ${L.exOer.toFixed(0)}% ex-OER (3m ann., ${monLabel(L.month)})`,
       detail: `${L.covN} items, ${L.covW.toFixed(1)}pp of CPI${three ? `; 3 months earlier ${three.w.toFixed(0)}% by weight` : ""}` };
+  },
+  s17(S, { pasted }) {
+    return rule10Signal(S, pasted?.consensus || {}, new Date().toISOString().slice(0, 10));
   },
   s5(S) {
     const miss = na(S, ["tp10y"]); if (miss) return miss;
