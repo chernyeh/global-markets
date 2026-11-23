@@ -88,8 +88,8 @@ Board from the BoJ's feed plus Japanese and English press.
 alert engine as the browser, adds new FOMC statements and minutes and ECB decisions from the banks' own
 feeds, and reminds you once a day of deferred decisions that fall due. It stores state in Supabase
 (Gloomberg project, tables `gm_kv`, `gm_alerts`, `gm_decisions`, row-level security on with no policies,
-so only the server's secret key can read them) and pushes to Telegram. Schedule: GitHub Actions hourly on
-weekdays and every 6 hours at weekends (`.github/workflows/macro-alerts.yml`), plus Vercel Cron once a day
+so only the server's secret key can read them) and pushes to Telegram. Schedule: GitHub Actions every 3 hours on
+weekdays and every 6 hours at weekends (`.github/workflows/macro-alerts.yml`; times in UTC, listed in that file), plus Vercel Cron once a day
 at 22:17 UTC (`vercel.json`; the Hobby plan allows one a day). With the app key entered in the Macro tab's
 Setup panel, your paste-ins, hand-set signals, scenario weights, events and release consensus sync to
 Supabase so the server check uses them (`api/store.js`, `src/macroSync.js`).
