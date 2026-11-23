@@ -106,7 +106,7 @@ export default function SetupPanel({ m }) {
             </div>
             {msg && <div style={{ ...smallMono(fs, msg.ok ? C.green : C.red), marginTop: 3 }}>{msg.text}</div>}
             <div style={{ fontFamily: SERIF, fontSize: fs(11), color: C.sub, marginTop: 4, lineHeight: 1.4 }}>
-              The server check runs hourly on weekdays and every 6 hours at weekends (GitHub Actions), plus once a day from Vercel as a backstop.
+              The server check runs every 3 hours on weekdays (08:23, 11:23, 14:23, 17:23, 20:23, 23:23, 02:23, 05:23 SGT) and every 6 hours at weekends (GitHub Actions), plus once a day from Vercel (06:17 SGT) as a backstop.
               It pushes new alerts at or above the level chosen, FOMC statements and minutes, ECB decisions, and deferred decisions that fall due.
             </div>
             {run && <div style={{ ...smallMono(fs), marginTop: 3 }} title={Object.entries(run.sources || {}).map(([k, v]) => `${k} ${v}`).join("\n")}>

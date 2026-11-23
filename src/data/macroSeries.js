@@ -249,8 +249,10 @@ export const MACRO_SERIES = {
             note: "Rotterdam coal futures (Yahoo MTF=F). On 23 Nov 2026 Yahoo's last bar for this ticker was 26 Dec 2025, so the tile reads stale until Yahoo rolls it; the monthly IMF Australian coal tile is the maintained alternative." },
 
   // ── Metals ───────────────────────────────────────────────────────────────
-  gold:   { group: "metals", label: "Gold", unit: "$", dp: 0, chg: "pct", move: 2.5, src: [["yahoo", "GC=F"], ["sinag", "GC"]] },
-  silver: { group: "metals", label: "Silver", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "SI=F"], ["sinag", "SI"]] },
+  gold:   { group: "metals", label: "Gold $/oz (COMEX)", unit: "$", dp: 0, chg: "pct", move: 2.5, src: [["yahoo", "GC=F"], ["sinag", "GC"]],
+            note: "COMEX gold futures, front month (Yahoo GC=F), US$ per troy ounce. Trades almost 24 hours on CME Globex (Mon–Fri; closed about 06:00–07:00 SGT), so it moves through Asian hours. Fallback: the same COMEX contract via Sina. Spot gold (XAU/USD) differs by the carry to the contract's expiry. SGX O87 is SPDR Gold Shares (GLD) in US$ — about 0.09 oz per share, not the price of an ounce." },
+  silver: { group: "metals", label: "Silver $/oz (COMEX)", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "SI=F"], ["sinag", "SI"]],
+            note: "COMEX silver futures, front month (Yahoo SI=F), US$ per troy ounce; trades almost 24 hours. Fallback: the same contract via Sina." },
   copper: { group: "metals", label: "Copper $/lb", unit: "$", dp: 3, chg: "pct", src: [["yahoo", "HG=F"], ["sinag", "HG", { scale: 0.01 }]] },
   alu:    { group: "metals", label: "Aluminium", unit: "$", dp: 0, chg: "pct", src: [["yahoo", "ALI=F"], ["sinag", "AHD"]],
             note: "COMEX aluminium, $/t. Fallback: LME aluminium 3-month via Sina — same metal, different exchange (usually within a few %)." },

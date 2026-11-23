@@ -1,6 +1,6 @@
 /* global process */
 // Scheduled alert check for the macro monitor — the "while the app is closed"
-// half of the alerts. Runs hourly on weekdays from GitHub Actions and once a day
+// half of the alerts. Runs every 3 hours on weekdays from GitHub Actions and once a day
 // from Vercel Cron (Hobby plan limit); both send Authorization: Bearer CRON_SECRET.
 //
 // GET /api/alerts  (Authorization: Bearer <CRON_SECRET>)

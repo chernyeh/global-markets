@@ -1,7 +1,17 @@
 # Scheduled macro-monitor check: calls /api/alerts on the deployed site, which
 # evaluates the signals, stores alerts in Supabase and pushes to Telegram.
 # Vercel's Hobby plan allows one cron a day (vercel.json, 22:17 UTC); this adds
-# hourly runs on weekdays and every 6 hours at weekends.
+# runs every 3 hours on weekdays and every 6 hours at weekends.
+#
+# Times are UTC (GitHub cron has no time zone); Singapore is UTC+8.
+#   Weekdays (Mon–Fri UTC) at :23 past 00, 03, 06, 09, 12, 15, 18, 21 UTC
+#     = 08:23, 11:23, 14:23, 17:23, 20:23, 23:23, 02:23, 05:23 SGT.
+#     03:23 / 06:23 UTC catch BoJ decisions (around midday Tokyo) and the Asian session;
+#     15:23 UTC follows the ECB decision (14:15 Frankfurt = 13:15 UTC in winter),
+#     US data at 8:30 ET and the US open; 21:23 UTC follows the US close and FOMC
+#     decisions (2 pm ET = 19:00 UTC in winter).
+#   Weekends (Sat–Sun UTC) at :23 past 00, 06, 12, 18 UTC.
+# Minute 23, not 00: GitHub delays runs queued on the hour, sometimes by 15+ min.
 #
 # Needs two repository secrets (Settings → Secrets and variables → Actions):
 #   CRON_SECRET  — the same value as CRON_SECRET in Vercel
@@ -10,7 +20,7 @@ name: Macro alerts
 
 on:
   schedule:
-    - cron: "23 * * * 1-5"
+    - cron: "23 */3 * * 1-5"
     - cron: "23 */6 * * 0,6"
   workflow_dispatch:
 
