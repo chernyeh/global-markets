@@ -18,7 +18,7 @@ import { BRIEF_FORMAT, BRIEF_RULES, WORLD_FORMAT, WORLD_RULES } from "./prompts.
 import { mono, RED, labelSm, labelMed, pillBtn, card, HoverButton } from "./ui.jsx";
 import { sleep, backoff, mapLimit, callClaude, MODEL_CLASSIFY, MODEL_SYNTHESIZE, SYNTH_MODELS, DEFAULT_SYNTH_MODEL, setSynthModel } from "./api.js";
 import { SK, EM_SK, sGet, sSet } from "./storage.js";
-import { classifyMicro } from "./utils.js";
+import { classifyMicro, stripOutletSuffix } from "./utils.js";
 import { setTopicDials, dialsKey, topicMatches, isTopicMuted, isTopicFocused, worldTopicScore, briefTopicBoost, normalizeDialRecords, expireDials, levelsOf, setCustomTopics, allTopics, applyPreset, matchPreset, coverageSurges, evalGauges, buildSuggestions, MAX_PER_SOURCE, MAX_PER_SOURCE_FOCUS } from "./topicDials.js";
 import { MARKET_GAUGES } from "./data/taxonomy.js";
 import TopicDials from "./components/TopicDials.jsx";
@@ -75,10 +75,16 @@ async function fetchFeed(source) {
     return items.slice(0, source.limit || 10).map(item => {
       const g = t => item.querySelector(t)?.textContent?.trim() || "";
       let title = g("title").replace(/<!\[CDATA\[|\]\]>/g,"").trim();
-      title = title
-        .replace(/\s*[-–]\s*\d{8}\s*[-–].*$/,"")
-        .replace(/\s*[-–]\s*[^-–]{3,50}$/, "")
-        .trim();
+      title = title.replace(/\s*[-–]\s*\d{8}\s*[-–].*$/,"").trim();
+      // Drop a trailing " - Outlet" tag only when it names the outlet, so
+      // hyphenated words ("Late-Life") never cut a headline short. Google News
+      // names the outlet in <source>; direct feeds are matched on their own name
+      // and domain. See stripOutletSuffix in utils.js.
+      const srcEl = item.querySelector("source");
+      const isGoogleNews = (source.url || "").startsWith("https://news.google.com/");
+      title = stripOutletSuffix(title, isGoogleNews
+        ? { outlets: [srcEl?.textContent?.trim()], urls: [srcEl?.getAttribute("url") || ""] }
+        : { outlets: [source.name, srcEl?.textContent?.trim()], urls: [source.url, srcEl?.getAttribute("url") || ""] });
       if (!title) return null;
       const JUNK_PATTERNS = [
         /\b(award[s]?|recogni[sz]|certif|named one of|best place|top \d+ company|proud to announce|thrilled to|excited to|sponsorship|celebrate[s]?|anniversary)\b/i,
