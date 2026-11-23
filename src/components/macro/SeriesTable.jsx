@@ -11,8 +11,8 @@ export function SourceTag({ s, fs }) {
   const src = s.srcUsed === "derived" ? null : SOURCE_META[s.srcUsed];
   const tier = src?.tier;
   return (
-    <span style={{ ...smallMono(fs, tier ? TIER_COLOR[tier] : C.faint), fontSize: fs(8), whiteSpace: "nowrap" }}>
-      {src ? src.short : "calc"}{s.fallback ? "*" : ""} {asOfLabel(s)}
+    <span style={{ ...smallMono(fs, s.stale ? C.amber : tier ? TIER_COLOR[tier] : C.faint), fontSize: fs(8), whiteSpace: "nowrap", fontWeight: s.stale ? 700 : 400 }}>
+      {src ? src.tag || src.short : "calc"}{s.fallback ? "*" : ""} {asOfLabel(s)}{s.stale ? " · stale" : ""}
     </span>
   );
 }
@@ -49,13 +49,16 @@ function Row({ s, fs }) {
   );
 }
 
-// `more` = rows behind a toggle (e.g. secondary FX); `note` = the card's
-// footnote, now behind the "i" next to the title.
+// `more` = groups of rows behind their own toggle (e.g. Asia oil importers, SGD
+// crosses): { id, label, ids, tip } or a list of them. `note` = the card's
+// footnote, behind the "i" next to the title.
 export default function SeriesTable({ label, ids, series, note, more }) {
   const fs = useFs();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState({});
   const rows = ids.map(id => series[id]).filter(Boolean);
-  const extra = (more?.ids || []).map(id => series[id]).filter(Boolean);
+  const groups = (Array.isArray(more) ? more : more ? [more] : [])
+    .map((g, i) => ({ ...g, key: g.id || String(i), rows: (g.ids || []).map(id => series[id]).filter(Boolean) }))
+    .filter(g => g.rows.length);
   return (
     <div style={{ ...card, padding: "12px 14px" }}>
       <div style={{ ...kickerStyle(fs), marginBottom: 6 }}>{label}{note && <InfoTip tip={note} />}</div>
@@ -70,12 +73,25 @@ export default function SeriesTable({ label, ids, series, note, more }) {
           <span role="columnheader" style={{ textAlign: "right" }}>SRC</span>
         </div>
         {rows.map(s => <Row key={s.id} s={s} fs={fs} />)}
-        {open && extra.map(s => <Row key={s.id} s={s} fs={fs} />)}
+        {groups.filter(g => open[g.key]).map(g => (
+          <div key={g.key} role="rowgroup" aria-label={g.label}>
+            <div role="row" style={{ ...smallMono(fs, C.sub), fontSize: fs(8), letterSpacing: "0.06em", padding: "5px 0 1px", borderBottom: `1px solid ${C.line2}` }}>
+              <span role="cell">{g.label.toUpperCase()}</span>
+            </div>
+            {g.rows.map(s => <Row key={s.id} s={s} fs={fs} />)}
+          </div>
+        ))}
       </div>
-      {extra.length > 0 && (
-        <div style={{ marginTop: 5 }}>
-          <button onClick={() => setOpen(o => !o)} style={chipBtn(open, C.ink)}>{open ? `hide ${more.label}` : `+ ${more.label} (${extra.length})`}</button>
-          <InfoTip tip={GLOSSARY.fxMore} />
+      {groups.length > 0 && (
+        <div style={{ marginTop: 5, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+          {groups.map(g => (
+            <span key={g.key} style={{ whiteSpace: "nowrap" }}>
+              <button onClick={() => setOpen(o => ({ ...o, [g.key]: !o[g.key] }))} aria-expanded={!!open[g.key]} style={chipBtn(!!open[g.key], C.ink)}>
+                {open[g.key] ? `hide ${g.label}` : `+ ${g.label} (${g.rows.length})`}
+              </button>
+              {g.tip && GLOSSARY[g.tip] && <InfoTip tip={GLOSSARY[g.tip]} />}
+            </span>
+          ))}
         </div>
       )}
     </div>

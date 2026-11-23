@@ -14,11 +14,14 @@
 //   dp                  decimals shown
 //   chg                 how changes are shown: "bp" (for % series) or "pct"
 //   scale               multiply raw values (FRED OAS are in percent → ×100 = bp)
-//   freq                "D" daily (default) or "M" monthly — sets the history fetched
+//   freq                "D" daily (default), "M" monthly, or "L" daily with ≈4 years of
+//                       history (policy rates: the move before the last one can be years back)
 //   thr                 reference lines [{ v, label }] drawn on the sparkline
 //   move                daily-move alert threshold (in the `chg` unit); upOnly for VIX
 //   derived             { op:"sub"|"div", a, b, scale } — computed from two entries
 //   note                shown on hover
+//   src                 [[source, key, { scale }?], …] — a per-source scale converts a
+//                       fallback's unit (Sina's copper is in ¢/lb, the tile in $/lb)
 //
 // Source keys: see api/macro.js for what each source is and how it is fetched.
 
@@ -46,11 +49,25 @@ export const SOURCE_META = {
   mof:      { label: "Japan MoF",            short: "MoF",   tier: "PRIMARY",              url: "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/" },
   yahoo:    { label: "Yahoo Finance",        short: "Yahoo", tier: "SECONDARY-reliable",   url: "https://finance.yahoo.com/" },
   cbw:      { label: "Central Bank Watch",   short: "CBW",   tier: "SECONDARY-unverified", url: "https://centralbank.watch/" },
+  sinag:    { label: "Sina Finance (global futures)", short: "Sina gl", tag: "Sina", tier: "SECONDARY-unverified", url: "https://finance.sina.com.cn/futuremarket/" },
+  sinaus:   { label: "Sina Finance (US stocks)", short: "Sina US", tag: "Sina", tier: "SECONDARY-unverified", url: "https://finance.sina.com.cn/stock/usstock/" },
+  ecbfx:    { label: "ECB reference rates (crosses)", short: "ECB fx", tag: "ECB", tier: "PRIMARY", url: "https://data.ecb.europa.eu/data/datasets/EXR" },
+  bis:      { label: "BIS policy rates",     short: "BIS",   tier: "PRIMARY",              url: "https://data.bis.org/topics/CBPOL" },
 };
 
 import { breadthRegistry } from "./macroInflation.js";
 
 const BUND_10Y = "D.I.ZAR.ZI.EUR.S1311.B.A604.R10XX.R.A.A._Z._Z.A";
+
+// SGD/xxx rows: [quote currency, decimals, note?, only: "yahoo" | "ecb"].
+function sgdCrosses(list) {
+  return Object.fromEntries(list.map(([q, dp, note, only]) => [`sgd${q.toLowerCase()}`, {
+    group: "fx", label: `SGD/${q}`, unit: "fx", dp, chg: "pct",
+    src: [only !== "ecb" && ["yahoo", `SGD${q}=X`], only !== "yahoo" && ["ecbfx", `SGD${q}`]].filter(Boolean),
+    ...(note ? { note } : {}),
+  }]));
+}
+const SGD_CROSS_IDS = ["usd", "eur", "gbp", "jpy", "cny", "hkd", "aud", "myr", "thb", "idr", "php", "inr", "krw", "twd"].map(q => `sgd${q}`);
 const ECB_10Y = c => `IRS/M.${c}.L.L40.CI.0000.EUR.N.Z`;
 
 export const MACRO_SERIES = {
@@ -150,58 +167,93 @@ export const MACRO_SERIES = {
             note: "Weekly. Zero = normal financial-market stress." },
   vix:    { group: "credit", label: "VIX", unit: "x", dp: 1, chg: "pct", move: 15, upOnly: true, src: [["yahoo", "^VIX"], ["fred", "VIXCLS"]] },
   moveIx: { group: "credit", label: "MOVE (bond vol)", unit: "x", dp: 1, chg: "pct", src: [["yahoo", "^MOVE"]] },
-  hyg:    { group: "credit", label: "HYG (HY ETF)", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "HYG"]] },
-  crwv:   { group: "credit", label: "CoreWeave shares", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "CRWV"]],
+  hyg:    { group: "credit", label: "HYG (HY ETF)", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "HYG"], ["sinaus", "HYG"]] },
+  crwv:   { group: "credit", label: "CoreWeave shares", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "CRWV"], ["sinaus", "CRWV"]],
             note: "Equity proxy for neocloud credit stress; CoreWeave bond and CDS prices have no free feed." },
-  orcl:   { group: "credit", label: "Oracle shares", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "ORCL"]] },
+  orcl:   { group: "credit", label: "Oracle shares", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "ORCL"], ["sinaus", "ORCL"]] },
 
   // ── Equities & breadth ───────────────────────────────────────────────────
-  spx:    { group: "equity", label: "S&P 500", unit: "idx", dp: 0, chg: "pct", move: 2, src: [["yahoo", "^GSPC"], ["fred", "SP500"]] },
-  ndq:    { group: "equity", label: "Nasdaq Comp.", unit: "idx", dp: 0, chg: "pct", src: [["yahoo", "^IXIC"], ["fred", "NASDAQCOM"]] },
+  spx:    { group: "equity", label: "S&P 500", unit: "idx", dp: 0, chg: "pct", move: 2, src: [["yahoo", "^GSPC"], ["sinaus", ".INX"], ["fred", "SP500"]] },
+  ndq:    { group: "equity", label: "Nasdaq Comp.", unit: "idx", dp: 0, chg: "pct", src: [["yahoo", "^IXIC"], ["sinaus", ".IXIC"], ["fred", "NASDAQCOM"]] },
   rut:    { group: "equity", label: "Russell 2000", unit: "idx", dp: 0, chg: "pct", src: [["yahoo", "^RUT"]] },
-  rsp:    { hidden: true, unit: "$", dp: 2, src: [["yahoo", "RSP"]] },
-  spy:    { hidden: true, unit: "$", dp: 2, src: [["yahoo", "SPY"]] },
-  ewRatio:{ group: "equity", label: "Equal- vs cap-weight", unit: "x", dp: 4, chg: "pct", derived: { op: "div", a: "rsp", b: "spy" },
+  rsp:    { hidden: true, unit: "$", dp: 2, src: [["yahoo", "RSP"], ["sinaus", "RSP"]] },
+  spy:    { hidden: true, unit: "$", dp: 2, src: [["yahoo", "SPY"], ["sinaus", "SPY"]] },
+  ewRatio:{ group: "equity", label: "Equal- vs cap-weight", unit: "x", dp: 4, chg: "pct", derived: { op: "div", a: "rsp", b: "spy", sameSrc: true },
             note: "RSP ÷ SPY. Rising = breadth improving (equal-weight beating the cap-weighted index)." },
 
   // ── FX ───────────────────────────────────────────────────────────────────
-  dxy:    { group: "fx", label: "DXY", unit: "fx", dp: 2, chg: "pct", src: [["yahoo", "DX-Y.NYB"]] },
-  eurusd: { group: "fx", label: "EUR/USD", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "EURUSD=X"], ["fred", "DEXUSEU"]] },
-  usdjpy: { group: "fx", label: "USD/JPY", unit: "fx", dp: 2, chg: "pct", move: 1, src: [["yahoo", "JPY=X"], ["fred", "DEXJPUS"]] },
-  usdsgd: { group: "fx", label: "USD/SGD", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "SGD=X"], ["fred", "DEXSIUS"]],
+  // Fallbacks: ECB reference rates (PRIMARY, daily 14:15 CET fix; crosses are the
+  // ratio of two ECB rates) ahead of FRED's H.10 rates, which arrive a week late.
+  dxy:    { group: "fx", label: "DXY", unit: "fx", dp: 2, chg: "pct", src: [["yahoo", "DX-Y.NYB"], ["ecbfx", "DXY"]],
+            note: "Fallback rebuilt from the ECB's daily fixes with ICE's published DXY formula (six currencies, 57.6% euro) — the same index at a different time of day." },
+  eurusd: { group: "fx", label: "EUR/USD", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "EURUSD=X"], ["ecbfx", "EURUSD"], ["fred", "DEXUSEU"]] },
+  usdjpy: { group: "fx", label: "USD/JPY", unit: "fx", dp: 2, chg: "pct", move: 1, src: [["yahoo", "JPY=X"], ["ecbfx", "USDJPY"], ["fred", "DEXJPUS"]] },
+  usdsgd: { group: "fx", label: "USD/SGD", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "SGD=X"], ["ecbfx", "USDSGD"], ["fred", "DEXSIUS"]],
             thr: [{ v: 1.25, label: "1.25 carry break-even" }],
             note: "Below ≈1.25 within a year, an unhedged USD T-bill loses its ≈2pp carry over SGD (playbook)." },
-  usdcnh: { group: "fx", label: "USD/CNH", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "CNH=X"], ["fred", "DEXCHUS"]],
-            note: "FRED fallback is onshore CNY, not offshore CNH." },
-  usdinr: { group: "fx", label: "USD/INR", unit: "fx", dp: 2, chg: "pct", src: [["yahoo", "INR=X"], ["fred", "DEXINUS"]] },
-  usdidr: { group: "fx", label: "USD/IDR", unit: "fx", dp: 0, chg: "pct", src: [["yahoo", "IDR=X"]] },
-  usdthb: { group: "fx", label: "USD/THB", unit: "fx", dp: 3, chg: "pct", src: [["yahoo", "THB=X"], ["fred", "DEXTHUS"]] },
-  audusd: { group: "fx", label: "AUD/USD", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "AUDUSD=X"], ["fred", "DEXUSAL"]] },
-  usdnok: { group: "fx", label: "USD/NOK", unit: "fx", dp: 3, chg: "pct", src: [["yahoo", "NOK=X"], ["fred", "DEXNOUS"]] },
+  usdcnh: { group: "fx", label: "USD/CNH", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "CNH=X"], ["ecbfx", "USDCNY"], ["fred", "DEXCHUS"]],
+            note: "The ECB and FRED fallbacks are onshore CNY, not offshore CNH." },
+  usdinr: { group: "fx", label: "USD/INR", unit: "fx", dp: 2, chg: "pct", src: [["yahoo", "INR=X"], ["ecbfx", "USDINR"], ["fred", "DEXINUS"]] },
+  usdidr: { group: "fx", label: "USD/IDR", unit: "fx", dp: 0, chg: "pct", src: [["yahoo", "IDR=X"], ["ecbfx", "USDIDR"]] },
+  usdthb: { group: "fx", label: "USD/THB", unit: "fx", dp: 3, chg: "pct", src: [["yahoo", "THB=X"], ["ecbfx", "USDTHB"], ["fred", "DEXTHUS"]] },
+  audusd: { group: "fx", label: "AUD/USD", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "AUDUSD=X"], ["ecbfx", "AUDUSD"], ["fred", "DEXUSAL"]] },
+  usdnok: { group: "fx", label: "USD/NOK", unit: "fx", dp: 3, chg: "pct", src: [["yahoo", "NOK=X"], ["ecbfx", "USDNOK"], ["fred", "DEXNOUS"]] },
+
+  // SGD crosses (behind a toggle): units of the second currency per 1 SGD. Yahoo
+  // first; the ECB fix as fallback (no TWD at the ECB; Yahoo keeps no PHP history).
+  ...sgdCrosses([
+    ["USD", 4], ["EUR", 4], ["GBP", 4], ["JPY", 2], ["CNY", 4, "Onshore yuan (Yahoo keeps no SGD/CNH history)."], ["HKD", 3], ["AUD", 4],
+    ["MYR", 4], ["THB", 3], ["IDR", 0], ["PHP", 3, null, "ecb"], ["INR", 3], ["KRW", 1], ["TWD", 3, null, "yahoo"],
+  ]),
+
+  // Currencies of the lead central banks (not shown as rows; read by that card).
+  nzdusd: { hidden: true, label: "NZD/USD", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "NZDUSD=X"], ["ecbfx", "NZDUSD"]] },
+  usdcad: { hidden: true, label: "USD/CAD", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "CAD=X"], ["ecbfx", "USDCAD"]] },
+  gbpusd: { hidden: true, label: "GBP/USD", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "GBPUSD=X"], ["ecbfx", "GBPUSD"]] },
+  usdbrl: { hidden: true, label: "USD/BRL", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "BRL=X"], ["ecbfx", "USDBRL"]] },
+  usdsek: { hidden: true, label: "USD/SEK", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "SEK=X"], ["ecbfx", "USDSEK"]] },
+  usdchf: { hidden: true, label: "USD/CHF", unit: "fx", dp: 4, chg: "pct", src: [["yahoo", "CHF=X"], ["ecbfx", "USDCHF"]] },
+  usdkrw: { hidden: true, label: "USD/KRW", unit: "fx", dp: 1, chg: "pct", src: [["yahoo", "KRW=X"], ["ecbfx", "USDKRW"]] },
+
+  // ── Lead central banks: policy rates (BIS, PRIMARY) ──────────────────────
+  // Read by the Lead central banks card and its alerts; not shown as rows.
+  prNZ: { hidden: true, group: "lead", label: "RBNZ OCR", unit: "%", dp: 2, freq: "L", src: [["bis", "NZ"]] },
+  prCA: { hidden: true, group: "lead", label: "BoC overnight target", unit: "%", dp: 2, freq: "L", src: [["bis", "CA"]] },
+  prAU: { hidden: true, group: "lead", label: "RBA cash rate target", unit: "%", dp: 2, freq: "L", src: [["bis", "AU"]] },
+  prGB: { hidden: true, group: "lead", label: "BoE Bank Rate", unit: "%", dp: 2, freq: "L", src: [["bis", "GB"], ["fred", "IUDSOIA"]],
+          note: "Fallback: SONIA (FRED), which sits a few bp below Bank Rate and moves with it on decision days." },
+  prBR: { hidden: true, group: "lead", label: "BCB Selic target", unit: "%", dp: 2, freq: "L", src: [["bis", "BR"]] },
+  prNO: { hidden: true, group: "lead", label: "Norges Bank policy rate", unit: "%", dp: 2, freq: "L", src: [["bis", "NO"]] },
+  prSE: { hidden: true, group: "lead", label: "Riksbank policy rate", unit: "%", dp: 2, freq: "L", src: [["bis", "SE"]] },
+  prCH: { hidden: true, group: "lead", label: "SNB policy rate", unit: "%", dp: 2, freq: "L", src: [["bis", "CH"]] },
+  prKR: { hidden: true, group: "lead", label: "Bank of Korea base rate", unit: "%", dp: 2, freq: "L", src: [["bis", "KR"]] },
 
   // ── Energy ───────────────────────────────────────────────────────────────
-  brent:  { group: "energy", label: "Brent", unit: "$", dp: 2, chg: "pct", move: 3, src: [["yahoo", "BZ=F"], ["fred", "DCOILBRENTEU"]],
+  brent:  { group: "energy", label: "Brent", unit: "$", dp: 2, chg: "pct", move: 3, src: [["yahoo", "BZ=F"], ["sinag", "OIL"], ["fred", "DCOILBRENTEU"]],
             thr: [{ v: 90, label: "$90" }, { v: 71, label: "pre-war $71" }] },
   brentM6:{ hidden: true, unit: "$", dp: 2, src: [["yahoo", brentContractTicker(5)]] },
   brentCurve:{ group: "energy", label: "Brent M1–M6", unit: "$", dp: 2, chg: "abs", derived: { op: "sub", a: "brent", b: "brentM6", sameSrc: true },
             note: "Front month minus the contract five months later. Positive = backwardation (tight prompt market)." },
-  wti:    { group: "energy", label: "WTI", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "CL=F"], ["fred", "DCOILWTICO"]] },
+  wti:    { group: "energy", label: "WTI", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "CL=F"], ["sinag", "CL"], ["fred", "DCOILWTICO"]] },
   ttf:    { group: "energy", label: "TTF gas €/MWh", unit: "px", dp: 1, chg: "pct", move: 6, src: [["yahoo", "TTF=F"]] },
-  hh:     { group: "energy", label: "Henry Hub", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "NG=F"], ["fred", "DHHNGSP"]] },
-  rbob:   { group: "energy", label: "RBOB gasoline", unit: "$", dp: 3, chg: "pct", src: [["yahoo", "RB=F"]] },
-  hoil:   { group: "energy", label: "Heating oil (diesel)", unit: "$", dp: 3, chg: "pct", src: [["yahoo", "HO=F"]] },
+  hh:     { group: "energy", label: "Henry Hub", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "NG=F"], ["sinag", "NG"], ["fred", "DHHNGSP"]] },
+  rbob:   { group: "energy", label: "RBOB gasoline", unit: "$", dp: 3, chg: "pct", src: [["yahoo", "RB=F"], ["fred", "DGASNYH"]],
+            note: "NYMEX RBOB, $/gal. Fallback: EIA New York Harbor conventional gasoline spot via FRED — the futures' delivery point, published with a few days' lag." },
+  hoil:   { group: "energy", label: "Heating oil (diesel)", unit: "$", dp: 3, chg: "pct", src: [["yahoo", "HO=F"], ["sinag", "HO"], ["fred", "DDFUELNYH"]],
+            note: "NYMEX NY Harbor ULSD, $/gal. Fallbacks: the same contract via Sina, then EIA New York Harbor ultra-low-sulfur diesel spot via FRED." },
   gasStore:{ group: "energy", label: "EU gas storage % full", unit: "%", dp: 1, chg: "abs", src: [["gie", "eu"]],
             thrFrom: { id: "gasAvg5", label: "5y avg same day" },
             note: "GIE AGSI+ EU aggregate. Reference line: average fill on the same gas day over the previous five years." },
   gasAvg5:{ hidden: true, unit: "%", dp: 1, src: [["gie", "eu:avg5"]] },
   coal:   { group: "energy", label: "Coal API2 (ARA)", unit: "$", dp: 1, chg: "pct", src: [["yahoo", "MTF=F"]],
-            note: "Rotterdam coal futures. Ticker unverified from the build sandbox." },
+            note: "Rotterdam coal futures (Yahoo MTF=F). On 23 Nov 2026 Yahoo's last bar for this ticker was 26 Dec 2025, so the tile reads stale until Yahoo rolls it; the monthly IMF Australian coal tile is the maintained alternative." },
 
   // ── Metals ───────────────────────────────────────────────────────────────
-  gold:   { group: "metals", label: "Gold", unit: "$", dp: 0, chg: "pct", move: 2.5, src: [["yahoo", "GC=F"]] },
-  silver: { group: "metals", label: "Silver", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "SI=F"]] },
-  copper: { group: "metals", label: "Copper $/lb", unit: "$", dp: 3, chg: "pct", src: [["yahoo", "HG=F"]] },
-  alu:    { group: "metals", label: "Aluminium", unit: "$", dp: 0, chg: "pct", src: [["yahoo", "ALI=F"]] },
+  gold:   { group: "metals", label: "Gold", unit: "$", dp: 0, chg: "pct", move: 2.5, src: [["yahoo", "GC=F"], ["sinag", "GC"]] },
+  silver: { group: "metals", label: "Silver", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "SI=F"], ["sinag", "SI"]] },
+  copper: { group: "metals", label: "Copper $/lb", unit: "$", dp: 3, chg: "pct", src: [["yahoo", "HG=F"], ["sinag", "HG", { scale: 0.01 }]] },
+  alu:    { group: "metals", label: "Aluminium", unit: "$", dp: 0, chg: "pct", src: [["yahoo", "ALI=F"], ["sinag", "AHD"]],
+            note: "COMEX aluminium, $/t. Fallback: LME aluminium 3-month via Sina — same metal, different exchange (usually within a few %)." },
   cnRebar:{ group: "metals", label: "China rebar ¥/t (SHFE)", unit: "px", dp: 0, chg: "pct", src: [["sina", "RB0"]],
             note: "SHFE rebar, continuous main contract, via Sina Finance (unofficial endpoint). China construction demand." },
   cnHrc:  { group: "metals", label: "China HRC ¥/t (SHFE)", unit: "px", dp: 0, chg: "pct", src: [["sina", "HC0"]],
@@ -218,13 +270,13 @@ export const MACRO_SERIES = {
             note: "CME Midwest hot-rolled coil futures. China rebar has no free official feed (Phase 4)." },
 
   // ── Food ─────────────────────────────────────────────────────────────────
-  wheat:  { group: "food", label: "Wheat ¢/bu", unit: "px", dp: 0, chg: "pct", src: [["yahoo", "ZW=F"]] },
-  corn:   { group: "food", label: "Corn ¢/bu", unit: "px", dp: 0, chg: "pct", src: [["yahoo", "ZC=F"]] },
-  soy:    { group: "food", label: "Soybeans ¢/bu", unit: "px", dp: 0, chg: "pct", src: [["yahoo", "ZS=F"]] },
+  wheat:  { group: "food", label: "Wheat ¢/bu", unit: "px", dp: 0, chg: "pct", src: [["yahoo", "ZW=F"], ["sinag", "W"]] },
+  corn:   { group: "food", label: "Corn ¢/bu", unit: "px", dp: 0, chg: "pct", src: [["yahoo", "ZC=F"], ["sinag", "C"]] },
+  soy:    { group: "food", label: "Soybeans ¢/bu", unit: "px", dp: 0, chg: "pct", src: [["yahoo", "ZS=F"], ["sinag", "S"]] },
   rice:   { group: "food", label: "Rough rice $/cwt", unit: "px", dp: 2, chg: "pct", src: [["yahoo", "ZR=F"]] },
   sugar:  { group: "food", label: "Sugar ¢/lb", unit: "px", dp: 2, chg: "pct", src: [["yahoo", "SB=F"]] },
-  coffee: { group: "food", label: "Coffee ¢/lb", unit: "px", dp: 1, chg: "pct", src: [["yahoo", "KC=F"]] },
-  cocoa:  { group: "food", label: "Cocoa $/t", unit: "px", dp: 0, chg: "pct", src: [["yahoo", "CC=F"]] },
+  coffee: { group: "food", label: "Coffee ¢/lb", unit: "px", dp: 1, chg: "pct", src: [["yahoo", "KC=F"], ["sinag", "KC"]] },
+  cocoa:  { group: "food", label: "Cocoa $/t", unit: "px", dp: 0, chg: "pct", src: [["yahoo", "CC=F"], ["sinag", "CC"]] },
   cattle: { group: "food", label: "Live cattle ¢/lb", unit: "px", dp: 1, chg: "pct", src: [["yahoo", "LE=F"]] },
 
   ffpi:   { group: "food", label: "FAO Food Price Index", unit: "idx", dp: 1, chg: "pct", freq: "M", src: [["fao", "ffpi"]], note: "FAO, 2014–16 = 100. Monthly." },
@@ -235,10 +287,10 @@ export const MACRO_SERIES = {
   faoMeat:{ group: "food", label: "FAO meat", unit: "idx", dp: 1, chg: "pct", freq: "M", src: [["fao", "meat"]] },
 
   // ── Rare earths (equity proxies; oxide prices arrive in Phase 4) ─────────
-  mp:     { group: "rare", label: "MP Materials", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "MP"]] },
+  mp:     { group: "rare", label: "MP Materials", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "MP"], ["sinaus", "MP"]] },
   lynas:  { group: "rare", label: "Lynas (A$)", unit: "px", dp: 2, chg: "pct", src: [["yahoo", "LYC.AX"]] },
   cnre:   { group: "rare", label: "China Northern RE (¥)", unit: "px", dp: 2, chg: "pct", src: [["yahoo", "600111.SS"]] },
-  remx:   { group: "rare", label: "REMX ETF", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "REMX"]] },
+  remx:   { group: "rare", label: "REMX ETF", unit: "$", dp: 2, chg: "pct", src: [["yahoo", "REMX"], ["sinaus", "REMX"]] },
 };
 
 // Panels on the page, in order, and which groups they show.
@@ -247,8 +299,10 @@ export const TABLE_PANELS = [
   { id: "credit", label: "CREDIT, STRESS & BREADTH", ids: ["hyOas", "igOas", "cccOas", "stlfsi", "vix", "moveIx", "hyg", "crwv", "orcl", "spx", "ndq", "rut", "ewRatio"] },
   // INR, IDR and THB sit behind a toggle: the playbook (section 4) uses them only as
   // oil-importer stress gauges ("treat Indonesia, India and Thailand cautiously until Hormuz clears").
+  // SGD crosses: your base currency against where your costs and holdings are.
   { id: "fx",     label: "FX", ids: ["dxy", "eurusd", "usdjpy", "usdcnh", "usdsgd", "audusd", "usdnok"],
-    more: { label: "Asia oil importers", ids: ["usdinr", "usdidr", "usdthb"] } },
+    more: [{ id: "oil", label: "Asia oil importers", ids: ["usdinr", "usdidr", "usdthb"], tip: "fxMore" },
+           { id: "sgd", label: "SGD crosses", ids: SGD_CROSS_IDS, tip: "fxSgd" }] },
 ];
 export const TILE_GROUPS = [
   { id: "energy", label: "ENERGY",  ids: ["brent", "brentCurve", "wti", "ttf", "gasStore", "hh", "rbob", "hoil", "coal"] },

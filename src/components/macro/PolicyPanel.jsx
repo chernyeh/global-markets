@@ -5,6 +5,7 @@ import { fmtStamp } from "../../macroFormat.js";
 import { valueAtOrBefore } from "../../macroData.js";
 import { GLOSSARY } from "../../data/macroGlossary.js";
 import SpeakerPanel from "./SpeakerPanel.jsx";
+import LeadBanksCard from "./LeadBanksCard.jsx";
 import Tip from "./Tip.jsx";
 import { InfoTip } from "./SeriesTable.jsx";
 
@@ -322,6 +323,7 @@ export default function PolicyPanel({ today, now, series, paths, pasted, setPast
         <BankCard bank="ecb" path={paths?.ecb} {...common} />
         <BankCard bank="boj" path={paths?.boj} {...common} />
       </div>
+      <LeadBanksCard series={series} paths={paths} today={today} />
     </div>
   );
 }

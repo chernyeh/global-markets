@@ -11,11 +11,15 @@
 //   move    a series' latest daily move passed its `move` threshold — once per
 //           series per data date. INFO.
 //   source  a data source started failing — once per source per day. INFO.
+//   leadcb  a lead central bank moved (WATCH if it is a turn or ends a long
+//           hold, else INFO), or the lead banks started moving together
+//           (WATCH) — src/macroLeadBanks.js
 // The first run records a baseline and raises nothing, so opening the page for
 // the first time doesn't flood the inbox with every signal already in place.
 
 import { SIGNAL_MAP } from "./data/macroSignals.js";
 import { SOURCE_META } from "./data/macroSeries.js";
+import { leadAlertUpdate } from "./macroLeadBanks.js";
 
 const DAY = 86400000;
 const MAX_ALERTS = 120;
@@ -23,7 +27,7 @@ export const SEV_RANK = { info: 0, watch: 1, act: 2 };
 const RANK = { na: -1, unset: -1, not: 0, partial: 1, met: 2 };
 const STATUS_WORD = { met: "met", partial: "partly met", not: "not met" };
 
-export const emptyAlertState = () => ({ baseline: false, last: {}, alerts: [], moves: {}, srcDown: {}, flips: 0 });
+export const emptyAlertState = () => ({ baseline: false, last: {}, alerts: [], moves: {}, srcDown: {}, flips: 0, lead: null, leadCluster: null });
 
 const fmtMove = (s, v) => (s.chg === "pct" ? `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}%`
   : s.chg === "bp" ? `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(0)}bp`
@@ -85,9 +89,13 @@ export function updateAlerts(prev, { results, series, health, now = Date.now() }
       detail: `${firstErr}. Tiles fall back to another source where one is listed; otherwise they show the last stored value with its date.` });
   }
 
+  // Lead central banks
+  const lb = leadAlertUpdate(st, series || {}, { today });
+  if (st.baseline) fresh.push(...lb.fresh);
+
   const stamped = fresh.map((a, i) => ({ ...a, id: `${now}-${i}`, at: now, read: false }));
   return {
-    baseline: true, last, moves, srcDown, flips,
+    baseline: true, last, moves, srcDown, flips, lead: lb.lead, leadCluster: lb.leadCluster,
     alerts: [...stamped, ...st.alerts].slice(0, MAX_ALERTS),
     newAlerts: stamped,
   };

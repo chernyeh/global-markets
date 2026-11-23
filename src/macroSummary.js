@@ -8,6 +8,7 @@
 import { SIGNALS, SIGNAL_GROUPS } from "./data/macroSignals.js";
 import { buildCalendar, daysUntil, fmtDay, nextFomc, nextEcb, nextBoj } from "./data/macroCalendar.js";
 import { monthlyChanges, round1 } from "./macroData.js";
+import { leadStats, leadSummary } from "./macroLeadBanks.js";
 
 export const UST10_HIGH = 5.36; // 7 Oct 2026 closing high (playbook rev 54); signal 12 uses the same level
 const has = v => v !== null && v !== undefined && Number.isFinite(v);
@@ -71,13 +72,15 @@ export function bottomLine({ S, results, paths, today, userEvents = [], due = []
   const nf = nextFomc(today), ne = nextEcb(today), nb = nextBoj(today);
   const pf = nextPriced(paths?.fed, nf?.end), pe = nextPriced(paths?.ecb, ne?.date), pb = nextPriced(paths?.boj, nb?.end);
   const tot = ["fed", "ecb", "boj"].map(b => paths?.[b]?.totalBp).filter(has);
+  const lead = leadSummary(leadStats(S, paths, today), paths);
   rows.push({ id: "cb", q: "What will central banks do?",
     a: tot.length && tot.every(v => v > 0) ? "All three are still priced to hike" : tot.some(v => v < 0) ? "Mixed — some cuts priced" : "Next moves",
     tone: tot.length && tot.every(v => v > 0) ? "warn" : "neutral",
     detail: [pricedText("Fed", pf), pricedText("ECB", pe), pricedText("BoJ", pb)].join(" · "),
-    extra: ["fed", "ecb", "boj"].map(b => has(paths?.[b]?.totalBp) ? `${b === "fed" ? "Fed" : b === "ecb" ? "ECB" : "BoJ"} ${sgn(paths[b].totalBp)}bp over ${paths[b].meetings.length} meetings` : null).filter(Boolean).join(" · ") || null,
-    tip: { t: "Market pricing, not forecasts", d: "Odds and basis points implied by overnight-index swaps (Central Bank Watch). Odds at later meetings are cumulative — don't add them.",
-      r: "Details, SOFR options and the officials' tone are in the Fed, ECB and BoJ cards." } });
+    extra: [["fed", "ecb", "boj"].map(b => has(paths?.[b]?.totalBp) ? `${b === "fed" ? "Fed" : b === "ecb" ? "ECB" : "BoJ"} ${sgn(paths[b].totalBp)}bp over ${paths[b].meetings.length} meetings` : null).filter(Boolean).join(" · "),
+      lead.text && `Lead banks — ${lead.text}`].filter(Boolean).join(" · ") || null,
+    tip: { t: "Market pricing, not forecasts", d: "Odds and basis points implied by overnight-index swaps (Central Bank Watch). Odds at later meetings are cumulative — don't add them. The lead-bank line counts the early movers' actual moves (BIS) and their futures pricing.",
+      r: "Details, SOFR options and the officials' tone are in the Fed, ECB and BoJ cards; the early movers are in Lead central banks below them." } });
 
   // 4. Inflation
   const cc = S.coreCpi?.points?.length ? monthlyChanges(S.coreCpi.points).filter(c => c.mom !== null).slice(-3) : [];

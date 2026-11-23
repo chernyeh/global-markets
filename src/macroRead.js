@@ -12,6 +12,7 @@ import { breadth } from "./macroInflation.js";
 import { withShifts, hawkDove, rosterFor } from "./macroSpeech.js";
 import { monthlyChanges, round1 } from "./macroData.js";
 import { fmtChg } from "./macroFormat.js";
+import { leadStats, leadSummary, fmtD, sgnBp } from "./macroLeadBanks.js";
 
 const f = (v, dp = 2) => (v === null || v === undefined || !Number.isFinite(v) ? "n/a" : v.toFixed(dp));
 const sg = (v, dp = 0) => (v === null || v === undefined || !Number.isFinite(v) ? "n/a" : `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(dp)}`);
@@ -70,6 +71,17 @@ export function buildMacroDigest({ series: S, results, tally, scen, paths, mpt, 
   if (S.ffLo?.last !== null && S.ffLo?.last !== undefined) lines.push(`  Fed target ${f(S.ffLo.last)}–${f(S.ffHi?.last)}%`);
   if (S.dfr?.last !== null && S.dfr?.last !== undefined) lines.push(`  ECB deposit rate ${f(S.dfr.last)}%`);
   if (paths?.boj?.currentRate) lines.push(`  BoJ policy rate ${f(paths.boj.currentRate)}% (CBW); JGB 2y ${f(S.jgb2?.last, 3)}%, 10y ${f(S.jgb10?.last, 3)}% (MoF); USD/JPY ${f(S.usdjpy?.last, 2)}`);
+
+  // Early movers: secondary to the big three, but a turn here has preceded them.
+  const ls = leadStats(S, paths, today);
+  lines.push(`LEAD CENTRAL BANKS (early movers; rates BIS, pricing CBW): ${leadSummary(ls, paths).text || "n/a"}`);
+  for (const x of ls) {
+    const bits = [x.bank.rate ? (x.rate !== null ? `rate ${f(x.rate)}% (${x.srcUsed}, ${x.rateDate})` : "rate n/a") : "S$NEER policy (no rate)"];
+    if (x.last) bits.push(`last move ${sgnBp(x.last.bp)} on ${fmtD(x.last.date)}${x.turn ? " (TURN)" : x.resumed ? " (after a long hold)" : ""}; 12m ${x.up12} hikes/${x.down12} cuts`);
+    if (x.priced) bits.push(`priced ${sgnBp(x.priced.next.stepBp)} for ${x.priced.next.date} (${f(x.priced.next.pct, 0)}% odds), ${sgnBp(x.priced.totalBp)} total (CBW ${x.priced.asOf || "n.d."})`);
+    if (x.fx1m !== null) bits.push(`${x.bank.ccy} ${sg(x.fx1m, 1)}% vs USD 1m`);
+    lines.push(`  ${x.bank.name}: ${bits.join("; ")}`);
+  }
 
   lines.push("INFLATION:");
   if (S.coreCpi?.points?.length) {

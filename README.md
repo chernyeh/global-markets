@@ -18,8 +18,11 @@ alerts from a scheduled server check; and a decision log.
 | ECB Data Portal | deposit rate, €STR, monthly 10y yields (OAT–Bund, BTP–Bund) | PRIMARY | none |
 | Bundesbank | daily Bund 10y | PRIMARY | none |
 | Japan MoF | JGB yields | PRIMARY | none |
-| Yahoo Finance | futures, FX, indices, ETFs | SECONDARY-reliable | none |
-| Central Bank Watch | market-implied Fed/ECB meeting paths | SECONDARY-unverified | none |
+| Yahoo Finance | futures, FX, indices, ETFs (batched 20 symbols a request; see below) | SECONDARY-reliable | none |
+| Sina Finance (global futures, US stocks) | fallbacks for Yahoo: COMEX/NYMEX/ICE/CBOT/LME futures; S&P 500, Nasdaq, HYG, ORCL, CRWV, RSP/SPY, MP, REMX | SECONDARY-unverified | none |
+| ECB reference rates | fallback for every FX row, the SGD crosses, and DXY rebuilt with ICE's formula | PRIMARY | none |
+| BIS (WS_CBPOL) | policy rates of the lead central banks | PRIMARY | none |
+| Central Bank Watch | market-implied Fed/ECB/BoJ meeting paths; BoE, RBA, RBNZ, SNB pricing for the lead-banks card | SECONDARY-unverified | none |
 | BLS | CPI items (core-services breadth), aggregates, PPI, average gasoline price | PRIMARY | `BLS_API_KEY` |
 | Eurostat | euro-area and country HICP (ECOICOP ver.2, `prc_hicp_minr`) | PRIMARY | none |
 | GIE AGSI+ | EU gas storage and its 5-year same-day average | PRIMARY | `GIE_API_KEY` (optional, higher limits) |
@@ -52,6 +55,28 @@ small-caps label has a hover (tap on a phone) explanation from `src/data/macroGl
 itself carries little explanatory text. The signals board is titled *Playbook triggers*: each column is a
 question (has the yield peak arrived? can yields go higher? add risk? cut risk? market bottom?) with its
 met-count and the action it unlocks.
+
+**Why Yahoo tiles went blank (fixed 23 Nov 2026)** — Yahoo throttles per IP *and* User-Agent. The adapter sent a stock
+Chrome User-Agent from Vercel's shared AWS IPs, one request per symbol: tested from the build sandbox, the Chrome string
+got HTTP 429 while the app's own User-Agent got 200 in the same second. It now identifies itself as the app, asks for 20
+symbols per request (≈4 requests a refresh), retries once, and stops for the run if Yahoo still refuses. Every Yahoo tile
+except TTF, API2 coal, US HRC, rice, sugar, cattle, Lynas, China Northern RE, MOVE, Russell 2000 and SGD/TWD also has a
+non-Yahoo fallback (*). A source wins only with a usable history (≥20 daily points), and a daily series with no new
+observation in 21 days is marked *stale* (Yahoo's API2 coal ticker last traded 26 Dec 2025).
+
+**FX** — the SGD crosses (SGD/USD, EUR, GBP, JPY, CNY, HKD, AUD, MYR, THB, IDR, PHP, INR, KRW, TWD; units per 1 SGD) and the
+Asia oil importers sit behind their own buttons on the FX card.
+
+**Lead central banks** — under the Fed/ECB/BoJ cards: BCB, RBNZ, BoC, BoE, MAS and RBA, plus Norges Bank, Riksbank, SNB
+and Bank of Korea. Each row: policy rate and last move (BIS), moves in 12 months, the next priced meeting and total bp
+priced (Central Bank Watch, BoE/RBA/RBNZ/SNB only), and the currency's month against USD. A row opens to why the bank has
+led past cycles (dated precedents) and its latest headlines (Google News, local language where its press is, filtered for
+relevance). Flags: a *turn* (first hike after cuts or the reverse, ≤120 days old), a move after ≥9 months on hold, a
+hiking/cutting *cluster* (≥3 banks in 90 days), lead banks *diverging* from Fed pricing, and a ≥5% monthly currency move.
+New moves and clusters raise alerts (pushed to Telegram from the server check); the bottom line and the Macro read carry a
+one-line summary. Logic: `src/macroLeadBanks.js`; registry: `src/data/macroLeadBanks.js`. The BIS response format could
+not be checked from the build sandbox (its network blocks stats.bis.org): the parser reads the SDMX-CSV standard columns
+and, if BIS answers in another shape, Source health shows the error and the card falls back to Central Bank Watch rates.
 
 **Central banks** — Fed, ECB and Bank of Japan cards: policy rate, next decision (BoJ dates from boj.or.jp,
 PRIMARY), the market-implied path (Central Bank Watch; BoJ rows matched to the BoJ's published dates), and
@@ -91,7 +116,7 @@ reminder; a signal deferred twice is flagged.
 
 Registry: `src/data/macroSeries.js` (indicators), `src/data/macroSignals.js` (signals, scenarios),
 `src/data/macroCalendar.js` (meetings and catalysts), `src/data/macroInflation.js` (breadth items, print rows),
-`src/data/macroSpeakers.js` (rosters, feeds, trusted outlets). Tracker: `src/macroSpeech.js`; Macro read: `src/macroRead.js`. Logic: `src/macroData.js`, `src/macroSignals.js`,
+`src/data/macroSpeakers.js` (rosters, feeds, trusted outlets), `src/data/macroLeadBanks.js` (lead central banks). Tracker: `src/macroSpeech.js`; Macro read: `src/macroRead.js`. Logic: `src/macroData.js`, `src/macroSignals.js`,
 `src/macroAlerts.js`, `src/macroRule10.js`, `src/macroSync.js`, `src/macroMonitor.js`. Server: `api/macro.js`,
 `api/alerts.js`, `api/store.js`, `api/_supabase.js`, `api/_telegram.js`. UI: `src/components/macro/`.
 
