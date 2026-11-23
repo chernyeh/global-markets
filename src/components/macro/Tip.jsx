@@ -54,7 +54,7 @@ export default function Tip({ tip, children, underline = true, style }) {
   return (
     <span ref={ref} tabIndex={0} aria-describedby={rect ? id : undefined}
       onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}
-      style={{ cursor: "help", outline: "none", ...(underline ? { textDecoration: "underline dotted", textDecorationColor: C.ghost, textUnderlineOffset: 3 } : {}), ...style }}>
+      style={{ cursor: "default", outline: "none",...(underline ? { textDecoration: "underline dotted", textDecorationColor: C.ghost, textUnderlineOffset: 3 } : {}), ...style }}>
       {children}
       {box}
     </span>

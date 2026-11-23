@@ -11,7 +11,7 @@ export function sourceTitle(s) {
   const meta = s.srcUsed === "derived" ? { label: `derived from ${(s.inputs || []).join(" & ")}`, tier: "" } : SOURCE_META[s.srcUsed] || {};
   return [
     `${s.label} — ${meta.label || s.srcUsed}${meta.tier ? ` (${meta.tier})` : ""}${s.srcKey ? ` · ${s.srcKey}` : ""}`,
-    `as of ${s.lastDate}${s.fallback ? " · fallback source (*)" : ""}${s.carried ? " · last stored value (source failed this refresh)" : ""}`,
+    `as of ${s.lastDate}${s.fallback ? " · fallback source (*)" : ""}${s.carried ? " · last stored value (source failed this refresh)" : ""}${s.stale ? " · STALE: no new observation in over 21 days — the source has stopped updating this ticker" : ""}`,
     s.thr?.length ? `reference: ${s.thr.map(t => t.label).join(", ")}` : null,
     s.note || null,
   ].filter(Boolean).join("\n");

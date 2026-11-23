@@ -13,8 +13,9 @@ export const isoDay = ms => new Date(ms).toISOString().slice(0, 10);
 const dayMs = d => Date.parse(`${d}T00:00:00Z`);
 
 // History requested per frequency: daily ≈13 months; monthly 3 years so that
-// m/m, 3-month annualised and y/y can all be computed with a gap or two.
-const START_DAYS = { D: 400, M: 1100 };
+// m/m, 3-month annualised and y/y can all be computed with a gap or two; "L"
+// (policy rates) ≈4 years, so the move before the latest one is in view.
+const START_DAYS = { D: 400, M: 1100, L: 1500 };
 
 // Group registry sources into requests: { src, start, ids }.
 // Fallbacks are fetched lazily: stage 0 asks every entry's first source; a
@@ -32,7 +33,7 @@ export function buildRequests(registry = MACRO_SERIES, now = Date.now(), { level
     (groups[k] ||= { src, start: isoDay(now - START_DAYS[freq] * DAY), ids: new Set() }).ids.add(key);
   }
   if (level === 0 && !only) {
-    groups.cbw = { src: "cbw", start: null, ids: new Set(["fed", "ecb", "boj"]) };
+    groups.cbw = { src: "cbw", start: null, ids: new Set(["fed", "ecb", "boj", "boe", "rba", "rbnz", "snb"]) };
     groups.mpt = { src: "mpt", start: null, ids: new Set(["fed"]) };
   }
   return Object.values(groups).map(g => ({ ...g, ids: [...g.ids] }));
@@ -50,7 +51,13 @@ async function fetchOne(req, timeoutMs) {
   } finally { clearTimeout(timer); }
 }
 
-const hasPoints = s => (s?.points || []).some(p => typeof p[1] === "number");
+// A source "answers" an entry only with a usable history: a daily series needs
+// ≥20 observations (Yahoo now returns one or two bars for some FX tickers, e.g.
+// CNH=X, which would leave the row without changes or a sparkline while a
+// fallback holds a full year). Monthly series need one.
+const MIN_DAILY = 20;
+const nPoints = s => (s?.points || []).filter(p => typeof p[1] === "number").length;
+const usable = (s, def) => nPoints(s) >= (def?.freq === "M" ? 1 : MIN_DAILY);
 
 // Runs the staged requests through `fetcher(req) → body` (the API in the
 // browser; the handler itself in tests).
@@ -83,7 +90,7 @@ export async function collectMacro(fetcher, registry = MACRO_SERIES, now = Date.
   for (let level = 1; level < 3; level++) {
     const missing = new Set(Object.entries(registry)
       .filter(([, def]) => !def.derived && def.src?.[level] &&
-        !def.src.slice(0, level).some(([src, key]) => hasPoints(sources[src]?.series?.[key])))
+        !def.src.slice(0, level).some(([src, key]) => usable(sources[src]?.series?.[key], def)))
       .map(([id]) => id));
     if (!missing.size) break;
     await run(buildRequests(registry, now, { level, only: missing }));
@@ -156,28 +163,38 @@ function withStats(def, points) {
   };
 }
 
-// → { [id]: { ...def, id, points, last, lastDate, chg1d, chg1m, srcUsed, srcKey, fallback, asOf } }
-export function resolveMacro(raw, registry = MACRO_SERIES) {
+// → { [id]: { ...def, id, points, last, lastDate, chg1d, chg1m, srcUsed, srcKey, fallback, asOf, stale } }
+// stale: a daily series whose latest observation is over 21 days old (e.g. a
+// futures ticker the source stopped rolling) — flagged so it never passes for current.
+const STALE_DAYS = 21;
+export function resolveMacro(raw, registry = MACRO_SERIES, now = Date.now()) {
   const out = {};
   const sources = raw?.sources || {};
   // Plain series first…
   for (const [id, def] of Object.entries(registry)) {
     if (def.derived) continue;
     let used = null;
-    for (let i = 0; i < (def.src || []).length; i++) {
-      const [src, key] = def.src[i];
+    // First source with a usable history wins; failing that, the first with any data.
+    const order = (def.src || []).map((p, i) => i);
+    const best = order.find(i => usable(sources[def.src[i][0]]?.series?.[def.src[i][1]], def));
+    for (const i of best !== undefined ? [best] : order) {
+      const [src, key, opt] = def.src[i];
       const s = sources[src]?.series?.[key];
       const pts = clean(s?.points);
       if (pts.length) {
-        const scaled = def.scale ? pts.map(([d, v]) => [d, v * def.scale]) : pts;
+        // Entry scale (e.g. FRED OAS % → bp) times a per-source one (Sina copper ¢ → $).
+        const k = (def.scale ?? 1) * (opt?.scale ?? 1);
+        const scaled = k !== 1 ? pts.map(([d, v]) => [d, v * k]) : pts;
         used = { points: scaled, srcUsed: src, srcKey: key, fallback: i > 0, time: s.time || null,
                  carried: (sources[src]?.carried || []).includes(key) };
         break;
       }
     }
     const firstErr = (def.src || []).map(([src, key]) => sources[src]?.errors?.[key]).find(Boolean) || null;
-    out[id] = { id, ...withStats(def, used?.points || []), srcUsed: used?.srcUsed || null, srcKey: used?.srcKey || null,
-                fallback: !!used?.fallback, time: used?.time || null, carried: !!used?.carried, error: used ? null : firstErr };
+    const stats = withStats(def, used?.points || []);
+    const stale = def.freq !== "M" && !!stats.lastDate && now - dayMs(stats.lastDate) > STALE_DAYS * DAY;
+    out[id] = { id, ...stats, srcUsed: used?.srcUsed || null, srcKey: used?.srcKey || null,
+                fallback: !!used?.fallback, time: used?.time || null, carried: !!used?.carried, stale, error: used ? null : firstErr };
   }
   // …then derived ones (inputs may themselves be fallbacks).
   for (const [id, def] of Object.entries(registry)) {

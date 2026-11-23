@@ -31,7 +31,8 @@ const NOTES = {
     r: "1D/1M = change in bp (or % for prices). Sparkline = 6 months, with the playbook's threshold line where one applies. SRC tier colour: green PRIMARY, blue SECONDARY-reliable, amber unverified; * = fallback source." },
   credit: { t: "Credit, stress & breadth", d: "Spreads (ICE BofA via FRED), stress and volatility indices, and the AI-debt bellwethers. CoreWeave's bonds and CDS have no free feed, so the shares stand in.",
     r: "Spreads up = stress up. Equal- vs cap-weight rising = breadth improving." },
-  fx: { t: "Currencies", d: "Yahoo Finance with FRED fallbacks.", r: "USD/SGD line at 1.25 = where an unhedged USD T-bill's ≈2pp carry over SGD is lost (playbook)." },
+  fx: { t: "Currencies", d: "Yahoo Finance first; fallbacks: the ECB's daily reference-rate fix (PRIMARY; crosses computed from it, DXY rebuilt with ICE's formula), then FRED. SGD crosses and the Asia oil importers sit behind the buttons.",
+    r: "USD/SGD line at 1.25 = where an unhedged USD T-bill's ≈2pp carry over SGD is lost (playbook)." },
 };
 const REGIME = { t: "The regime (playbook, 20 Nov)", d: "An inflation shock with a credit-bust tail — 2022's energy-and-rates shock, 2000's concentration in AI, 2007's early credit cracks.",
   w: "In this template the equity low comes when bond yields peak, not when the Fed cuts: watch the 10-year and core services inflation, not rate-cut odds." };
@@ -133,7 +134,7 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
 
       <div style={{ marginBottom: 14 }}>
         <CommodityTiles groups={TILE_GROUPS} series={S}
-          onlineNote={yahooDown ? "Yahoo did not answer this refresh — futures tiles show FRED spot fallbacks where listed, or the last stored value" : null} />
+          onlineNote={yahooDown ? "Yahoo did not answer this refresh — tiles show Sina, ECB or FRED fallbacks (*) where listed, or the last stored value" : null} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(420px,100%),1fr))", gap: 14, marginBottom: 14, alignItems: "start" }}>
