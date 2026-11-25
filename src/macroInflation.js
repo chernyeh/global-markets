@@ -19,6 +19,7 @@ export function breadth(S, { months = 6 } = {}) {
     const sa = S[`sa_${it.code}`], nsa = S[`nsa_${it.code}`];
     return { ...it, saCh: changesFor(sa), nsaCh: changesFor(nsa), nsaFallback: isNsa(sa), srcUsed: sa?.srcUsed || nsa?.srcUsed || null };
   });
+  const totalW = items.reduce((s, it) => s + it.weight, 0);
   const allMonths = [...new Set(items.flatMap(it => [...(it.saCh?.keys() || []), ...(it.nsaCh?.keys() || [])]))].sort();
   const recent = allMonths.slice(-months);
   const measure = (month, basis) => {
@@ -31,8 +32,9 @@ export function breadth(S, { months = 6 } = {}) {
       if (above) { w += it.weight; n++; }
       if (it.code !== "SEHC") { covWx += it.weight; if (above) wx += it.weight; }
     }
-    // Need most of the basket for a share to mean anything.
-    if (covN < Math.ceil(items.length * 0.7)) return null;
+    // Need most of the basket, by weight, for a share to mean anything — by
+    // weight so a few small items failing to load can't blank the card.
+    if (covW < totalW * 0.7) return null;
     return { month, basis, w: (w / covW) * 100, n: (n / covN) * 100, exOer: covWx ? (wx / covWx) * 100 : null, covW, covN };
   };
   const series = basis => recent.map(m => measure(m, basis)).filter(Boolean);
