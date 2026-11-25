@@ -80,13 +80,13 @@ async function news(p, signal) {
       counts.n24 += kept.filter(it => now - it.ts <= D).length;
       counts.n7 += kept.filter(it => now - it.ts <= 7 * D).length;
       // The usual daily rate, from the stories before the last 24h. Google returns at most
-      // 100 items, so for a busy name the page covers less than a week: divide by the
-      // span it does cover. Under 1.5 days covered → no baseline (perDay null).
+      // 100 items, and at the cap it returns a sample spread over the week rather than the
+      // newest 100 (checked 25 Nov 2026: "Alphabet" gave 12/15/8/4/18/29/14 by day), so a
+      // capped page has no measurable rate: perDay null, and no "unusual" call is made.
       const prior = kept.filter(it => now - it.ts > D && now - it.ts <= 7 * D).length;
-      const span = raw.length ? Math.min(7, (now - Math.min(...raw.map(it => it.ts))) / D) : 7;
-      const full = raw.length >= 95 && span < 7;
+      const full = raw.length >= 95;
       if (full) counts.capped = true;
-      const rate = !full ? prior / 6 : span > 1.5 ? prior / (span - 1) : null;
+      const rate = full ? null : prior / 6;
       counts.perDay = counts.perDay === null || rate === null ? null : counts.perDay + rate;
       // Newest 30 per language, so a busy home-language press doesn't crowd out English.
       lists.push(kept.slice(0, 30).map(it => ({ title: it.title, link: it.link, outlet: it.outlet, ts: it.ts, lang: q.lang === "en" ? "en" : "local" })));
