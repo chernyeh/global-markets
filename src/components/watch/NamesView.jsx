@@ -216,10 +216,10 @@ export default function NamesView({ w, setAppKey }) {
       <Health w={w} />
 
       {w.undo && (
-        <div role="status" style={{ position: "fixed", bottom: 18, left: "50%", transform: "translateX(-50%)", zIndex: 300, background: C.ink, color: "#fff",
+        <div role="status" style={{ position: "fixed", bottom: 18, left: "50%", transform: "translateX(-50%)", zIndex: 300, background: C.ink, color: "#fff", maxWidth: "calc(100vw - 32px)",
           borderRadius: 6, padding: "8px 14px", display: "flex", gap: 12, alignItems: "center", fontFamily: MONO, fontSize: 11, boxShadow: "0 4px 18px rgba(0,0,0,0.25)" }}>
-          Removed {w.undo.label} from the Gloomberg watchlist
-          <button onClick={w.undoRemove} style={{ background: "none", border: "1px solid #fff8", color: "#fff", borderRadius: 4, padding: "2px 8px", cursor: "pointer", fontFamily: MONO, fontSize: 11 }}>undo</button>
+          <span>Removed <b>{w.undo.label}</b> from your watchlist (Gloomberg too){w.undo.held ? " · still shown: you hold it" : ""}</span>
+          <button onClick={w.undoRemove} disabled={w.busy} style={{ background: "#fff", border: "none", color: C.ink, borderRadius: 4, padding: "3px 10px", cursor: "pointer", fontFamily: MONO, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>undo</button>
         </div>
       )}
     </div>

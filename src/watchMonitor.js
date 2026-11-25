@@ -17,6 +17,7 @@ import { callClaude, MODEL_CLASSIFY, mapLimit } from "./api.js";
 import { evaluateWatchAlerts, DEFAULT_PREFS } from "./watchCalc.js";
 import { buildRows } from "./watchRows.js";
 
+const REMOVED_DAYS = 30, UNDO_MS = 15000;
 const LIST_MS = 5 * 60 * 1000, QUOTES_MS = 10 * 60 * 1000, FUND_MS = 4 * 60 * 60 * 1000, NEWS_MS = 30 * 60 * 1000;
 const T = t => String(t || "").toUpperCase().trim();
 
@@ -62,6 +63,7 @@ export function useWatchMonitor({ appKey, active, articles }) {
   const [alerts, setAlerts] = useState([]);
   const [dismissed, setDismissed] = useState([]);
   const [undo, setUndo] = useState(null);
+  const [removed, setRemoved] = useState([]);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const alertStateRef = useRef(null);
@@ -71,8 +73,9 @@ export function useWatchMonitor({ appKey, active, articles }) {
 
   // Restore the last session so the board draws at once.
   useEffect(() => {
-    Promise.all([sGet(SK.watchList), sGet(SK.watchQuotes), sGet(SK.watchFund), sGet(SK.watchAlertState), sGet(SK.watchAlerts), sGet(SK.watchDismissed)])
-      .then(([l, q, f, st, al, dis]) => {
+    Promise.all([sGet(SK.watchList), sGet(SK.watchQuotes), sGet(SK.watchFund), sGet(SK.watchAlertState), sGet(SK.watchAlerts), sGet(SK.watchDismissed), sGet(SK.watchRemoved)])
+      .then(([l, q, f, st, al, dis, rm]) => {
+        setRemoved(Array.isArray(rm) ? rm.filter(e => Date.now() - e.at < REMOVED_DAYS * 86400000) : []);
         if (l?.list) { setList(l.list); setListAt(l.at); }
         if (q?.quotes) { setQuotes(q.quotes); setQuotesMeta({ at: q.at, errors: q.errors || {}, error: null }); }
         if (f?.fund) { setFund(f.fund); setFundMeta({ at: f.at, errors: f.errors || {}, error: null }); fundAtRef.current = f.at || 0; }
@@ -279,20 +282,32 @@ export function useWatchMonitor({ appKey, active, articles }) {
     return {};
   }), [run, loadList, loadNews, loadQuotes]);
 
-  const removeName = useCallback(row => run(async () => {
-    const { removed } = await watchApi("item", { method: "DELETE", query: { id: row.watch.id } });
-    setUndo({ snapshot: removed, label: row.name, until: Date.now() + 10000 });
-    await loadList();
-    return {};
-  }), [run, loadList]);
+  // Remove = one click, no confirm: the row goes at once, an undo toast stays
+  // for 15 s, and the removed row (with its Gloomberg notes history) is kept in
+  // this browser for 30 days under "recently removed", from where it can be put back.
+  const keepRemoved = useCallback(fn => setRemoved(prev => { const next = fn(prev).slice(0, 25); sSet(SK.watchRemoved, next); return next; }), []);
 
-  const undoRemove = useCallback(() => run(async () => {
-    if (!undo) return {};
-    await watchApi("restore", { method: "POST", body: { snapshot: undo.snapshot } });
-    setUndo(null);
+  const removeName = useCallback(row => run(async () => {
+    const { removed: snap, notes } = await watchApi("item", { method: "DELETE", query: { id: row.watch.id } });
+    const entry = { key: String(snap.id), snapshot: snap, notes: notes || [], label: row.name, ticker: row.ticker, held: !!row.hold, at: Date.now() };
+    keepRemoved(prev => [entry, ...prev.filter(e => e.key !== entry.key)]);
+    setUndo({ ...entry, until: Date.now() + UNDO_MS });
+    setList(l => (l ? { ...l, watch: l.watch.filter(x => x.id !== snap.id) } : l));
     await loadList();
     return {};
-  }), [run, undo, loadList]);
+  }), [run, loadList, keepRemoved]);
+
+  const restoreName = useCallback(entry => run(async () => {
+    if (!entry) return {};
+    await watchApi("restore", { method: "POST", body: { snapshot: entry.snapshot, notes: entry.notes } });
+    keepRemoved(prev => prev.filter(e => e.key !== entry.key));
+    setUndo(u => (u?.key === entry.key ? null : u));
+    await loadList();
+    return {};
+  }), [run, loadList, keepRemoved]);
+
+  const undoRemove = useCallback(() => restoreName(undo), [restoreName, undo]);
+  const forgetRemoved = useCallback(key => keepRemoved(prev => prev.filter(e => e.key !== key)), [keepRemoved]);
 
   useEffect(() => {
     if (!undo) return;
@@ -315,7 +330,7 @@ export function useWatchMonitor({ appKey, active, articles }) {
   return {
     ready, list, listErr, listAt, rows, quotes, quotesMeta, fundMeta, news, newsBusy, busy,
     alerts: allAlerts, unread: allAlerts.length, dismiss,
-    addName, updateName, removeName, undo, undoRemove, setPrefs, refreshAll,
+    addName, updateName, removeName, undo, undoRemove, removed, restoreName, forgetRemoved, setPrefs, refreshAll,
     prefs: { ...DEFAULT_PREFS, ...(list?.prefs || {}) },
   };
 }
