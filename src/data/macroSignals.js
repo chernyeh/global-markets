@@ -60,7 +60,7 @@ export const SIGNALS = [
     guard: "Needs signal 1 as well — falling core PCE while the Fed keeps hiking is the Aug 2022 false dawn." },
   { id: "s4", n: 4, group: "peak", label: "Core-services breadth narrowing", auto: true,
     threshold: "Share of core services above 3% (by weight, 3m annualised, SA) below 50%* and lower than three months earlier; partly met if it fell ≥5pp in a month or is below 60%*",
-    supports: ["disinf"], contradicts: ["sticky"], src: "BLS CPI item indices (PRIMARY); weights from the 19 Nov note",
+    supports: ["disinf"], contradicts: ["sticky"], src: "BLS CPI item indices (PRIMARY), all of core services in 27 items; weights: BLS relative importance, Sep 2026; reads from the 19 Nov note",
     action: "Waller's case for more hikes weakens; supports a last hike in Q1 2027.",
     guard: "Separate fading items (education, lodging) and fuel-linked ones (airfares) from the sticky ones (OER, hospital, dental, repair)." },
   { id: "s5", n: 5, group: "peak", label: "Term premium below ≈0.8%*", auto: true,
