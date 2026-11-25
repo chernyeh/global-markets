@@ -30,6 +30,7 @@ export const SK = {
   watchDismissed: "gm_watch_dismissed_v1",
   watchLocalTried:"gm_watch_localtried_v1",
   watchView:      "gm_watch_view_v1",
+  watchRemoved:   "gm_watch_removed_v1",
 };
 
 export const EM_SK = {

@@ -150,25 +150,37 @@ export async function updateItem(id, body) {
   return out?.[0] || null;
 }
 
-// Hard delete, as Gloomberg does; the full row comes back so the app can
-// offer an undo that puts it back with the same id and dates.
+// Hard delete, as Gloomberg does. Deleting a watchlist row also deletes its
+// watchlist_notes_log history (ON DELETE CASCADE), so that history is read
+// first and returned with the row: undo or "restore" puts both back.
 export async function removeItem(id) {
   const uid = await gbUserId();
+  const notes = await sb(`watchlist_notes_log?watchlist_id=eq.${enc(id)}&user_id=eq.${enc(uid)}&select=*&order=logged_at`).catch(() => []);
   const out = await sb(`watchlist?id=eq.${enc(id)}&user_id=eq.${enc(uid)}`, { method: "DELETE", prefer: "return=representation" });
   if (!out?.length) throw new Error("Not found — it may already have been removed in Gloomberg");
-  return out[0];
+  return { removed: out[0], notes: notes || [] };
 }
 
 const RESTORE_COLS = ["id", "ticker", "name", "sector", "country", "asset_type", "reason_added", "notes", "alert_price", "buy_trigger", "added_date",
   "created_at", "updated_at", "reason_updated_at", "notes_updated_at", "deep_dive", "conviction_score"];
-export async function restoreItem(snapshot) {
+export async function restoreItem(snapshot, notes = []) {
   const uid = await gbUserId();
   const row = Object.fromEntries(RESTORE_COLS.filter(k => snapshot?.[k] !== undefined).map(k => [k, snapshot[k]]));
   if (!row.id || !TICKER_RE.test(String(row.ticker || ""))) throw new Error("Nothing to restore");
+  let item;
   try {
     const out = await sb("watchlist", { method: "POST", body: [{ ...row, user_id: uid }], prefer: "return=representation" });
-    return out?.[0] || null;
+    item = out?.[0] || null;
   } catch (e) { throw friendly(e); }
+  // The notes history, re-attached to the same row id (ids kept; duplicates ignored).
+  const log = (Array.isArray(notes) ? notes : []).filter(n => n && n.watchlist_id === row.id).slice(0, 500)
+    .map(n => ({ ...(n.id ? { id: n.id } : {}), watchlist_id: row.id, user_id: uid, reason_text: n.reason_text ?? null, notes_text: n.notes_text ?? null,
+      ...(n.logged_at ? { logged_at: n.logged_at } : {}) }));
+  if (log.length) {
+    await sb("watchlist_notes_log?on_conflict=id", { method: "POST", body: log, prefer: "resolution=ignore-duplicates,return=minimal" })
+      .catch(() => { /* the row is back; a history hiccup shouldn't fail the restore */ });
+  }
+  return item;
 }
 
 // ─── This app's own per-name settings ────────────────────────────────────────

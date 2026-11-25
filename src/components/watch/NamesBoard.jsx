@@ -7,10 +7,12 @@ import { basket } from "../../watchCalc.js";
 import { fmtPx, fmtPct, fmtX, fmtBig, fmtDay } from "./watchFormat.js";
 import { Chg, RangeBar } from "./watchUi.jsx";
 import NameDetail from "./NameDetail.jsx";
+import { timeAgo } from "../helpers.jsx";
 
 // Columns: name · last · 1D · 1W · 1M · YTD · vs index 1M · 1Y line · 52-week position · forward P/E · nearest level · news
-const COLS = "minmax(180px,1.7fr) 70px 54px 54px 54px 56px 58px 66px 54px 46px 104px 46px";
-const MIN_W = 960;
+// … plus a last narrow column for the remove ×.
+const COLS = "minmax(180px,1.7fr) 70px 54px 54px 54px 56px 58px 66px 54px 46px 104px 46px 20px";
+const MIN_W = 986;
 
 const HEAD = [
   { k: "name", label: "NAME", tip: { t: "Name", d: "● held in Gloomberg · ◆ has a thesis (number = conviction) · 🔕 alerts muted.", r: "Click a row for detail, news and editing." } },
@@ -29,6 +31,7 @@ const HEAD = [
     r: "Shown: a level the price is through (green buy · amber sell · red risk), else the closest one and the distance to it." } },
   { k: "news", label: "NEWS", right: true, tip: { t: "News, 24 hours · 7 days", d: "Google News in English and the home-market language, plus this app's feeds — only headlines that name the company.",
     r: "Amber = unusual flow (≥3 in 24h and 2.5× the usual daily rate). + = more than Google's 100-story page holds for the week." } },
+  { k: "rm", label: "", tip: null },
 ];
 
 const GROUP_BY = [
@@ -57,7 +60,7 @@ function levelTone(n) {
   return Math.abs(n.dist) <= 5 ? C.amber : C.sub;
 }
 
-function Row({ r, fs, open, onToggle }) {
+function Row({ r, fs, open, onToggle, onRemove, busy }) {
   const q = r.q, f = r.f, n = r.nearest;
   const unusual = q?.z1d !== null && q?.z1d !== undefined && Math.abs(q.z1d) >= 2.5;
   const valTip = f ? { t: `${r.name} — valuation`, d: [
@@ -70,7 +73,7 @@ function Row({ r, fs, open, onToggle }) {
   const newsTip = r.newsItems[0] ? { t: "Latest", d: r.newsItems[0].title, src: `${r.newsItems[0].outlet || ""}` } : (r.skipNews ? "News isn't searched for ETFs and funds — set a news query in the row to turn it on." : null);
   const cell = { fontFamily: MONO, fontSize: fs(10.5), textAlign: "right", color: C.ink };
   return (
-    <div role="row" onClick={onToggle} aria-expanded={open}
+    <div role="row" className="gm-wrow" onClick={onToggle} aria-expanded={open}
       style={{ display: "grid", gridTemplateColumns: COLS, gap: 6, alignItems: "center", padding: "4px 0", borderBottom: `1px solid ${C.line2}`, cursor: "pointer",
         background: open ? C.cream : "transparent" }}>
       <span role="cell" style={{ minWidth: 0, display: "flex", alignItems: "baseline", gap: 5, overflow: "hidden" }}>
@@ -101,6 +104,13 @@ function Row({ r, fs, open, onToggle }) {
       <span role="cell" style={{ ...cell, fontSize: fs(10), color: r.news.surge ? C.amber : r.news.n24 ? C.ink : C.faint, fontWeight: r.news.surge ? 700 : 400 }} onClick={e => e.stopPropagation()}>
         <Tip tip={newsTip} underline={false}>{r.skipNews ? "·" : `${r.news.n24}·${r.news.n7}${r.news.capped ? "+" : ""}`}</Tip>
       </span>
+      <span role="cell" style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
+        {r.watch && (
+          <button className="gm-wx" onClick={() => onRemove(r)} disabled={busy} aria-label={`Remove ${r.name} from the watchlist`}
+            title={`Remove from the watchlist (in Gloomberg too)${r.hold ? " — it stays on the board because you hold it" : ""}. Undo for 15 s.`}
+            style={{ border: "none", background: "none", cursor: busy ? "wait" : "pointer", fontSize: fs(14), lineHeight: 1, padding: "0 2px", color: C.faint }}>×</button>
+        )}
+      </span>
     </div>
   );
 }
@@ -118,9 +128,9 @@ function GroupRow({ label, rows, fs }) {
         </Tip>
       </span>
       <span role="cell" />
-      {["chg1d", "chg1w", "chg1m", "ytd"].map(k => <span key={k} role="cell" style={{ textAlign: "right" }}><Chg v={b[k]} fs={fs} size={10} /></span>)}
-      <span role="cell" style={{ textAlign: "right" }}><Chg v={b.rel1m} fs={fs} pp size={10} /></span>
-      <span role="cell" /><span role="cell" /><span role="cell" /><span role="cell" /><span role="cell" />
+      {["chg1d", "chg1w", "chg1m", "ytd"].map(k => <span key={k} role="cell" style={{ textAlign: "right" }}>{CATCH_ALL.has(label) ? null : <Chg v={b[k]} fs={fs} size={10} />}</span>)}
+      <span role="cell" style={{ textAlign: "right" }}>{CATCH_ALL.has(label) ? null : <Chg v={b.rel1m} fs={fs} pp size={10} />}</span>
+      <span role="cell" /><span role="cell" /><span role="cell" /><span role="cell" /><span role="cell" /><span role="cell" />
     </div>
   );
 }
@@ -132,6 +142,10 @@ export default function NamesBoard({ w, rows }) {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState({ k: "chg1d", dir: -1 });
   const [open, setOpen] = useState(null);
+  const [showRemoved, setShowRemoved] = useState(false);
+  const [rmErr, setRmErr] = useState(null);
+  const remove = async r => { setRmErr(null); const res = await w.removeName(r); if (!res.ok) setRmErr(`${r.name}: ${res.error}`); };
+  const restore = async e => { setRmErr(null); const res = await w.restoreName(e); if (!res.ok) setRmErr(`${e.label}: ${res.error}`); };
 
   const shown = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -157,7 +171,7 @@ export default function NamesBoard({ w, rows }) {
       .sort((a, b) => (last.has(a[0]) - last.has(b[0])) || b[1].length - a[1].length || a[0].localeCompare(b[0]));
   }, [shown, groupBy, sort]);
 
-  const headClick = k => { if (k === "spark") return; setSort(s => (s.k === k ? { k, dir: -s.dir } : { k, dir: k === "name" || k === "level" ? 1 : -1 })); };
+  const headClick = k => { if (k === "spark" || k === "rm") return; setSort(s => (s.k === k ? { k, dir: -s.dir } : { k, dir: k === "name" || k === "level" ? 1 : -1 })); };
 
   return (
     <div style={{ ...card, padding: "12px 14px", marginBottom: 14 }}>
@@ -171,7 +185,28 @@ export default function NamesBoard({ w, rows }) {
         ))}
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="find a name…" aria-label="Find a name"
           style={{ ...inputStyle, width: 130, marginLeft: "auto" }} />
+        {w.removed.length > 0 && (
+          <button onClick={() => setShowRemoved(x => !x)} aria-expanded={showRemoved} style={chipBtn(showRemoved, C.ink)}
+            title="Names removed from this browser in the last 30 days — put one back with its notes history">↺ removed ({w.removed.length})</button>
+        )}
       </div>
+      {/* Remove × shows when the pointer is over a row (always on touch screens). */}
+      <style>{`.gm-wrow .gm-wx{opacity:0;transition:opacity .12s}.gm-wrow:hover .gm-wx,.gm-wrow .gm-wx:focus-visible{opacity:1}.gm-wrow .gm-wx:hover{color:${C.red}!important}@media (hover:none){.gm-wrow .gm-wx{opacity:1}}`}</style>
+      {rmErr && <div style={{ ...smallMono(fs, C.red), marginBottom: 6 }}>⚠ {rmErr}</div>}
+      {showRemoved && w.removed.length > 0 && (
+        <div style={{ border: `1px solid ${C.line}`, borderRadius: 6, padding: "6px 10px", marginBottom: 8, background: C.cream }}>
+          <div style={{ ...kickerStyle(fs), color: C.ink, marginBottom: 2 }}>RECENTLY REMOVED · LAST 30 DAYS</div>
+          {w.removed.map(e => (
+            <div key={e.key} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "3px 0", borderTop: `1px solid ${C.line2}` }}>
+              <span style={{ fontFamily: SERIF, fontSize: fs(12.5), color: C.ink }}>{e.label}</span>
+              <span style={smallMono(fs)}>{e.ticker} · removed {timeAgo(e.at)}{e.notes?.length ? ` · ${e.notes.length} note${e.notes.length > 1 ? "s" : ""} kept` : ""}</span>
+              <button onClick={() => restore(e)} disabled={w.busy} style={{ ...chipBtn(false, C.ink), marginLeft: "auto" }}>put back</button>
+              <button onClick={() => w.forgetRemoved(e.key)} title="Drop from this list (it stays removed)" aria-label={`Forget ${e.label}`}
+                style={{ border: "none", background: "none", color: C.faint, cursor: "pointer", fontSize: fs(12) }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
       <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         <div role="table" aria-label="Watchlist names" style={{ minWidth: MIN_W }}>
           <div role="row" style={{ display: "grid", gridTemplateColumns: COLS, gap: 6, padding: "0 0 3px", borderBottom: `1px solid ${C.line2}` }}>
@@ -189,8 +224,8 @@ export default function NamesBoard({ w, rows }) {
               {groupBy !== "none" && <GroupRow label={label} rows={rs} fs={fs} />}
               {rs.map(r => (
                 <Fragment key={r.ticker}>
-                  <Row r={r} fs={fs} open={open === r.ticker} onToggle={() => setOpen(o => (o === r.ticker ? null : r.ticker))} />
-                  {open === r.ticker && <NameDetail r={r} w={w} />}
+                  <Row r={r} fs={fs} open={open === r.ticker} onToggle={() => setOpen(o => (o === r.ticker ? null : r.ticker))} onRemove={remove} busy={w.busy} />
+                  {open === r.ticker && <NameDetail r={r} w={w} onRemove={remove} />}
                 </Fragment>
               ))}
             </div>

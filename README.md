@@ -12,7 +12,11 @@ The old keyword tracker is still there as *Themes & keywords*.
 **Synced with Gloomberg** — the list *is* Gloomberg's: `watchlist` (read and written) plus `holdings` and the latest
 `theses` row per ticker (read only), in the same Supabase project. Adding, editing or removing a watchlist name here
 changes it in Gloomberg (same fields and rules as Gloomberg's own form: upper-case ticker, one row per ticker, a changed
-reason or note is timestamped and logged to `watchlist_notes_log`; remove has a 10-second undo, as in Gloomberg). Changes
+reason or note is timestamped and logged to `watchlist_notes_log`). **Removing** is one click — the × at the end of a
+row (it shows on hover; always on touch screens) or *× remove* at the top of an opened row — with no confirm box: an
+undo button stays for 15 seconds, and *↺ removed* above the board keeps the last 30 days' removals in this browser to
+put back later. Gloomberg deletes a name's notes history with the name, so that history is saved first and restored
+with it. Holdings can't be removed here (that's Gloomberg's Portfolio). Changes
 made in Gloomberg appear here on opening the tab, on returning to the window, or within 5 minutes. Holdings, theses,
 quantities and costs are never written. This app's own per-name settings — why tracked, group, benchmark override,
 local-language name, short names, custom news query, mute — live in `gm_kv` (`watch_meta`) and don't touch Gloomberg.

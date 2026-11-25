@@ -6,8 +6,8 @@
 //   GET    ?kind=list                 Gloomberg watchlist + holdings + theses + this app's settings + 7 days of server alerts
 //   POST   ?kind=item                 add a name to Gloomberg's watchlist        → { item }
 //   PATCH  ?kind=item&id=             edit it (reason/notes changes logged)      → { item }
-//   DELETE ?kind=item&id=             remove it                                  → { removed } (full row, for undo)
-//   POST   ?kind=restore              put a removed row back (undo)              → { item }
+//   DELETE ?kind=item&id=             remove it                                  → { removed, notes } (full row + notes history, for undo)
+//   POST   ?kind=restore              { snapshot, notes } put a removed row back → { item }
 //   POST   ?kind=meta                 { patches: { TICKER: {...} } } why tracked, group, local name, benchmark, mute
 //   POST   ?kind=prefs                { tgLevels, tgMoves, sigma }
 // Public market data (no personal data; CDN-cached):
@@ -150,9 +150,9 @@ export default async function handler(req, res) {
     if (kind === "item") {
       if (req.method === "POST") { res.status(200).json({ item: await addItem(body) }); return; }
       if (req.method === "PATCH" && id) { res.status(200).json({ item: await updateItem(id, body) }); return; }
-      if (req.method === "DELETE" && id) { res.status(200).json({ removed: await removeItem(id) }); return; }
+      if (req.method === "DELETE" && id) { res.status(200).json(await removeItem(id)); return; }
     }
-    if (kind === "restore" && req.method === "POST") { res.status(200).json({ item: await restoreItem(body.snapshot) }); return; }
+    if (kind === "restore" && req.method === "POST") { res.status(200).json({ item: await restoreItem(body.snapshot, body.notes) }); return; }
     if (kind === "meta" && req.method === "POST") { res.status(200).json({ meta: await setMeta(body.patches) }); return; }
     if (kind === "prefs" && req.method === "POST") { res.status(200).json({ prefs: await setPrefs(body) }); return; }
     res.status(400).json({ error: `unknown request "${req.method} ${kind}"` });

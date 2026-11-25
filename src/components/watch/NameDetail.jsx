@@ -60,11 +60,6 @@ function Edit({ r, w, onDone }) {
     const res = await w.updateName(r, item, meta);
     if (res.ok) onDone(); else setErr(res.error);
   };
-  const remove = async () => {
-    if (!window.confirm(`Remove ${r.name} from the Gloomberg watchlist? This removes it in Gloomberg too (you get 10 seconds to undo).`)) return;
-    const res = await w.removeName(r);
-    if (!res.ok) setErr(res.error);
-  };
 
   return (
     <div style={{ borderTop: `1px solid ${C.line}`, marginTop: 8, paddingTop: 8 }} onClick={e => e.stopPropagation()}>
@@ -114,14 +109,13 @@ function Edit({ r, w, onDone }) {
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
         <button onClick={save} disabled={w.busy} style={{ ...chipBtn(true, C.ink), padding: "4px 12px", fontSize: 10 }}>{w.busy ? "saving…" : "save"}</button>
         <button onClick={onDone} style={{ ...chipBtn(false, C.ink), padding: "4px 12px", fontSize: 10 }}>cancel</button>
-        {wl && <button onClick={remove} disabled={w.busy} style={{ ...chipBtn(false, C.red), color: C.red, marginLeft: "auto", padding: "4px 10px", fontSize: 10 }}>remove from watchlist</button>}
         {err && <span style={smallMono(fs, C.red)}>⚠ {err}</span>}
       </div>
     </div>
   );
 }
 
-export default function NameDetail({ r, w }) {
+export default function NameDetail({ r, w, onRemove }) {
   const fs = useFs();
   const [editing, setEditing] = useState(false);
   const [brief, setBrief] = useState(null);
@@ -144,7 +138,15 @@ export default function NameDetail({ r, w }) {
         <span style={{ fontFamily: SERIF, fontSize: fs(14), fontWeight: 700, color: C.ink }}>{r.name}</span>
         <span style={smallMono(fs)}>{r.ticker} · {r.country}{r.sector ? ` · ${r.sector}` : ""}{r.assetType ? ` · ${r.assetType}` : ""}</span>
         {r.purposes.length > 0 && <span style={smallMono(fs, C.ink)}>tracked as {r.purposes.join(" + ")}{r.group ? ` · ${r.group}` : ""}</span>}
-        <button onClick={() => setEditing(e => !e)} style={{ ...chipBtn(editing, C.ink), marginLeft: "auto" }}>{editing ? "close edit" : "✎ edit"}</button>
+        <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+          <button onClick={() => setEditing(e => !e)} style={chipBtn(editing, C.ink)}>{editing ? "close edit" : "✎ edit"}</button>
+          {r.watch ? (
+            <button onClick={() => onRemove(r)} disabled={w.busy} title={`Remove from the watchlist (in Gloomberg too)${r.hold ? " — it stays on the board because you hold it" : ""}. Undo for 15 s.`}
+              style={{ ...chipBtn(false, C.red), color: C.red, borderColor: `${C.red}66` }}>× remove</button>
+          ) : (
+            <span title="A holding, not a watchlist entry — sell or remove it in Gloomberg's Portfolio" style={smallMono(fs)}>held · not on watchlist</span>
+          )}
+        </span>
       </div>
       {r.watch?.reason_added && <div style={{ fontFamily: SERIF, fontSize: fs(12), color: C.sub, marginBottom: 6 }}><b style={{ color: C.ink }}>Why on watchlist: </b>{r.watch.reason_added}{r.watch.buy_trigger ? <> · <b style={{ color: C.ink }}>waiting for: </b>{r.watch.buy_trigger}</> : null}</div>}
 
