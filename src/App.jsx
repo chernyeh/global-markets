@@ -12,7 +12,7 @@ import NewsBriefsTab from "./components/NewsBriefsTab.jsx";
 import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONTEXT_PATTERNS, BRIEF_CATEGORY_WEIGHT, SIGNAL_STRENGTH, BRIEF_COUNTRY_BOOST, BRIEF_COUNTRY_PENALTY, BRIEF_BOOSTED_COUNTRIES, BRIEF_PENALISED_COUNTRIES, OPINION_MAP } from "./data/taxonomy.js";
 import { resolveOpinion, SOURCE_WEIGHTING_NOTE } from "./opinions.js";
 import OpinionsTab from "./components/OpinionsTab.jsx";
-import { GN, NEWS_BRIEF_GROUPS, SOURCES, EM_SOURCES, ALL_MARKET_SOURCES, SOURCE_TIER_MAP, PROMINENT_SOURCE_IDS, PROMINENT_SOURCE_BOOST, PROMINENT_SOURCE_WORLD_BONUS } from "./data/sources.js";
+import { GN, NEWS_BRIEF_GROUPS, SOURCES, EM_SOURCES, ALL_MARKET_SOURCES, PROMINENT_SOURCE_IDS, PROMINENT_SOURCE_BOOST, worldSourceBonus } from "./data/sources.js";
 import { COUNTRIES, EM_COUNTRIES, MARKET_REGIONS, MARKETS, MARKET_MAP } from "./data/markets.js";
 import { BRIEF_FORMAT, BRIEF_RULES, WORLD_FORMAT, WORLD_RULES } from "./prompts.js";
 import { mono, RED, labelSm, labelMed, pillBtn, card, HoverButton } from "./ui.jsx";
@@ -29,31 +29,13 @@ import { useMacroMonitor } from "./macroMonitor.js";
 // NEWS BRIEFS TAB groups → src/data/sources.js
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function isMarqueeSource(id) {
-  if (!id) return false;
-  const s = id.toLowerCase();
-  return s.startsWith("bloomberg") || s.startsWith("bloom_") ||
-    s.startsWith("wsj") || s.startsWith("reuters") ||
-    s === "ft" || s === "ft_alphaville" ||
-    s === "nyt" || s.startsWith("wapo") || s === "semafor" || s === "semafor_politics" ||
-    s.startsWith("politico") || s === "punchbowl" ||
-    s === "scmp" || s === "scmp_markets" || s === "scmp_china" ||
-    s === "scmp_politics" || s === "scmp_diplomacy" || s === "scmp_china_politics_gn" ||
-    s === "globe_mail" || s === "globe_itm" ||
-    s === "guardian" || s === "guardian_au";
-}
 
 
 // Topic weight comes from the TOPICS registry as adjusted by the reader's Focus
 // dials — see src/topicDials.js. Pass d = {} to score with every dial at default.
 function worldScore(a, d) {
   const topicScore = worldTopicScore(a, d);
-  const tier = SOURCE_TIER_MAP[a.sourceId] ?? 3;
-  // Prominent regional papers of record rank with the global marquee titles
-  // rather than at their nominal tier — see PROMINENT_SOURCE_IDS.
-  const sourceBonus = isMarqueeSource(a.sourceId) ? 15
-    : PROMINENT_SOURCE_IDS.has(a.sourceId) || PROMINENT_SOURCE_IDS.has(a.originalSourceId) ? PROMINENT_SOURCE_WORLD_BONUS
-    : tier === 1 ? 8 : tier === 2 ? 3 : 0;
+  const sourceBonus = worldSourceBonus(a);
   const t = a.pubDate ? new Date(a.pubDate).getTime() : (a.fetchedAt || 0);
   const recency = t ? Math.min(0.999, t / Date.now()) : 0;
   return (topicScore + sourceBonus) * 10 + recency;

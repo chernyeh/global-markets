@@ -4,7 +4,9 @@ import { SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES } from "../data/taxonomy.js"
 import { SOURCES } from "../data/sources.js";
 import { Tag, timeAgo, Dots } from "./helpers.jsx";
 
-export default function ArticleCard({art, highlightKeyword=null, freeCoverage=false, onFindFree=null, findingFree=false}) {
+// `why` (optional): a short reason the story was picked, shown as a tag —
+// the Macro tab passes the playbook term or topic it matched.
+export default function ArticleCard({art, highlightKeyword=null, freeCoverage=false, onFindFree=null, findingFree=false, why=null}) {
   const fontScale = useContext(FontScaleCtx);
   const sec = art.sector ? SECTOR_MAP[art.sector] : null;
   const sigMeta   = art.signal ? SIGNAL_META[art.signal] : null;
@@ -65,6 +67,7 @@ export default function ArticleCard({art, highlightKeyword=null, freeCoverage=fa
           );
         })()}
         {art.lang!=="en" && <Tag color="#7a8fa6">{art.lang.toUpperCase()}→EN</Tag>}
+        {why && <Tag color={why.startsWith("playbook") ? "#c0392b" : "#3a6080"}>{why}</Tag>}
         {sec && sec.code!=="UNK" && <Tag color={sec.color}>{sec.icon} {sec.label}</Tag>}
         {sigMeta && art.signal !== "N" && (
           <span style={{display:"inline-flex",alignItems:"center",gap:3,
