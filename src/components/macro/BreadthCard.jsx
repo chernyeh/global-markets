@@ -1,11 +1,29 @@
 import { breadth } from "../../macroInflation.js";
 import { QUALITY_TAGS } from "../../data/macroInflation.js";
+import { SOURCE_META } from "../../data/macroSeries.js";
 import Spark from "./Spark.jsx";
+import Tip from "./Tip.jsx";
 import { C, MONO, SERIF, card, kickerStyle, smallMono, useFs, heat } from "./macroStyles.js";
 
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const mon = ym => MON[Number(ym.slice(5, 7)) - 1];
 const SIGNAL_LINE = 50; // signal 4's illustrative threshold, % by weight
+
+// Hover/tap card for an item row: full name (the cell truncates on narrow
+// screens), the note's read in full, weight and source. The note text often
+// restates the tag ("Below 3%"), so the tag is only prefixed when it adds something.
+function itemTip(it, tag) {
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const read = !tag ? it.note : !it.note ? cap(tag.label)
+    : it.note.toLowerCase().includes(tag.label.toLowerCase()) ? it.note : `${cap(tag.label)} — ${it.note}`;
+  const via = it.srcUsed && it.srcUsed !== "bls" ? SOURCE_META[it.srcUsed]?.label || it.srcUsed : null;
+  return {
+    t: it.label,
+    d: `${read ? `Note's read: ${read}. ` : ""}Weight ${it.weight.toFixed(1)}pp of CPI.`,
+    r: it.nsaFallback ? "m/m cells use the unadjusted index: no seasonally adjusted series was returned (marked nsa)." : undefined,
+    src: `BLS CPI item ${it.code}${via ? ` · via ${via}` : ""}${it.yoy ? ` · y/y as of ${mon(it.yoy.month)} ${it.yoy.month.slice(0, 4)}` : ""}`,
+  };
+}
 
 // Meter list: one row per measure — name, bar against 100%, figure, 6-month trend.
 // Fill carries severity (broad = sticky): ≥70% red, 50–70% amber, <50% green;
@@ -70,12 +88,14 @@ export default function BreadthCard({ series: S }) {
           {items.map(it => {
             const tag = QUALITY_TAGS[it.tag];
             return (
-              <div role="row" key={it.code} title={`${it.label} — BLS ${it.code}${it.note ? ` · ${it.note}` : ""}${it.nsaFallback ? " · m/m from the unadjusted index (no SA series returned)" : ""}${it.yoy ? ` · y/y as of ${it.yoy.month}` : ""}`}
+              <div role="row" key={it.code}
                 style={{ display: "grid", gridTemplateColumns: cols, gap: 3, alignItems: "center", padding: "1px 0", borderBottom: `1px solid ${C.line2}` }}>
-                <span role="cell" style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: SERIF, fontSize: fs(11.5), color: C.ink }}>{it.label}</span>
-                  {tag && <span style={{ fontFamily: MONO, fontSize: fs(8), color: tag.color, marginLeft: 4 }}>{tag.label}</span>}
-                  {it.nsaFallback && <span style={{ fontFamily: MONO, fontSize: fs(8), color: C.amber, marginLeft: 4 }}>nsa</span>}
+                <span role="cell" style={{ minWidth: 0 }}>
+                  <Tip tip={itemTip(it, tag)} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ fontFamily: SERIF, fontSize: fs(11.5), color: C.ink }}>{it.label}</span>
+                    {tag && <span style={{ fontFamily: MONO, fontSize: fs(8), color: tag.color, marginLeft: 4 }}>{tag.label}</span>}
+                    {it.nsaFallback && <span style={{ fontFamily: MONO, fontSize: fs(8), color: C.amber, marginLeft: 4 }}>nsa</span>}
+                  </Tip>
                 </span>
                 <span role="cell" style={{ fontFamily: MONO, fontSize: fs(9.5), color: C.sub, textAlign: "right" }}>{it.weight.toFixed(1)}</span>
                 {it.mom.map(m => <span role="cell" key={m.month} style={{ display: "flex", justifyContent: "flex-end" }}>{cell(m.v, 0.25, 0.1)}</span>)}
