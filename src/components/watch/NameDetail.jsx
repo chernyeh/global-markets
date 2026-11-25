@@ -4,7 +4,7 @@ import BriefRenderer from "../BriefRenderer.jsx";
 import { Dots, timeAgo } from "../helpers.jsx";
 import { C, MONO, SERIF, kickerStyle, smallMono, chipBtn, inputStyle, useFs } from "../macro/macroStyles.js";
 import { PURPOSES, GB_SECTORS, GB_COUNTRIES } from "../../data/watchMarkets.js";
-import { isMet, levelDist, daysSince } from "../../watchCalc.js";
+import { isMet, levelDist, moveTo, daysSince } from "../../watchCalc.js";
 import { callClaude, MODEL_SYNTHESIZE } from "../../api.js";
 import { fmtPx, fmtPct, fmtPp, fmtX, fmtBig, fmtDay, fmtDayY, LANG_TAG } from "./watchFormat.js";
 
@@ -171,13 +171,16 @@ export default function NameDetail({ r, w, onRemove }) {
         </div>
 
         <div>
-          <div style={{ ...kickerStyle(fs), marginBottom: 3 }}>YOUR LEVELS & DATES</div>
+          <div style={{ ...kickerStyle(fs), marginBottom: 3 }}>YOUR TARGETS & DATES</div>
           {r.levels.length ? r.levels.map(l => {
             const d = q?.last ? levelDist(l, q.last) : null;
+            const mv = q?.last ? moveTo(l, q.last) : null;
             const met = q?.last ? isMet(l, q.last) : false;
+            // Not there yet: the move needed (upside/downside to the level). There: how far past it.
+            const where = !l.ccyOk ? (l.unitsOff ? "units?" : "ccy?") : met ? `✓ ${Math.abs(d).toFixed(1)}% ${l.side === "sell" ? "above" : "below"}` : `${fmtPct(mv)} to go`;
             return <KV key={l.key} fs={fs} k={`${l.label} (${l.side})`}
               tip={`From ${l.src}${l.unitsOff ? " — more than 20× away from the price: probably pence vs pounds or a split; not compared or alerted" : l.ccyOk ? "" : ` — level is in ${l.ccy}, quote in ${ccy}: not compared`}`}
-              v={`${l.ccy || ccy} ${fmtPx(l.value)} · ${l.unitsOff ? "units?" : l.ccyOk ? (met ? "through" : fmtPct(d)) : "ccy?"}`}
+              v={`${l.ccy || ccy} ${fmtPx(l.value)} · ${where}`}
               tone={!l.ccyOk ? C.amber : met ? (l.side === "buy" ? C.green : l.side === "risk" ? C.red : C.amber) : undefined} />;
           }) : <div style={{ ...smallMono(fs), padding: "2px 0" }}>No levels set — that's fine for a gauge. Add an alert price on the left (✎ edit) if you want one.</div>}
           {t?.prob_weighted_value && <KV fs={fs} k="Probability-weighted value" v={`${t.price_currency || ""} ${fmtPx(t.prob_weighted_value)}${q?.last && (t.price_currency || "") === ccy ? ` · ${fmtPct((t.prob_weighted_value / q.last - 1) * 100)} upside` : ""}`} />}

@@ -26,7 +26,7 @@ local-language name, short names, custom news query, mute — live in `gm_kv` (`
 | Price, 1D / 1W / 1M / YTD, 1Y line, 52-week position, σ of today's move | Yahoo spark (`/api/watch?kind=quotes`, CDN 5 min); London pence converted to pounds | SECONDARY-reliable |
 | vs IDX | the name's 1M change minus its home index's (TOPIX via the 1306.T ETF, STI, S&P 500, FTSE 100, CAC 40, DAX, Hang Seng, ASX 200, TSX…; `src/data/watchMarkets.js`), or a benchmark you set per name (e.g. `^SOX`) | SECONDARY-reliable |
 | P/E (trailing, forward), P/B, yield, market cap, ADV, earnings date | Yahoo v7 quote **through Gloomberg's `yahoo-proxy` edge function**, which already handles Yahoo's cookie/crumb (CDN 4 h) | SECONDARY-reliable |
-| Your levels | Gloomberg watchlist `alert_price` (buy at/below); thesis entry, Munger (buy), exit (sell), invalidation (risk); holding target (sell), stop (risk) | your records |
+| TO TARGET (your levels) | Gloomberg watchlist `alert_price` (buy at/below); thesis entry, Munger (buy), exit (sell), invalidation (risk); holding target (sell), stop (risk). Shown as the move the price needs to reach the nearest one — *buy −3.0%* = must fall 3%, *exit +12%* = 12% upside; *✓ buy* / *✓ exit* / *✗ stop* once there | your records |
 | Results / ex-dividend dates | thesis `next_results_date` first, else Yahoo's earnings date (marked *est.*); Gloomberg `dividend_data` | your records / SECONDARY |
 | TSE liquidity tier | Gloomberg `digest_companies` (.T names) | your records |
 | News | Google News, English **and** the home-market language (`"full name" OR "short name"`, 7 days), plus this app's own feeds; only headlines that name the company | SECONDARY |
@@ -43,8 +43,10 @@ flagged and never alerted. The scheduled server check (`api/alerts.js`, same sch
 rules (`src/watchCalc.js`, `src/watchRows.js`) and pushes to Telegram what you tick on the tab (default: level
 crossings on, big moves off). Server state: `gm_kv` `watch_alert_state`; history: `gm_alerts` with `kind = 'watch'`.
 
-**Unusual news flow** = at least 3 headlines in 24 hours and 2.5× the usual daily rate. Google returns at most 100
-items, so for busy names the usual rate is taken over the days the page does cover; under 1.5 days covered, no call.
+**Unusual news flow** = at least 3 headlines in 24 hours and 2.5× the usual daily rate of the six days before. Google
+returns at most 100 items, and at that cap it returns a sample spread over the week rather than the newest 100
+(checked 25 Nov 2026), so names that hit it can't be measured: they're listed apart as "100+ a week, not measured" and
+never called unusual. On every Bottom line row, *+N more* opens the full list.
 
 **Setup** — nothing new: it uses `SUPABASE_SECRET_KEY` and `GM_APP_KEY` (enter the key once, in Macro → Setup or on
 the tab). Optional: `GLOOMBERG_USER_ID` in Vercel; without it the server takes the single user id found on Gloomberg's
