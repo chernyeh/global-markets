@@ -1,5 +1,57 @@
 # Global Markets
 
+## Watchlist (the ◎ Watchlist tab — second after Macro)
+
+A names board built like the Macro cover: a *Bottom line* of six questions answered from the board's own numbers
+(unusual moves, which gauges moved, anything at my buy levels, anything at sell or risk levels, unusual news flow,
+what reports in the next 14 days), dismissible alerts, then one row per name. Names can be tracked as **invest**,
+**gauge**, **factor** or **index** — a thesis or levels are optional — and put into **groups** that read as
+equal-weighted baskets (each group's header row shows the basket's 1D / 1W / 1M / YTD and its move against the index).
+The old keyword tracker is still there as *Themes & keywords*.
+
+**Synced with Gloomberg** — the list *is* Gloomberg's: `watchlist` (read and written) plus `holdings` and the latest
+`theses` row per ticker (read only), in the same Supabase project. Adding, editing or removing a watchlist name here
+changes it in Gloomberg (same fields and rules as Gloomberg's own form: upper-case ticker, one row per ticker, a changed
+reason or note is timestamped and logged to `watchlist_notes_log`; remove has a 10-second undo, as in Gloomberg). Changes
+made in Gloomberg appear here on opening the tab, on returning to the window, or within 5 minutes. Holdings, theses,
+quantities and costs are never written. This app's own per-name settings — why tracked, group, benchmark override,
+local-language name, short names, custom news query, mute — live in `gm_kv` (`watch_meta`) and don't touch Gloomberg.
+
+| Column / item | Source | Tier |
+|---|---|---|
+| Price, 1D / 1W / 1M / YTD, 1Y line, 52-week position, σ of today's move | Yahoo spark (`/api/watch?kind=quotes`, CDN 5 min); London pence converted to pounds | SECONDARY-reliable |
+| vs IDX | the name's 1M change minus its home index's (TOPIX via the 1306.T ETF, STI, S&P 500, FTSE 100, CAC 40, DAX, Hang Seng, ASX 200, TSX…; `src/data/watchMarkets.js`), or a benchmark you set per name (e.g. `^SOX`) | SECONDARY-reliable |
+| P/E (trailing, forward), P/B, yield, market cap, ADV, earnings date | Yahoo v7 quote **through Gloomberg's `yahoo-proxy` edge function**, which already handles Yahoo's cookie/crumb (CDN 4 h) | SECONDARY-reliable |
+| Your levels | Gloomberg watchlist `alert_price` (buy at/below); thesis entry, Munger (buy), exit (sell), invalidation (risk); holding target (sell), stop (risk) | your records |
+| Results / ex-dividend dates | thesis `next_results_date` first, else Yahoo's earnings date (marked *est.*); Gloomberg `dividend_data` | your records / SECONDARY |
+| TSE liquidity tier | Gloomberg `digest_companies` (.T names) | your records |
+| News | Google News, English **and** the home-market language (`"full name" OR "short name"`, 7 days), plus this app's own feeds; only headlines that name the company | SECONDARY |
+
+**Local-language news** — for Tokyo, Hong Kong, Taiwan, mainland China, Korea and Thailand listings the press writes
+in another script, so the home-language search needs the local name (e.g. トヨタ自動車 / トヨタ). The first time the tab
+opens, Haiku suggests local names and the short English names headlines use (OCBC, LVMH) in one call; they are marked
+*AI-suggested — check* until you edit them, and a name you clear is never re-suggested.
+
+**Alerts — no decision needed.** A level fires once when the price crosses it and re-arms only after the price moves 1%
+back; a move of 3σ (your choice: 2.5–4σ) and at least 2% fires once a day; names you mute raise none. Dismiss with ×.
+Levels in another currency from the quote, or more than 20× away from the price (pence vs pounds, a split), are shown,
+flagged and never alerted. The scheduled server check (`api/alerts.js`, same schedule as the macro alerts) runs the same
+rules (`src/watchCalc.js`, `src/watchRows.js`) and pushes to Telegram what you tick on the tab (default: level
+crossings on, big moves off). Server state: `gm_kv` `watch_alert_state`; history: `gm_alerts` with `kind = 'watch'`.
+
+**Unusual news flow** = at least 3 headlines in 24 hours and 2.5× the usual daily rate. Google returns at most 100
+items, so for busy names the usual rate is taken over the days the page does cover; under 1.5 days covered, no call.
+
+**Setup** — nothing new: it uses `SUPABASE_SECRET_KEY` and `GM_APP_KEY` (enter the key once, in Macro → Setup or on
+the tab). Optional: `GLOOMBERG_USER_ID` in Vercel; without it the server takes the single user id found on Gloomberg's
+rows and refuses to write if it finds more than one.
+
+**Not covered** — company filings from HKEXnews and SGX (no free APIs); the Filings tab remains SEC-only.
+
+Files: `api/watch.js` (endpoint), `api/_watchlist.js` (Gloomberg reads/writes, valuations), `src/watchMonitor.js`
+(hook), `src/watchRows.js`, `src/watchCalc.js`, `src/watchSummary.js`, `src/data/watchMarkets.js`, UI in
+`src/components/watch/`.
+
 ## Macro monitor (the ◈ Macro tab — the cover page)
 
 Tracks the signals from the Bear-Market Playbook (rev 54, 20 Nov 2026): a signals board with the

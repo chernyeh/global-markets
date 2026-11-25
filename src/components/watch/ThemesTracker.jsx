@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { SK, sGet, sSet } from "../storage.js";
-import { callClaude, MODEL_CLASSIFY, MODEL_SYNTHESIZE } from "../api.js";
-import { Dots, timeAgo } from "./helpers.jsx";
-import ArticleCard from "./ArticleCard.jsx";
-import BriefRenderer from "./BriefRenderer.jsx";
+import { SK, sGet, sSet } from "../../storage.js";
+import { callClaude, MODEL_CLASSIFY, MODEL_SYNTHESIZE } from "../../api.js";
+import { Dots, timeAgo } from "../helpers.jsx";
+import ArticleCard from "../ArticleCard.jsx";
+import BriefRenderer from "../BriefRenderer.jsx";
 
 async function intelligentMatch(keyword, articles) {
   if (!articles.length) return [];
@@ -85,9 +85,9 @@ ${related.map(a=>`• ${a.translatedTitle||a.title} [${a.source}] — ${a.watchM
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// WATCHLIST TAB
+// THEMES TRACKER — keywords and themes matched against the news feeds
 // ═══════════════════════════════════════════════════════════════════════════════
-export default function WatchlistTab({allArticles, setAllArticles}) {
+export default function ThemesTracker({allArticles, setAllArticles}) {
   const [keywords,     setKeywords]     = useState([]);
   const [inputVal,     setInputVal]     = useState("");
   const [analysing,    setAnalysing]    = useState(false);
@@ -150,14 +150,14 @@ export default function WatchlistTab({allArticles, setAllArticles}) {
   return (
     <div style={{animation:"fadeIn 0.3s ease"}}>
       <div style={{background:"#fff",borderLeft:"3px solid #c0392b",border:"1px solid #e0e0e0",borderRadius:10,padding:"20px 24px",marginBottom:20}}>
-        <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.12em",marginBottom:4}}>WATCHLIST TRACKER</div>
-        <div style={{fontFamily:"'Spectral',serif",fontSize:15,color:"#1a1a1a",fontWeight:600,marginBottom:14}}>Intelligent Keyword Monitoring</div>
+        <div style={{fontFamily:"'DM Mono',monospace",fontSize:9,color:"#c0392b",letterSpacing:"0.12em",marginBottom:4}}>THEMES TRACKER</div>
+        <div style={{fontFamily:"'Spectral',serif",fontSize:15,color:"#1a1a1a",fontWeight:600,marginBottom:14}}>Themes, people and keywords in the news</div>
         <p style={{fontSize:12,color:"#4a6a8a",fontFamily:"'Spectral',Georgia,serif",lineHeight:1.7,margin:"0 0 16px"}}>
-          Add companies, people, sectors, or themes to track. Claude will flag both direct mentions and related stories — competitors, suppliers, regulators, macro factors — giving you a complete picture around each subject.
+          Add themes, people, sectors or keywords to track (companies you follow belong under Names, which is synced with Gloomberg). Claude flags direct mentions and related stories — competitors, suppliers, regulators, macro factors — in this app's news feeds.
         </p>
         <div style={{display:"flex",gap:8,marginBottom:16}}>
           <input value={inputVal} onChange={e=>setInputVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addKeyword()}
-            placeholder="e.g. Samsung, Fed rate cut, TSMC, Reliance Industries…"
+            placeholder="e.g. Fed rate cut, HBM memory, Japan governance reform, Xi Jinping…"
             style={{flex:1,background:"#fff",border:"1px solid #ddd",borderRadius:6,padding:"9px 14px",color:"#1a1a1a",fontFamily:"'Spectral',Georgia,serif",fontSize:13,outline:"none"}}/>
           <button onClick={addKeyword}
             style={{padding:"9px 18px",background:"#c0392b11",border:"1px solid #c0392b66",color:"#c0392b",borderRadius:6,cursor:"pointer",fontFamily:"'DM Mono',monospace",fontSize:11,transition:"all 0.15s"}}

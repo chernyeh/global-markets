@@ -16,7 +16,7 @@ function headers(extra = {}) {
   return { apikey: key, ...(key.startsWith("sb_") ? {} : { Authorization: `Bearer ${key}` }), "Content-Type": "application/json", ...extra };
 }
 
-async function sb(path, { method = "GET", body, prefer } = {}) {
+export async function sb(path, { method = "GET", body, prefer } = {}) {
   const base = process.env.SUPABASE_URL || DEFAULT_URL;
   const r = await fetch(`${base}/rest/v1/${path}`, {
     method, body: body === undefined ? undefined : JSON.stringify(body),

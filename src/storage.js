@@ -21,6 +21,15 @@ export const SK = {
   macroSyncAt: "gm_macro_syncat_v1",
   macroDecisions: "gm_macro_decisions_v1",
   macroServerRead: "gm_macro_srvread_v1",
+  // Watchlist names board (src/watchMonitor.js)
+  watchList:      "gm_watch_list_v1",
+  watchQuotes:    "gm_watch_quotes_v1",
+  watchFund:      "gm_watch_fund_v1",
+  watchAlertState:"gm_watch_alertstate_v1",
+  watchAlerts:    "gm_watch_alerts_v1",
+  watchDismissed: "gm_watch_dismissed_v1",
+  watchLocalTried:"gm_watch_localtried_v1",
+  watchView:      "gm_watch_view_v1",
 };
 
 export const EM_SK = {
