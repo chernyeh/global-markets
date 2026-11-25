@@ -549,3 +549,28 @@ export const PROMINENT_SOURCE_BOOST = 1.35;
 // Score bonus for a prominent source in the world/breaking-news ranking, matching
 // the bonus given to the global marquee publications in worldScore.
 export const PROMINENT_SOURCE_WORLD_BONUS = 15;
+
+// The global marquee publications: wires, the big financial papers and the
+// Washington and Hong Kong desks that break policy news.
+export function isMarqueeSource(id) {
+  if (!id) return false;
+  const s = id.toLowerCase();
+  return s.startsWith("bloomberg") || s.startsWith("bloom_") ||
+    s.startsWith("wsj") || s.startsWith("reuters") ||
+    s === "ft" || s === "ft_alphaville" ||
+    s === "nyt" || s.startsWith("wapo") || s === "semafor" || s === "semafor_politics" ||
+    s.startsWith("politico") || s === "punchbowl" ||
+    s === "scmp" || s === "scmp_markets" || s === "scmp_china" ||
+    s === "scmp_politics" || s === "scmp_diplomacy" || s === "scmp_china_politics_gn" ||
+    s === "globe_mail" || s === "globe_itm" ||
+    s === "guardian" || s === "guardian_au";
+}
+
+// Source-quality points in the Breaking ranking (worldScore) and the Macro
+// tab's headlines: marquee and prominent sources rank together, then by tier.
+export function worldSourceBonus(a) {
+  if (isMarqueeSource(a.sourceId)) return 15;
+  if (PROMINENT_SOURCE_IDS.has(a.sourceId) || PROMINENT_SOURCE_IDS.has(a.originalSourceId)) return PROMINENT_SOURCE_WORLD_BONUS;
+  const tier = SOURCE_TIER_MAP[a.sourceId] ?? 3;
+  return tier === 1 ? 8 : tier === 2 ? 3 : 0;
+}

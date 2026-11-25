@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import ArticleCard from "../ArticleCard.jsx";
 import { Dots } from "../helpers.jsx";
-import { topicMatches } from "../../topicDials.js";
+import { rankMacroHeadlines } from "../../macroHeadlines.js";
 import { TABLE_PANELS, TILE_GROUPS } from "../../data/macroSeries.js";
 import SignalsBoard from "./SignalsBoard.jsx";
 import ScenarioStrip from "./ScenarioStrip.jsx";
@@ -24,7 +24,6 @@ import { fedDoneSuggestion } from "../../macroSpeech.js";
 import { C, MONO, SERIF, card, kickerStyle, smallMono, useFs, chipBtn } from "./macroStyles.js";
 import { fmtDate, fmtStamp } from "../../macroFormat.js";
 
-const HEADLINE_TOPICS = new Set(["rates", "macro", "oil", "credit", "fx"]);
 // Card notes, shown behind the "i" next to each title.
 const NOTES = {
   rates: { t: "Rates & yields", d: "US Treasury par curves (PRIMARY) with FRED fallbacks; Bund from the Bundesbank; JGB from Japan's MoF. OAT–Bund and BTP–Bund are monthly ECB averages — paste a daily spread on signal 8.",
@@ -63,13 +62,8 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
     return { ...(m.speech?.evidence || {}), ...(s1 ? { s1 } : {}) };
   }, [m.speech]);
 
-  const headlines = useMemo(() => {
-    const cutoff = now - 24 * 3600 * 1000;
-    return (canonical || [])
-      .filter(a => { const t = a.pubDate ? new Date(a.pubDate).getTime() : a.fetchedAt || 0; return t > cutoff; })
-      .filter(a => topicMatches(a).some(t => HEADLINE_TOPICS.has(t.id)))
-      .slice(0, 10);
-  }, [canonical, now]);
+  // Ranked by relevance, not recency — see src/macroHeadlines.js.
+  const headlines = useMemo(() => rankMacroHeadlines(canonical, { now }), [canonical, now]);
 
   if (!m.ready) return <div style={{ textAlign: "center", padding: 60, fontFamily: MONO, fontSize: 11, color: C.mute }}><Dots /> loading macro monitor…</div>;
 
@@ -142,10 +136,13 @@ export default function MacroTab({ m, canonical, onOpenTab }) {
         <div className="gm-news" style={{ ...card, padding: "12px 14px", minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
             <span style={kickerStyle(fs)}>RELATED HEADLINES · LAST 24H</span>
-            <span style={smallMono(fs)}>rates & central banks, macro data, oil, credit, FX — from your news feeds</span>
+            <Tip tip={{ t: "How these are chosen", d: "Stories from your news feeds whose headline is about rates and central banks, macro data, oil, credit, FX, or a playbook signal (10-year, real yields, term premium, core inflation, the Fed path, the curve, Brent, OAT–Bund, tariffs and US–China, USD/SGD, credit stress, hyperscaler capex).",
+              r: "Ranked by relevance, not time: a playbook term, a hard figure in the headline, the AI's macro read and source quality push a story up; opinion, stock lists and personal-finance pieces push it down, and older stories slip. At most two per source; the same story from two outlets shows once. Your Breaking-tab dials apply: a hidden topic stays hidden. The tag on each card says why it is here." }}>
+              <span style={smallMono(fs)}>ranked by relevance to the playbook — rates & CBs, macro data, oil, credit, FX</span>
+            </Tip>
             <button onClick={() => onOpenTab("breaking")} style={{ ...chipBtn(false, C.ink), marginLeft: "auto" }}>all news → Breaking</button>
           </div>
-          {headlines.length ? headlines.map((a, i) => <ArticleCard key={a.id || i} art={a} />)
+          {headlines.length ? headlines.map(({ a, why }, i) => <ArticleCard key={a.id || i} art={a} why={why} />)
             : <div style={{ ...smallMono(fs), padding: "10px 0" }}>No macro headlines in the last 24 hours yet — feeds load in the background.</div>}
         </div>
       </div>
