@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useContext } from "react";
+import { useState, useEffect, useCallback, useRef, useContext, useMemo } from "react";
 import { FontScaleCtx, FONT_SCALES } from "./context.js";
 import { timeAgo, Dots, Tag, humanizeBriefError } from "./components/helpers.jsx";
 import ArticleCard from "./components/ArticleCard.jsx";
@@ -6,7 +6,7 @@ import BriefRenderer, { findLinksForBullet, extractTickers, fetchQuotes } from "
 import BriefBox from "./components/BriefBox.jsx";
 import OverflowMenu from "./components/OverflowMenu.jsx";
 import FilingsTab from "./components/FilingsTab.jsx";
-import WatchlistTab from "./components/WatchlistTab.jsx";
+import WatchTab from "./components/watch/WatchTab.jsx";
 import SourcesTab from "./components/SourcesTab.jsx";
 import NewsBriefsTab from "./components/NewsBriefsTab.jsx";
 import { MSCI_SECTORS, SECTOR_MAP, SIGNAL_META, SIGNAL_CATEGORIES, WEAKNESS_CONTEXT_PATTERNS, BRIEF_CATEGORY_WEIGHT, SIGNAL_STRENGTH, BRIEF_COUNTRY_BOOST, BRIEF_COUNTRY_PENALTY, BRIEF_BOOSTED_COUNTRIES, BRIEF_PENALISED_COUNTRIES, OPINION_MAP } from "./data/taxonomy.js";
@@ -24,6 +24,7 @@ import { MARKET_GAUGES } from "./data/taxonomy.js";
 import TopicDials from "./components/TopicDials.jsx";
 import MacroTab from "./components/macro/MacroTab.jsx";
 import { useMacroMonitor } from "./macroMonitor.js";
+import { useWatchMonitor } from "./watchMonitor.js";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // NEWS BRIEFS TAB groups → src/data/sources.js
@@ -822,7 +823,10 @@ export default function App() {
   const enrichedCount=allArticles.filter(a=>a.insight).length;
   const sectorCountsForCountry={};
   countryArts.forEach(a=>{if(a.sector)sectorCountsForCountry[a.sector]=(sectorCountsForCountry[a.sector]||0)+1;});
-  const watchlistHits=canonical.filter(a=>a.watchMatches?.length>0).length;
+  // Watchlist names board (synced with Gloomberg): runs on every tab so prices
+  // and alerts stay current; news loads once the tab has been opened.
+  const watchArticles = useMemo(() => allArticles.filter(a => !a.duplicateOf), [allArticles]);
+  const watch = useWatchMonitor({ appKey: macro.appKey, active: mainTab === "watchlist", articles: watchArticles });
 
   const WINDOW_OPTIONS = [
     { h:3, label:"3h" }, { h:6, label:"6h" }, { h:12, label:"12h" }, { h:24, label:"24h" }, { h:48, label:"48h" },
@@ -895,11 +899,11 @@ export default function App() {
 
   const MAIN_TABS=[
     {id:"macro",     label:`◈ Macro${macro.unread>0?` (${macro.unread})`:""}`},
+    {id:"watchlist", label:`◎ Watchlist${watch.alerts.length>0?` (${watch.alerts.length})`:""}`},
     {id:"breaking",  label:`⚡ Breaking${breakingArts.length>0?` (${breakingArts.length})`:""}`},
     {id:"newsbriefs",label:`📰 Intel${briefsTabCount>0?` (${briefsTabCount})`:""}`},
     {id:"opinions",  label:`💬 Opinions${opinionCount>0?` (${opinionCount})`:""}`},
     {id:"markets",   label:"🌍 Markets"},
-    {id:"watchlist", label:`◎ Watchlist${watchlistHits>0?` (${watchlistHits})`:""}`},
     {id:"filings",   label:"📋 Filings"},
   ];
 
@@ -1081,7 +1085,7 @@ export default function App() {
       <div style={{maxWidth:1500,margin:"0 auto",padding:"22px 24px"}}>
 
         {mainTab==="macro"&&<MacroTab m={macro} canonical={canonical} onOpenTab={setMainTab}/>}
-        {mainTab==="watchlist"&&<WatchlistTab allArticles={allArticles} setAllArticles={setAllArticles}/>}
+        {mainTab==="watchlist"&&<WatchTab w={watch} setAppKey={macro.setAppKey} allArticles={allArticles} setAllArticles={setAllArticles}/>}
         {mainTab==="filings"&&<FilingsTab />}
         {mainTab==="newsbriefs"&&<NewsBriefsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs} generateBrief={generateBriefUnlimited} generateWorldBrief={generateWorldBriefing} briefLoading={briefLoading} setBriefLoading={setBriefLoading} briefError={briefError} setBriefError={setBriefError}/>}
         {mainTab==="opinions"&&<OpinionsTab canonical={canonical} briefs={briefs} setBriefs={setBriefs} setAllArticles={setAllArticles} briefLoading={briefLoading} setBriefLoading={setBriefLoading} briefError={briefError} setBriefError={setBriefError}/>}

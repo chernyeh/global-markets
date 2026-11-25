@@ -40,7 +40,7 @@ const num = v => {
   return Number.isFinite(n) ? n : null;
 };
 
-async function get(url, { signal, ua = BOT_UA, headers = {}, timeoutMs = 9000, method = "GET", body } = {}) {
+export async function get(url, { signal, ua = BOT_UA, headers = {}, timeoutMs = 9000, method = "GET", body } = {}) {
   // The request-wide deadline has passed: don't start new fetches (an "abort"
   // listener added to an already-aborted signal would never fire).
   if (signal?.aborted) throw new Error("timeout");
@@ -294,7 +294,7 @@ const YAHOO_BATCH = 20;
 const pause = ms => new Promise(r => setTimeout(r, ms));
 const retryable = e => /HTTP (429|5\d\d)|timeout|fetch failed/i.test(e?.message || "");
 
-async function yahooJson(path, { signal }) {
+export async function yahooJson(path, { signal }) {
   let lastErr;
   for (const [i, host] of ["query1", "query2"].entries()) {
     try {

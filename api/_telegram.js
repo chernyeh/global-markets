@@ -28,18 +28,18 @@ export async function findChat() {
 }
 
 const SEV_LABEL = { act: "🔴 ACT", watch: "🟠 WATCH", info: "🔵 INFO" };
-export function formatAlert(a, appUrl) {
+export function formatAlert(a, appUrl, linkLabel = "Open the macro monitor") {
   return [
-    `<b>${SEV_LABEL[a.sev] || a.sev}</b> · ${esc(a.title)}`,
+    `<b>${SEV_LABEL[a.sev] || a.sev}</b> · ${a.kind === "watch" ? "◎ " : ""}${esc(a.title)}`,
     a.detail ? esc(a.detail) : null,
     a.action ? `→ ${esc(a.action)}` : null,
     a.guard ? `⚑ <i>No action unless:</i> ${esc(a.guard)}` : null,
-    appUrl ? `<a href="${esc(appUrl)}">Open the macro monitor</a>` : null,
+    appUrl ? `<a href="${esc(appUrl)}">${esc(linkLabel)}</a>` : null,
   ].filter(Boolean).join("\n");
 }
 
-export function formatDigest(alerts, appUrl) {
+export function formatDigest(alerts, appUrl, { title = "Macro monitor", linkLabel = "Open the macro monitor" } = {}) {
   const lines = alerts.slice(0, 12).map(a => `• <b>${(SEV_LABEL[a.sev] || a.sev).split(" ")[1]}</b> ${esc(a.title)}`);
-  return [`<b>Macro monitor: ${alerts.length} new alerts</b>`, ...lines, alerts.length > 12 ? `…and ${alerts.length - 12} more` : null,
-    appUrl ? `<a href="${esc(appUrl)}">Open the macro monitor</a>` : null].filter(Boolean).join("\n");
+  return [`<b>${esc(title)}: ${alerts.length} new alerts</b>`, ...lines, alerts.length > 12 ? `…and ${alerts.length - 12} more` : null,
+    appUrl ? `<a href="${esc(appUrl)}">${esc(linkLabel)}</a>` : null].filter(Boolean).join("\n");
 }

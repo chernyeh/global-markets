@@ -120,7 +120,8 @@ export function useMacroMonitor() {
       } else if (!v || local > (v.savedAt || 0)) {
         await pushSettings();
       }
-      serverAlertsRef.current = (al.alerts || []).filter(a => a.origin === "server");
+      // Watchlist alerts (kind "watch") belong to the Watchlist tab, not the macro inbox.
+      serverAlertsRef.current = (al.alerts || []).filter(a => a.origin === "server" && a.kind !== "watch");
       setServerAlerts(serverAlertsRef.current);
       const pending = decisionsRef.current.filter(d => d.pending);
       const failed = [];

@@ -9,7 +9,10 @@
 // diff against the last run with the same alert engine the browser uses, add
 // new FOMC statements/minutes and ECB decisions from the banks' own feeds, add a
 // once-a-day reminder of deferred decisions that are due, store everything in
-// Supabase (gm_ tables) and push to Telegram.
+// Supabase (gm_ tables) and push to Telegram. Then the watchlist: prices for
+// every Gloomberg watchlist name and holding, checked against your levels
+// (alert price, thesis Munger/entry/exit/invalidation, holding target/stop)
+// and for big daily moves — pushed as you set on the Watchlist tab.
 
 import { fetchSourceDirect } from "./macro.js";
 import { kvGet, kvSet, insertAlerts, listDecisions, supabaseConfigured } from "./_supabase.js";
@@ -18,6 +21,9 @@ import { collectMacro, resolveMacro } from "../src/macroData.js";
 import { evaluateSignals } from "../src/macroSignals.js";
 import { updateAlerts, SEV_RANK } from "../src/macroAlerts.js";
 import { parseRss } from "../src/macroSpeech.js";
+import { loadCoverage } from "./_watchlist.js";
+import { buildRows } from "../src/watchRows.js";
+import { seriesStats, evaluateWatchAlerts, pushable } from "../src/watchCalc.js";
 
 export const config = { maxDuration: 120 };
 
@@ -45,6 +51,26 @@ async function officialAlerts(seen, signal, now, baseline) {
     } catch { /* a feed hiccup only delays the alert to the next run */ }
   }
   return out;
+}
+
+// Watchlist check: same rows and alert rules as the browser (src/watchRows.js,
+// src/watchCalc.js); its own state in gm_kv so the browser and the server
+// each fire once per crossing.
+async function watchCheck(now, signal) {
+  const list = await loadCoverage();
+  const base = buildRows(list, {}, {}, {}, []);
+  if (!base.length) return { names: 0, priced: 0, fresh: [], prefs: list.prefs };
+  const syms = [...new Set([...base.map(r => r.ticker), ...base.map(r => r.benchSym).filter(Boolean)])];
+  const quotes = {};
+  for (let i = 0; i < syms.length; i += 100) {
+    const r = await fetchSourceDirect("yahoo", syms.slice(i, i + 100), null, signal);
+    for (const [k, s] of Object.entries(r.series || {})) { const st = seriesStats(s); if (st) quotes[k] = st; }
+  }
+  const rows = buildRows(list, quotes, {}, {}, [], now);
+  const prev = (await kvGet("watch_alert_state"))?.value || null;
+  const { state, fresh } = evaluateWatchAlerts(prev, rows, { now, prefs: list.prefs });
+  await kvSet("watch_alert_state", state);
+  return { names: rows.length, priced: rows.filter(r => r.q).length, fresh, prefs: list.prefs };
 }
 
 export default async function handler(req, res) {
@@ -111,8 +137,34 @@ export default async function handler(req, res) {
       pushed: pushed.has(a.id), push_error: pushed.has(a.id) || !toPush.includes(a) ? null : pushError,
     })));
 
+    // ── Watchlist (skipped if the macro half left too little time) ──
+    let watch = null;
+    if (Date.now() - now < 75000) {
+      try {
+        const w = await watchCheck(now, ctl.signal);
+        const toSend = w.fresh.filter(a => pushable(a, w.prefs));
+        const sent = new Set();
+        let wErr = null;
+        if (toSend.length && telegramConfigured() && tg.chatId && !tg.paused) {
+          const link = { title: "Watchlist", linkLabel: "Open the watchlist" };
+          try {
+            if (toSend.length <= 4) for (const a of toSend) { await sendMessage(tg.chatId, formatAlert(a, appUrl, link.linkLabel)); sent.add(a.id); }
+            else { await sendMessage(tg.chatId, formatDigest(toSend, appUrl, link)); toSend.forEach(a => sent.add(a.id)); }
+          } catch (e) { wErr = e.message; }
+        } else if (toSend.length) {
+          wErr = !telegramConfigured() ? "TELEGRAM_BOT_TOKEN not set" : !tg.chatId ? "Telegram chat not linked" : "push paused";
+        }
+        await insertAlerts(w.fresh.map(a => ({
+          id: `srv-${a.id}`, at: new Date(a.at).toISOString(), origin: "server", kind: "watch", ref: a.ref, sev: a.sev,
+          title: a.title, detail: a.detail || null, action: null, guard: null,
+          pushed: sent.has(a.id), push_error: sent.has(a.id) || !toSend.includes(a) ? null : wErr,
+        })));
+        watch = { names: w.names, priced: w.priced, alerts: w.fresh.length, pushed: sent.size, pushError: wErr };
+      } catch (e) { watch = { error: e.message }; }
+    } else watch = { skipped: "out of time" };
+
     const summary = {
-      at: now, ms: Date.now() - now, baseline: !prev, alerts: all.length, pushed: pushed.size, pushError,
+      at: now, ms: Date.now() - now, baseline: !prev, alerts: all.length, pushed: pushed.size, pushError, watch,
       sources: Object.fromEntries(Object.entries(raw.health).map(([k, h]) => [k, `${h.ok}/${h.requested}${h.error ? ` ${h.error}` : ""}`])),
     };
     await kvSet("server_alert_state", { ...state, alerts: (state.alerts || []).slice(0, 40), lastRun: summary });
