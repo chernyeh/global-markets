@@ -43,20 +43,23 @@ export function watchBottomLine(rows, { today, newsLoaded }) {
 
   // 3/4. Levels
   const met = side => priced.filter(r => r.nearest?.met && r.nearest.side === side);
-  const near = priced.filter(r => r.nearest && !r.nearest.met && r.nearest.side === "buy" && Math.abs(r.nearest.dist) <= 5);
+  const near = priced.filter(r => r.nearest && !r.nearest.met && r.nearest.side === "buy" && Math.abs(r.nearest.move) <= 5);
+  // Through a level: how far past it. Not there yet: the move needed to reach it.
+  const past = r => `${Math.abs(r.nearest.dist).toFixed(1)}% ${r.nearest.side === "sell" ? "above" : "below"} ${r.nearest.label}`;
+  const toGo = r => `${p1(r.nearest.move)} to ${r.nearest.label}`;
   const buy = met("buy");
   out.push({ id: "buy", q: "Anything at my buy levels?",
     tip: { t: "Buy levels", d: "Your Gloomberg watchlist alert price and, where a thesis exists, its entry and Munger prices.",
       r: "At = price at or below the level. Levels in a different currency from the quote are skipped (flagged in the row)." },
     a: buy.length ? `${buy.length} at or below` : "None", tone: buy.length ? "good" : "neutral",
-    ...(buy.length ? detailOf(many(buy.map(r => `${short(r)} (${r.nearest.label} ${p1(r.nearest.dist)})`), buy.map(r => `${r.name} (${r.nearest.label} ${p1(r.nearest.dist)})`))) : {}),
-    ...(near.length ? extraOf("within 5%: ", many(near.map(r => `${short(r)} ${p1(r.nearest.dist)} vs ${r.nearest.label}`), near.map(r => `${r.name} ${p1(r.nearest.dist)} vs ${r.nearest.label}`))) : {}) });
+    ...(buy.length ? detailOf(many(buy.map(r => `${short(r)} (${past(r)})`), buy.map(r => `${r.name} (${past(r)})`))) : {}),
+    ...(near.length ? extraOf("within 5%: ", many(near.map(r => `${short(r)} ${toGo(r)}`), near.map(r => `${r.name} ${toGo(r)}`))) : {}) });
   const sell = met("sell"), risk = met("risk");
   out.push({ id: "sell", q: "Anything at sell or risk levels?",
     tip: { t: "Sell and risk levels", d: "Thesis exit price and holding target (sell); thesis invalidation price and holding stop-loss (risk)." },
     a: risk.length || sell.length ? [risk.length ? `${risk.length} through a risk level` : null, sell.length ? `${sell.length} at a sell level` : null].filter(Boolean).join(" · ") : "None",
     tone: risk.length ? "bad" : sell.length ? "warn" : "neutral",
-    ...([...risk, ...sell].length ? detailOf(many([...risk, ...sell].map(r => `${short(r)} (${r.nearest.label})`), [...risk, ...sell].map(r => `${r.name} (${r.nearest.label})`))) : {}) });
+    ...([...risk, ...sell].length ? detailOf(many([...risk, ...sell].map(r => `${short(r)} (${past(r)})`), [...risk, ...sell].map(r => `${r.name} (${past(r)})`))) : {}) });
 
   // 5. News flow — judged only where the usual rate can be measured. When
   // Google's 100-headline cap is hit it returns a sample of the week, not the

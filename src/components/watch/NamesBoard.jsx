@@ -11,8 +11,8 @@ import { timeAgo } from "../helpers.jsx";
 
 // Columns: name · last · 1D · 1W · 1M · YTD · vs index 1M · 1Y line · 52-week position · forward P/E · nearest level · news
 // … plus a last narrow column for the remove ×.
-const COLS = "minmax(180px,1.7fr) 70px 54px 54px 54px 56px 58px 66px 54px 46px 104px 46px 20px";
-const MIN_W = 986;
+const COLS = "minmax(180px,1.7fr) 70px 54px 54px 54px 56px 58px 66px 54px 52px 112px 46px 20px";
+const MIN_W = 1000;
 
 const HEAD = [
   { k: "name", label: "NAME", tip: { t: "Name", d: "● held in Gloomberg · ◆ has a thesis (number = conviction) · 🔕 alerts muted.", r: "Click a row for detail, news and editing." } },
@@ -25,10 +25,10 @@ const HEAD = [
     r: "Benchmark = home-market index (TOPIX via the 1306 ETF, STI, S&P 500…) unless you set another for the name, e.g. ^SOX for a chip gauge." } },
   { k: "spark", label: "1Y", center: true, tip: "Weekly closes over the past year." },
   { k: "pos52", label: "52W", center: true, tip: { t: "52-week range", d: "Where the price sits between the 52-week low (left) and high (right).", r: "Green dot = at a 52-week high, red = at a low." } },
-  { k: "fpe", label: "P/E", right: true, tip: { t: "Forward P/E", d: "Price over the next-12-month consensus EPS Yahoo carries; hover the figure for trailing P/E, P/B, yield, market cap and the next earnings date.",
+  { k: "fpe", label: "FWD P/E", right: true, tip: { t: "Forward P/E", d: "Price over the next-12-month consensus EPS Yahoo carries; hover the figure for trailing P/E, P/B, yield, market cap and the next earnings date.",
     src: "Yahoo Finance v7 quote via Gloomberg's proxy · SECONDARY-reliable" } },
-  { k: "level", label: "NEAREST LEVEL", tip: { t: "Nearest of your levels", d: "Gloomberg watchlist alert price; thesis entry, Munger, exit and invalidation prices; holding target and stop.",
-    r: "Shown: a level the price is through (green buy · amber sell · red risk), else the closest one and the distance to it." } },
+  { k: "level", label: "TO TARGET", tip: { t: "Upside / downside to your nearest target", d: "How far the price must move to reach the nearest of your levels — buy: Gloomberg watchlist alert price, thesis entry and Munger; sell: thesis exit, holding target; risk: thesis invalidation, holding stop.",
+    r: "buy −3.0% = the price must fall 3% to reach your buy level; exit +12% = 12% upside to your exit. ✓ buy (green) / ✓ exit (amber) = already there; ✗ stop (red) = through a risk level. Blank = no level set, which is fine for a gauge." } },
   { k: "news", label: "NEWS", right: true, tip: { t: "News, 24 hours · 7 days", d: "Google News in English and the home-market language, plus this app's feeds — only headlines that name the company.",
     r: "Amber = unusual flow (≥3 in 24h and 2.5× the usual daily rate). + = more than Google's 100-story page holds for the week." } },
   { k: "rm", label: "", tip: null },
@@ -46,18 +46,19 @@ const sortVal = (r, k) => {
     case "rel1m": return r.rel1m;
     case "pos52": return r.q?.pos52 ?? null;
     case "fpe": return r.f?.fpe > 0 ? r.f.fpe : null;
-    case "level": return r.nearest ? (r.nearest.met ? -1000 + Math.abs(r.nearest.dist) : Math.abs(r.nearest.dist)) : null;
+    case "level": return r.nearest ? (r.nearest.met ? -1000 + Math.abs(r.nearest.dist) : Math.abs(r.nearest.move)) : null;
     case "news": return r.news.n24 * 1000 + r.news.n7;
     default: return r.q?.[k] ?? null;
   }
 };
 
-const SHORT = { alert: "alert", entry: "entry", munger: "Munger", exit: "exit", inval: "inval.", target: "target", stop: "stop" };
+// Cell labels: Gloomberg's alert price is a target BUY price, so it reads "buy".
+const SHORT = { alert: "buy", entry: "entry", munger: "Munger", exit: "exit", inval: "inval.", target: "target", stop: "stop" };
 
 function levelTone(n) {
   if (!n) return C.ghost;
   if (n.met) return n.side === "buy" ? C.green : n.side === "risk" ? C.red : C.amber;
-  return Math.abs(n.dist) <= 5 ? C.amber : C.sub;
+  return Math.abs(n.move) <= 5 ? C.amber : C.sub;
 }
 
 function Row({ r, fs, open, onToggle, onRemove, busy }) {
@@ -68,7 +69,7 @@ function Row({ r, fs, open, onToggle, onRemove, busy }) {
     `Dividend yield ${f.dy !== null && f.dy !== undefined ? `${f.dy.toFixed(1)}%` : "—"} · market cap ${f.ccy || ""} ${fmtBig(f.mcap)}`,
     f.earn ? `Next earnings ${fmtDay(f.earn)}${f.earnEst ? " (Yahoo estimate)" : ""}` : null].filter(Boolean).join(". "),
     src: "Yahoo Finance v7 quote via Gloomberg's proxy · SECONDARY-reliable" } : "No valuation data from Yahoo for this ticker.";
-  const lvTip = n ? { t: `${n.label}: ${q?.currency || ""} ${fmtPx(n.value)}`, d: `${n.met ? "Price is through this level" : "Distance from the level"}: ${fmtPct(n.dist)}. From ${n.src}.`,
+  const lvTip = n ? { t: `${n.label}: ${q?.currency || ""} ${fmtPx(n.value)}`, d: `${n.met ? `Already there — the price is ${Math.abs(n.dist).toFixed(1)}% ${n.side === "sell" ? "above" : "below"} it` : `The price must move ${fmtPct(n.move)} to reach it`}. From ${n.src}.`,
     r: r.levels.length > 1 ? `All levels: ${r.levels.map(l => `${l.label} ${fmtPx(l.value)}${l.unitsOff ? " (check units)" : l.ccyOk ? "" : " (other currency)"}`).join(" · ")}` : null } : null;
   const newsTip = r.newsItems[0] ? { t: "Latest", d: r.newsItems[0].title, src: `${r.newsItems[0].outlet || ""}` } : (r.skipNews ? "News isn't searched for ETFs and funds — set a news query in the row to turn it on." : null);
   const cell = { fontFamily: MONO, fontSize: fs(10.5), textAlign: "right", color: C.ink };
@@ -95,9 +96,9 @@ function Row({ r, fs, open, onToggle, onRemove, busy }) {
       </span>
       <span role="cell" style={{ display: "flex", justifyContent: "center" }} title={q ? `52w ${fmtPx(q.lo52)} – ${fmtPx(q.hi52)} · ${fmtPct(q.offHi)} from high` : undefined}><RangeBar pos={q?.pos52} /></span>
       <span role="cell" style={{ ...cell, color: f?.fpe > 0 ? C.ink : C.ghost }} onClick={e => e.stopPropagation()}><Tip tip={valTip} underline={false}>{fmtX(f?.fpe)}</Tip></span>
-      <span role="cell" style={{ fontFamily: MONO, fontSize: fs(10), color: levelTone(n), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+      <span role="cell" style={{ fontFamily: MONO, fontSize: fs(10), color: levelTone(n), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 12,
         ...(n?.met ? { fontWeight: 700 } : {}) }} onClick={e => e.stopPropagation()}>
-        {n ? <Tip tip={lvTip} underline={false}>{n.met ? "at " : ""}{SHORT[n.key] || n.key} {fmtPct(n.dist)}</Tip>
+        {n ? <Tip tip={lvTip} underline={false}>{n.met ? `${n.side === "risk" ? "✗" : "✓"} ${SHORT[n.key] || n.key}` : `${SHORT[n.key] || n.key} ${fmtPct(n.move)}`}</Tip>
           : r.unitsOff ? <span title="A level is more than 20× away from the price — probably pence vs pounds or a split; check it in Gloomberg">units?</span>
           : r.ccyMismatch ? <span title="Levels are in a different currency from the quote">ccy?</span> : "—"}
       </span>
@@ -208,13 +209,15 @@ export default function NamesBoard({ w, rows }) {
         </div>
       )}
       <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-        <div role="table" aria-label="Watchlist names" style={{ minWidth: MIN_W }}>
+        {/* translate="no": a browser's page translator must not rewrite labels, figures or names
+            (Chrome turned "P/E" into "Spring/Summer"); headlines elsewhere stay translatable. */}
+        <div role="table" aria-label="Watchlist names" translate="no" className="notranslate" style={{ minWidth: MIN_W }}>
           <div role="row" style={{ display: "grid", gridTemplateColumns: COLS, gap: 6, padding: "0 0 3px", borderBottom: `1px solid ${C.line2}` }}>
             {HEAD.map(h => (
               <span key={h.k} role="columnheader" aria-sort={sort.k === h.k ? (sort.dir > 0 ? "ascending" : "descending") : undefined}
                 onClick={() => headClick(h.k)}
-                style={{ ...smallMono(fs, sort.k === h.k ? C.ink : C.faint), fontSize: fs(8), letterSpacing: "0.06em", whiteSpace: "nowrap",
-                  textAlign: h.right ? "right" : h.center ? "center" : "left", cursor: h.k === "spark" ? "default" : "pointer", fontWeight: sort.k === h.k ? 700 : 400 }}>
+                style={{ ...smallMono(fs, sort.k === h.k ? C.ink : C.faint), fontSize: fs(8), letterSpacing: "0.06em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0,
+                  textAlign: h.right ? "right" : h.center ? "center" : "left", paddingLeft: h.k === "level" ? 12 : 0, cursor: h.k === "spark" ? "default" : "pointer", fontWeight: sort.k === h.k ? 700 : 400 }}>
                 <Tip tip={h.tip} underline={false}>{h.label}{sort.k === h.k ? (sort.dir > 0 ? " ↑" : " ↓") : ""}</Tip>
               </span>
             ))}

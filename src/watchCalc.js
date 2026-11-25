@@ -90,6 +90,9 @@ export function levelsFor({ watch, hold, thesis }, quoteCcy, price = null) {
 
 export const isMet = (lv, price) => (lv.side === "sell" ? price >= lv.value : price <= lv.value);
 export const levelDist = (lv, price) => (price && lv.value ? (price / lv.value - 1) * 100 : null);
+// The move the price needs to reach the level, as analysts quote upside or
+// downside to a target: −3% = it must fall 3%; +12% = 12% upside.
+export const moveTo = (lv, price) => (price && lv.value ? (lv.value / price - 1) * 100 : null);
 
 // The level worth showing in the row: one that is met (risk first, then buy,
 // then sell), else the closest by distance.
@@ -98,8 +101,8 @@ export function nearestLevel(levels, price) {
   const ok = levels.filter(l => l.ccyOk);
   const met = ok.filter(l => isMet(l, price));
   const rank = { risk: 0, buy: 1, sell: 2 };
-  if (met.length) return { ...met.sort((a, b) => rank[a.side] - rank[b.side])[0], met: true, dist: levelDist(met[0], price) };
-  const near = ok.map(l => ({ ...l, met: false, dist: levelDist(l, price) })).sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist));
+  if (met.length) { const m = met.sort((a, b) => rank[a.side] - rank[b.side])[0]; return { ...m, met: true, dist: levelDist(m, price), move: moveTo(m, price) }; }
+  const near = ok.map(l => ({ ...l, met: false, dist: levelDist(l, price), move: moveTo(l, price) })).sort((a, b) => Math.abs(a.move) - Math.abs(b.move));
   return near[0] || null;
 }
 

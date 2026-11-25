@@ -26,7 +26,7 @@ local-language name, short names, custom news query, mute — live in `gm_kv` (`
 | Price, 1D / 1W / 1M / YTD, 1Y line, 52-week position, σ of today's move | Yahoo spark (`/api/watch?kind=quotes`, CDN 5 min); London pence converted to pounds | SECONDARY-reliable |
 | vs IDX | the name's 1M change minus its home index's (TOPIX via the 1306.T ETF, STI, S&P 500, FTSE 100, CAC 40, DAX, Hang Seng, ASX 200, TSX…; `src/data/watchMarkets.js`), or a benchmark you set per name (e.g. `^SOX`) | SECONDARY-reliable |
 | P/E (trailing, forward), P/B, yield, market cap, ADV, earnings date | Yahoo v7 quote **through Gloomberg's `yahoo-proxy` edge function**, which already handles Yahoo's cookie/crumb (CDN 4 h) | SECONDARY-reliable |
-| Your levels | Gloomberg watchlist `alert_price` (buy at/below); thesis entry, Munger (buy), exit (sell), invalidation (risk); holding target (sell), stop (risk) | your records |
+| TO TARGET (your levels) | Gloomberg watchlist `alert_price` (buy at/below); thesis entry, Munger (buy), exit (sell), invalidation (risk); holding target (sell), stop (risk). Shown as the move the price needs to reach the nearest one — *buy −3.0%* = must fall 3%, *exit +12%* = 12% upside; *✓ buy* / *✓ exit* / *✗ stop* once there | your records |
 | Results / ex-dividend dates | thesis `next_results_date` first, else Yahoo's earnings date (marked *est.*); Gloomberg `dividend_data` | your records / SECONDARY |
 | TSE liquidity tier | Gloomberg `digest_companies` (.T names) | your records |
 | News | Google News, English **and** the home-market language (`"full name" OR "short name"`, 7 days), plus this app's own feeds; only headlines that name the company | SECONDARY |
