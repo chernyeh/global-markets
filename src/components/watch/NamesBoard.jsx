@@ -11,8 +11,17 @@ import { timeAgo } from "../helpers.jsx";
 
 // Columns: name · last · 1D · 1W · 1M · YTD · vs index 1M · 1Y line · 52-week position · forward P/E · nearest level · news
 // … plus a last narrow column for the remove ×.
-const COLS = "minmax(180px,1.7fr) 70px 54px 54px 54px 56px 58px 66px 54px 52px 112px 46px 20px";
-const MIN_W = 1000;
+// Figure columns grow with the A/A/A font scale so a value never clips; the name column takes
+// what is left, down to NAME_MIN on a phone — so at the largest font LAST and 1D still sit on
+// screen without scrolling. Wider screens are unchanged: the name's 1.7fr soaks up the room.
+const FIXED = [70, 54, 54, 54, 56, 58, 66, 54, 52, 112, 46, 20];
+const NAME_MIN = 140;
+const GAP = 6;
+function layout(k) {
+  const px = FIXED.map(w => Math.round(w * k));
+  return { cols: `minmax(${NAME_MIN}px,1.7fr) ${px.map(w => `${w}px`).join(" ")}`,
+    minW: NAME_MIN + px.reduce((a, b) => a + b, 0) + GAP * FIXED.length };
+}
 
 const HEAD = [
   { k: "name", label: "NAME", tip: { t: "Name", d: "● held in Gloomberg · ◆ has a thesis (number = conviction) · 🔕 alerts muted.", r: "Click a row for detail, news and editing." } },
@@ -61,7 +70,7 @@ function levelTone(n) {
   return Math.abs(n.move) <= 5 ? C.amber : C.sub;
 }
 
-function Row({ r, fs, open, onToggle, onRemove, busy }) {
+function Row({ r, fs, cols, open, onToggle, onRemove, busy }) {
   const q = r.q, f = r.f, n = r.nearest;
   const unusual = q?.z1d !== null && q?.z1d !== undefined && Math.abs(q.z1d) >= 2.5;
   const valTip = f ? { t: `${r.name} — valuation`, d: [
@@ -75,7 +84,7 @@ function Row({ r, fs, open, onToggle, onRemove, busy }) {
   const cell = { fontFamily: MONO, fontSize: fs(10.5), textAlign: "right", color: C.ink };
   return (
     <div role="row" className="gm-wrow" onClick={onToggle} aria-expanded={open}
-      style={{ display: "grid", gridTemplateColumns: COLS, gap: 6, alignItems: "center", padding: "4px 0", borderBottom: `1px solid ${C.line2}`, cursor: "pointer",
+      style={{ display: "grid", gridTemplateColumns: cols, gap: GAP, alignItems: "center", padding: "4px 0", borderBottom: `1px solid ${C.line2}`, cursor: "pointer",
         background: open ? C.cream : "transparent" }}>
       <span role="cell" style={{ minWidth: 0, display: "flex", alignItems: "baseline", gap: 5, overflow: "hidden" }}>
         <span style={{ fontFamily: SERIF, fontSize: fs(12.5), color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }} title={r.name}>{r.name}</span>
@@ -119,10 +128,10 @@ function Row({ r, fs, open, onToggle, onRemove, busy }) {
 // Catch-all buckets aren't baskets, so they carry no averages.
 const CATCH_ALL = new Set(["Ungrouped", "Untagged", "No sector", "—", "All names"]);
 
-function GroupRow({ label, rows, fs }) {
+function GroupRow({ label, rows, fs, cols }) {
   const b = CATCH_ALL.has(label) ? { n: rows.length, priced: rows.filter(r => r.q).length } : basket(rows);
   return (
-    <div role="row" style={{ display: "grid", gridTemplateColumns: COLS, gap: 6, alignItems: "center", padding: "7px 0 3px", borderBottom: `1px solid ${C.line}` }}>
+    <div role="row" style={{ display: "grid", gridTemplateColumns: cols, gap: GAP, alignItems: "center", padding: "7px 0 3px", borderBottom: `1px solid ${C.line}` }}>
       <span role="cell" style={{ ...kickerStyle(fs), color: C.ink }}>
         <Tip tip={{ t: label, d: `${b.n} name${b.n > 1 ? "s" : ""}; ${b.priced} priced.${CATCH_ALL.has(label) ? "" : " Figures on this line are the equal-weighted average of the members — read the group as a basket."}` }} underline={false}>
           {label.toUpperCase()} <span style={{ color: C.mute, fontWeight: 400 }}>· {b.n}</span>
@@ -138,6 +147,7 @@ function GroupRow({ label, rows, fs }) {
 
 export default function NamesBoard({ w, rows }) {
   const fs = useFs();
+  const { cols, minW } = useMemo(() => layout(fs(100) / 100), [fs]);
   const [groupBy, setGroupBy] = useState("group");
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -211,8 +221,8 @@ export default function NamesBoard({ w, rows }) {
       <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         {/* translate="no": a browser's page translator must not rewrite labels, figures or names
             (Chrome turned "P/E" into "Spring/Summer"); headlines elsewhere stay translatable. */}
-        <div role="table" aria-label="Watchlist names" translate="no" className="notranslate" style={{ minWidth: MIN_W }}>
-          <div role="row" style={{ display: "grid", gridTemplateColumns: COLS, gap: 6, padding: "0 0 3px", borderBottom: `1px solid ${C.line2}` }}>
+        <div role="table" aria-label="Watchlist names" translate="no" className="notranslate" style={{ minWidth: minW }}>
+          <div role="row" style={{ display: "grid", gridTemplateColumns: cols, gap: GAP, padding: "0 0 3px", borderBottom: `1px solid ${C.line2}` }}>
             {HEAD.map(h => (
               <span key={h.k} role="columnheader" aria-sort={sort.k === h.k ? (sort.dir > 0 ? "ascending" : "descending") : undefined}
                 onClick={() => headClick(h.k)}
@@ -224,10 +234,10 @@ export default function NamesBoard({ w, rows }) {
           </div>
           {groups.map(([label, rs]) => (
             <div key={label} role="rowgroup">
-              {groupBy !== "none" && <GroupRow label={label} rows={rs} fs={fs} />}
+              {groupBy !== "none" && <GroupRow label={label} rows={rs} fs={fs} cols={cols} />}
               {rs.map(r => (
                 <Fragment key={r.ticker}>
-                  <Row r={r} fs={fs} open={open === r.ticker} onToggle={() => setOpen(o => (o === r.ticker ? null : r.ticker))} onRemove={remove} busy={w.busy} />
+                  <Row r={r} fs={fs} cols={cols} open={open === r.ticker} onToggle={() => setOpen(o => (o === r.ticker ? null : r.ticker))} onRemove={remove} busy={w.busy} />
                   {open === r.ticker && <NameDetail r={r} w={w} onRemove={remove} />}
                 </Fragment>
               ))}
