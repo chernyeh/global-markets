@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { C, MONO, SERIF, kickerStyle, smallMono, useFs } from "./macroStyles.js";
+import { C, MONO, SERIF, kickerStyle, useFs } from "./macroStyles.js";
 import Tip from "./Tip.jsx";
 
 const TONE = { good: C.green, bad: C.red, warn: C.amber, act: C.red, neutral: C.ink };
@@ -35,7 +35,6 @@ export default function BottomLine({ rows }) {
     <div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 3 }}>
         <span style={kickerStyle(fs)}>BOTTOM LINE</span>
-        <span style={smallMono(fs)}>worked out from the data on this page · hover a question for how</span>
       </div>
       <div role="table" aria-label="Bottom line">
         {rows.map(r => (

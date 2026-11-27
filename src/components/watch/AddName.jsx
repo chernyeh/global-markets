@@ -43,7 +43,6 @@ export default function AddName({ w, onClose }) {
     <div style={{ ...card, padding: "12px 14px", marginBottom: 14, borderLeft: `3px solid ${C.red}` }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
         <span style={kickerStyle(fs)}>ADD A NAME</span>
-        <span style={smallMono(fs)}>goes onto your Gloomberg watchlist — it shows there too</span>
         <button onClick={onClose} style={{ ...chipBtn(false, C.ink), marginLeft: "auto" }}>close</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(150px,100%),1fr))", gap: 8 }}>
