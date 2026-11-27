@@ -40,10 +40,9 @@ function Alerts({ w }) {
   return (
     <div style={{ borderTop: `1px solid ${C.line2}`, marginTop: 8, paddingTop: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 3 }}>
-        <span style={kickerStyle(fs)}>ALERTS · 7 DAYS{w.alerts.length ? ` · ${w.alerts.length}` : ""}</span>
         <Tip tip={{ t: "Alerts", d: "A level fires once when the price crosses it, and again only after the price has moved 1% back and crossed again. A move of 3σ or more fires once a day. Names you mute raise none.",
           r: "Dismiss with × — nothing needs a decision logged. Telegram (from the scheduled server check, every 3 hours on weekdays) sends what you tick here." }}>
-          <span style={smallMono(fs)}>no decision needed — dismiss with ×</span>
+          <span style={kickerStyle(fs)}>ALERTS · 7 DAYS{w.alerts.length ? ` · ${w.alerts.length}` : ""}</span>
         </Tip>
         <span style={{ marginLeft: "auto", display: "flex", gap: 4, alignItems: "center" }}>
           <span style={smallMono(fs)}>Telegram:</span>
@@ -87,9 +86,8 @@ function ComingUp({ rows, today }) {
   return (
     <div style={{ ...card, padding: "12px 14px", minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
-        <span style={kickerStyle(fs)}>COMING UP · 30 DAYS</span>
         <Tip tip={{ t: "Dated events", d: "Results dates from your thesis where one exists (else Yahoo's earnings calendar; est. = Yahoo's estimate, not yet confirmed by the company) and declared ex-dividend dates from Gloomberg." }}>
-          <span style={smallMono(fs)}>results · ex-dividend</span>
+          <span style={kickerStyle(fs)}>COMING UP · 30 DAYS</span>
         </Tip>
       </div>
       {ev.length ? ev.slice(0, 24).map((e, i) => (
@@ -117,9 +115,10 @@ function Headlines({ rows, now }) {
   return (
     <div style={{ ...card, padding: "12px 14px", minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
-        <span style={kickerStyle(fs)}>LATEST ON YOUR NAMES</span>
+        <Tip tip={{ t: "Latest on your names", d: "Google News in English and each name's home-market language, plus this app's feeds — only headlines that name the company." }}>
+          <span style={kickerStyle(fs)}>LATEST ON YOUR NAMES</span>
+        </Tip>
         {[24, 72].map(h => <button key={h} onClick={() => setHours(h)} style={chipBtn(hours === h, C.ink)}>{h}h</button>)}
-        <span style={{ ...smallMono(fs), marginLeft: "auto" }}>Google News (English + local) and this app's feeds</span>
       </div>
       <div style={{ maxHeight: 420, overflowY: "auto" }}>
         {items.map((n, i) => (
@@ -135,6 +134,9 @@ function Headlines({ rows, now }) {
     </div>
   );
 }
+
+const SYNC_TIP = { t: "Synced with Gloomberg", d: "Names come from Gloomberg's watchlist and holdings, with your latest thesis where there is one. Adding, editing or removing a watchlist name here changes it in Gloomberg; changes made in Gloomberg appear here when you open this tab, switch back to the window, or within 5 minutes.",
+  r: "Why tracked, group, local name, benchmark and mute are this app's own settings and don't change Gloomberg." };
 
 function Health({ w }) {
   const fs = useFs();
@@ -185,13 +187,9 @@ export default function NamesView({ w, setAppKey }) {
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
               <span style={{ fontFamily: SERIF, fontSize: fs(16), color: C.ink, fontWeight: 700 }}>Watchlist Monitor</span>
-              <Tip tip={{ t: "Synced with Gloomberg", d: "Names come from Gloomberg's watchlist and holdings, with your latest thesis where there is one. Adding, editing or removing a watchlist name here changes it in Gloomberg; changes made in Gloomberg appear here when you open this tab, switch back to the window, or within 5 minutes.",
-                r: "Why tracked, group, local name, benchmark and mute are this app's own settings and don't change Gloomberg." }}>
-                <span style={{ fontFamily: SERIF, fontSize: fs(12.5), color: C.sub }}>synced with Gloomberg · names as gauges, factors, index movers or positions</span>
-              </Tip>
             </div>
             <div style={{ ...smallMono(fs), marginTop: 1 }}>
-              {rows.length} names ({l.watch.length} watchlist · {l.hold.length} held · {rows.filter(r => r.thesis).length} with thesis) · prices to {lastPx ? fmtDay(lastPx) : "—"} · synced {fmtStamp(w.listAt)}
+              {rows.length} names ({l.watch.length} watchlist · {l.hold.length} held · {rows.filter(r => r.thesis).length} with thesis) · prices to {lastPx ? fmtDay(lastPx) : "—"} · <Tip tip={SYNC_TIP} underline={false}>synced {fmtStamp(w.listAt)}</Tip>
               {w.alerts.length > 0 && <span style={{ color: C.red }}> · {w.alerts.length} alert{w.alerts.length > 1 ? "s" : ""}</span>}
             </div>
           </div>
